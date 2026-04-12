@@ -101,6 +101,9 @@ class ToastEvent {
   /// If `true` the user can swipe / tap to dismiss.
   final bool dismissible;
 
+  /// Optional channel ID for category-based policies.
+  final String? channel;
+
   /// Creates a [ToastEvent].
   ToastEvent({
     String? id,
@@ -122,6 +125,7 @@ class ToastEvent {
     this.variant,
     this.persistent = false,
     this.dismissible = true,
+    this.channel,
     DateTime? createdAt,
   })  : id = id ?? _generateId(),
         createdAt = createdAt ?? DateTime.now();
@@ -146,6 +150,7 @@ class ToastEvent {
     List<ToastAction>? actions,
     bool persistent = false,
     bool dismissible = true,
+    String? channel,
   }) {
     return ToastEvent(
       type: ToastType.success,
@@ -163,6 +168,7 @@ class ToastEvent {
       actions: actions,
       persistent: persistent,
       dismissible: dismissible,
+      channel: channel,
     );
   }
 
@@ -182,6 +188,7 @@ class ToastEvent {
     List<ToastAction>? actions,
     bool persistent = false,
     bool dismissible = true,
+    String? channel,
   }) {
     return ToastEvent(
       type: ToastType.error,
@@ -199,6 +206,7 @@ class ToastEvent {
       actions: actions,
       persistent: persistent,
       dismissible: dismissible,
+      channel: channel,
     );
   }
 
@@ -218,6 +226,7 @@ class ToastEvent {
     List<ToastAction>? actions,
     bool persistent = false,
     bool dismissible = true,
+    String? channel,
   }) {
     return ToastEvent(
       type: ToastType.warning,
@@ -235,6 +244,7 @@ class ToastEvent {
       actions: actions,
       persistent: persistent,
       dismissible: dismissible,
+      channel: channel,
     );
   }
 
@@ -254,6 +264,7 @@ class ToastEvent {
     List<ToastAction>? actions,
     bool persistent = false,
     bool dismissible = true,
+    String? channel,
   }) {
     return ToastEvent(
       type: ToastType.info,
@@ -271,6 +282,7 @@ class ToastEvent {
       actions: actions,
       persistent: persistent,
       dismissible: dismissible,
+      channel: channel,
     );
   }
 
@@ -287,6 +299,7 @@ class ToastEvent {
     VoidCallback? onDismiss,
     bool persistent = true,
     bool dismissible = false,
+    String? channel,
   }) {
     return ToastEvent(
       type: ToastType.loading,
@@ -302,6 +315,7 @@ class ToastEvent {
       onDismiss: onDismiss,
       persistent: persistent,
       dismissible: dismissible,
+      channel: channel,
     );
   }
 
@@ -316,6 +330,7 @@ class ToastEvent {
     VoidCallback? onDismiss,
     bool persistent = false,
     bool dismissible = true,
+    String? channel,
   }) {
     return ToastEvent(
       type: ToastType.custom,
@@ -329,6 +344,7 @@ class ToastEvent {
       onDismiss: onDismiss,
       persistent: persistent,
       dismissible: dismissible,
+      channel: channel,
     );
   }
 
@@ -339,6 +355,18 @@ class ToastEvent {
 /// Controller for an individual toast's lifecycle.
 ///
 /// Provided to custom builders so they can interact with their own toast.
+/// The controller is **stateful** — it can transition between [ToastState]
+/// values, allowing patterns like loading → success or loading → error.
+///
+/// ```dart
+/// final ctrl = ToastKit.showLoading('Saving…');
+/// try {
+///   await saveData();
+///   ctrl.success('Saved!');
+/// } catch (_) {
+///   ctrl.error('Save failed');
+/// }
+/// ```
 class ToastController {
   /// Unique toast identifier.
   final String id;
@@ -358,6 +386,15 @@ class ToastController {
   /// Message notifier – update to change the displayed message.
   final ValueNotifier<String> messageNotifier;
 
+  /// Current lifecycle state of the toast.
+  final ValueNotifier<ToastState> stateNotifier;
+
+  /// Icon notifier – update to change the displayed icon.
+  final ValueNotifier<IconData?> iconNotifier;
+
+  /// Whether this controller has been disposed.
+  bool _isDisposed = false;
+
   /// Creates a [ToastController].
   ToastController({
     required this.id,
@@ -365,11 +402,21 @@ class ToastController {
     required VoidCallback pause,
     required VoidCallback resume,
     String initialMessage = '',
+    ToastState initialState = ToastState.idle,
+    IconData? initialIcon,
   })  : _dismiss = dismiss,
         _pause = pause,
         _resume = resume,
         progress = ValueNotifier<double>(0.0),
-        messageNotifier = ValueNotifier<String>(initialMessage);
+        messageNotifier = ValueNotifier<String>(initialMessage),
+        stateNotifier = ValueNotifier<ToastState>(initialState),
+        iconNotifier = ValueNotifier<IconData?>(initialIcon);
+
+  /// Whether this controller has been disposed.
+  bool get isDisposed => _isDisposed;
+
+  /// Current lifecycle state.
+  ToastState get state => stateNotifier.value;
 
   /// Dismiss this toast.
   void dismiss() => _dismiss();
@@ -380,19 +427,71 @@ class ToastController {
   /// Resume the auto-dismiss timer.
   void resume() => _resume();
 
-  /// Update progress and / or message.
-  void update({String? message, double? progressValue}) {
+  /// Update progress, message, state, and/or icon.
+  void update({
+    String? message,
+    double? progressValue,
+    ToastState? state,
+    IconData? icon,
+  }) {
+    if (_isDisposed) return;
     if (progressValue != null) {
       progress.value = progressValue.clamp(0.0, 1.0);
     }
     if (message != null) {
       messageNotifier.value = message;
     }
+    if (state != null) {
+      stateNotifier.value = state;
+    }
+    if (icon != null) {
+      iconNotifier.value = icon;
+    }
+  }
+
+  /// Transition to [ToastState.success] with the given [message].
+  void success(String message, {IconData? icon}) {
+    update(
+      message: message,
+      state: ToastState.success,
+      icon: icon ?? Icons.check_circle_rounded,
+    );
+  }
+
+  /// Transition to [ToastState.error] with the given [message].
+  void error(String message, {IconData? icon}) {
+    update(
+      message: message,
+      state: ToastState.error,
+      icon: icon ?? Icons.error_rounded,
+    );
+  }
+
+  /// Transition to [ToastState.warning] with the given [message].
+  void warning(String message, {IconData? icon}) {
+    update(
+      message: message,
+      state: ToastState.warning,
+      icon: icon ?? Icons.warning_rounded,
+    );
+  }
+
+  /// Transition to [ToastState.info] with the given [message].
+  void info(String message, {IconData? icon}) {
+    update(
+      message: message,
+      state: ToastState.info,
+      icon: icon ?? Icons.info_rounded,
+    );
   }
 
   /// Release resources held by this controller.
   void dispose() {
+    if (_isDisposed) return;
+    _isDisposed = true;
     progress.dispose();
     messageNotifier.dispose();
+    stateNotifier.dispose();
+    iconNotifier.dispose();
   }
 }

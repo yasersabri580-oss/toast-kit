@@ -11,6 +11,15 @@
 ///
 /// ToastKit.success('Done!');
 /// ToastKit.error('Oops!');
+///
+/// // Stateful loading → success/error
+/// final ctrl = ToastKit.showLoading('Saving…');
+/// try {
+///   await saveData();
+///   ctrl.success('Saved!');
+/// } catch (_) {
+///   ctrl.error('Save failed');
+/// }
 /// ```
 library toast_kit;
 
@@ -44,6 +53,15 @@ export 'src/theme/toast_theme.dart';
 
 // Layout
 export 'src/layout/toast_position_calculator.dart';
+
+// Channels
+export 'src/channels/toast_channel.dart';
+
+// Persistence
+export 'src/persistence/toast_persistence.dart';
+
+// Stacking
+export 'src/stacking/group_collapser.dart';
 
 // Variants
 export 'src/variants/toast_variant_helpers.dart';

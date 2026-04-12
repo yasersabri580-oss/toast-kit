@@ -190,15 +190,24 @@ class NotificationRouter {
   // -----------------------------------------------------------------------
 
   ToastEvent? _findLowestPriorityVisible() {
-    // We don't have direct access to visible events from the queue manager's
-    // public API, so we maintain a reference. In practice the overlay engine
-    // would supply this. For the router we check the queue manager's tracked
-    // visible events indirectly – the simplest approach is to keep a local
-    // mirror updated via the QueueManager state stream. For now, return null
-    // to fall through to the queue decision.
-    return null;
+    final events = queueManager.visibleEvents;
+    if (events.isEmpty) return null;
+    return events.reduce((a, b) =>
+        a.priority.index <= b.priority.index ? a : b);
   }
 
-  ToastEvent? _findOldestVisible() => null;
-  ToastEvent? _findSamePriorityVisible(ToastPriority priority) => null;
+  ToastEvent? _findOldestVisible() {
+    final events = queueManager.visibleEvents;
+    if (events.isEmpty) return null;
+    return events.reduce((a, b) =>
+        a.createdAt.isBefore(b.createdAt) ? a : b);
+  }
+
+  ToastEvent? _findSamePriorityVisible(ToastPriority priority) {
+    final events = queueManager.visibleEvents;
+    for (final e in events) {
+      if (e.priority == priority) return e;
+    }
+    return null;
+  }
 }

@@ -83,6 +83,10 @@ class QueueManager {
   bool get isFull => _visibleIds.length >= _config.maxVisibleToasts;
   Stream<QueueState> get stateStream => _stateController.stream;
 
+  /// Unmodifiable list of currently visible events.
+  List<ToastEvent> get visibleEvents =>
+      List<ToastEvent>.unmodifiable(_visibleEvents.values);
+
   /// Update the configuration at runtime.
   void updateConfig(ToastConfig config) {
     _config = config;

@@ -117,6 +117,33 @@ enum ToastType {
   custom,
 }
 
+/// Lifecycle state of a toast notification.
+///
+/// Toasts can transition between states using [ToastController.updateState].
+/// For example, a loading toast can transition to success or error.
+enum ToastState {
+  /// Initial idle state before display.
+  idle,
+
+  /// In-progress / loading indicator.
+  loading,
+
+  /// Positive outcome.
+  success,
+
+  /// Failure or error.
+  error,
+
+  /// Cautionary alert.
+  warning,
+
+  /// Neutral information.
+  info,
+
+  /// Completely user-defined state.
+  custom,
+}
+
 /// Priority for queue ordering and interruption rules.
 enum ToastPriority {
   /// Lowest priority – deferred when the queue is full.

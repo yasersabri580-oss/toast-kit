@@ -64,6 +64,43 @@ ToastKit.info('Update available');
 ToastKit.loading('Processing…');
 ```
 
+### 4. Stateful loading → success / error
+
+```dart
+final ctrl = ToastKit.showLoading('Saving…');
+try {
+  await saveData();
+  ctrl.success('Saved!');
+} catch (_) {
+  ctrl.error('Save failed');
+}
+```
+
+### 5. Toast channels
+
+```dart
+// Register channels during init
+ToastKit.init(
+  navigatorKey: navigatorKey,
+  channels: [ToastChannel.auth, ToastChannel.network],
+);
+
+// Show a toast on a channel
+ToastKit.success('Logged in!', channel: 'auth');
+```
+
+### 6. Persistence for critical toasts
+
+```dart
+ToastKit.init(
+  navigatorKey: navigatorKey,
+  persistence: InMemoryToastPersistence(),
+);
+
+// Persistent toasts are auto-saved and can be restored:
+await ToastKit.restorePersistedToasts();
+```
+
 ---
 
 ## 🎨 Variants
@@ -147,12 +184,20 @@ ToastKit.init(
 
 ```
 ┌──────────────────────────────────────────────────┐
-│  Public API: ToastKit.success() / .show()        │
+│  Public API: ToastKit.success() / .showLoading() │
 └──────────────┬───────────────────────────────────┘
-               │ ToastEvent
+               │ ToastEvent (+ channel)
                ▼
 ┌──────────────────────────────┐
 │  EventBus (broadcast stream) │
+└──────────────┬───────────────┘
+               │
+               ▼
+┌──────────────────────────────┐
+│  ChannelRegistry             │
+│  • per-channel policies      │
+│  • max visible per channel   │
+│  • enable / disable          │
 └──────────────┬───────────────┘
                │
                ▼
@@ -194,6 +239,11 @@ ToastKit.init(
 │  VariantFactory → Widget     │
 │  12+ prebuilt toast variants │
 └──────────────────────────────┘
+
+Side systems:
+ • ToastController: stateful (idle → loading → success/error)
+ • ToastPersistence: save/restore critical toasts
+ • GroupCollapser: smart stacking for repeated messages
 ```
 
 ---
@@ -205,7 +255,7 @@ lib/
 ├── toast_kit.dart              # Barrel export
 └── src/
     ├── core/
-    │   ├── toast_config.dart   # Global config + all enums
+    │   ├── toast_config.dart   # Global config + all enums (incl. ToastState)
     │   └── toast_kit.dart      # SDK singleton & public API
     ├── events/
     │   ├── toast_event.dart    # ToastEvent + ToastController + ToastAction
@@ -217,6 +267,12 @@ lib/
     │   └── router_config.dart  # Router configuration
     ├── overlay/
     │   └── overlay_engine.dart # OverlayEntry lifecycle
+    ├── channels/
+    │   └── toast_channel.dart  # Channel definitions + registry
+    ├── persistence/
+    │   └── toast_persistence.dart  # Persistence interface + in-memory impl
+    ├── stacking/
+    │   └── group_collapser.dart    # Smart stacking / group collapsing
     ├── animation/
     │   ├── animation_factory.dart  # 12 animations + factory
     │   └── animation_curves.dart   # Custom physics curves
