@@ -67,6 +67,9 @@ export 'src/stacking/group_collapser.dart';
 // Accessibility
 export 'src/accessibility/toast_accessibility.dart';
 
+// Debug
+export 'src/debug/toast_debug_overlay.dart';
+
 // Variants
 export 'src/variants/toast_variant_helpers.dart';
 export 'src/variants/variant_factory.dart';

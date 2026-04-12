@@ -354,12 +354,45 @@ class _ToastAnimationBuilderState extends State<_ToastAnimationBuilder> {
 // Factory
 // ---------------------------------------------------------------------------
 
+/// A simple instant animation used in deterministic test mode and when
+/// the platform requests reduced motion.
+class ReducedMotionAnimation extends ToastAnimation {
+  @override
+  Duration get duration => const Duration(milliseconds: 50);
+
+  @override
+  Widget buildEnterAnimation(Widget child, Animation<double> animation) {
+    return FadeTransition(opacity: animation, child: child);
+  }
+
+  @override
+  Widget buildExitAnimation(Widget child, Animation<double> animation) {
+    return FadeTransition(opacity: animation, child: child);
+  }
+}
+
 /// Creates [ToastAnimation] instances from [ToastAnimationType] enums.
 class AnimationFactory {
   AnimationFactory._();
 
+  /// When `true`, [fromType] always returns a [ReducedMotionAnimation]
+  /// with near-instant duration. Set this in test `setUp` and reset in
+  /// `tearDown` to make animation-dependent tests deterministic.
+  static bool testMode = false;
+
+  /// When `true`, [fromType] returns [ReducedMotionAnimation] – a simple
+  /// fade with very short duration. Enable this when the platform
+  /// indicates reduced-motion preference.
+  static bool reducedMotion = false;
+
   /// Return the built-in animation for the given [type].
+  ///
+  /// Respects [testMode] and [reducedMotion] flags: when either is `true`
+  /// a [ReducedMotionAnimation] is returned instead of the normal one.
   static ToastAnimation fromType(ToastAnimationType type) {
+    if (testMode || reducedMotion) {
+      return ReducedMotionAnimation();
+    }
     switch (type) {
       case ToastAnimationType.fade:
         return FadeAnimation();
