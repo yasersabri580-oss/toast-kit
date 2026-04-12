@@ -106,10 +106,14 @@ class OverlayEngine {
 
         // Calculate stack index for vertical offset.
         final stackIndex = _stackIndexFor(id, position);
+        // Use an estimated toast height for stacking. This is approximate;
+        // actual heights vary by variant. A more advanced implementation
+        // would measure widgets after layout.
+        const double estimatedToastHeight = 64.0;
         final stackOffset = ToastPositionCalculator.calculateStackOffset(
           stackIndex,
           _config.toastSpacing,
-          toastHeight: 64,
+          toastHeight: estimatedToastHeight,
         );
 
         final isTop = position == ToastPosition.top ||

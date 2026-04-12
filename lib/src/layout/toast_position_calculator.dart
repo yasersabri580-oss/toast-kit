@@ -74,6 +74,10 @@ class ToastPositionCalculator {
   }
 
   /// Vertical stack offset for the n-th toast.
+  ///
+  /// When [toastHeight] is 0 (the default), only spacing-based offsets are
+  /// calculated. Pass the measured or estimated height of each toast to
+  /// prevent overlapping when multiple toasts are stacked.
   static double calculateStackOffset(int index, double spacing,
       {double toastHeight = 0}) {
     return index * (spacing + toastHeight);

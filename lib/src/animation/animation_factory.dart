@@ -210,7 +210,7 @@ class ShakeAnimation extends ToastAnimation {
 
   @override
   Widget buildEnterAnimation(Widget child, Animation<double> animation) {
-    return AnimatedBuilder(
+    return _ToastAnimationBuilder(
       animation: animation,
       builder: (context, child) {
         final shake = math.sin(animation.value * math.pi * 4) *
@@ -237,7 +237,7 @@ class BlurAnimation extends ToastAnimation {
 
   @override
   Widget buildEnterAnimation(Widget child, Animation<double> animation) {
-    return AnimatedBuilder(
+    return _ToastAnimationBuilder(
       animation: animation,
       builder: (context, child) {
         final sigma = (1 - animation.value) * 8.0;
@@ -252,7 +252,7 @@ class BlurAnimation extends ToastAnimation {
 
   @override
   Widget buildExitAnimation(Widget child, Animation<double> animation) {
-    return AnimatedBuilder(
+    return _ToastAnimationBuilder(
       animation: animation,
       builder: (context, child) {
         final sigma = (1 - animation.value) * 8.0;
@@ -272,7 +272,7 @@ class GlowAnimation extends ToastAnimation {
 
   @override
   Widget buildEnterAnimation(Widget child, Animation<double> animation) {
-    return AnimatedBuilder(
+    return _ToastAnimationBuilder(
       animation: animation,
       builder: (context, child) {
         final glow = animation.value * 12.0;
@@ -300,61 +300,25 @@ class GlowAnimation extends ToastAnimation {
 }
 
 // ---------------------------------------------------------------------------
-// Helper — AnimatedBuilder that accepts an explicit animation & builder.
+// Helper — Rebuild-on-change widget (avoids shadowing Flutter's AnimatedBuilder).
 // ---------------------------------------------------------------------------
 
-class AnimatedBuilder extends StatelessWidget {
-  final Listenable animation;
-  final Widget Function(BuildContext, Widget?) builder;
-  final Widget? child;
-
-  const AnimatedBuilder({
-    super.key,
-    required this.animation,
-    required this.builder,
-    this.child,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder._internal(
-      animation: animation,
-      builder: builder,
-      child: child,
-    );
-  }
-
-  /// Internal redirect to Flutter's [AnimatedBuilder].
-  static Widget _internal({
-    required Listenable animation,
-    required Widget Function(BuildContext, Widget?) builder,
-    Widget? child,
-  }) {
-    // Use Flutter's built-in AnimatedBuilder via its super (ListenableBuilder).
-    return _RebuildOnChange(
-      listenable: animation,
-      builder: builder,
-      child: child,
-    );
-  }
-}
-
-class _RebuildOnChange extends StatefulWidget {
+class _ToastAnimationBuilder extends StatefulWidget {
   final Listenable listenable;
   final Widget Function(BuildContext, Widget?) builder;
   final Widget? child;
 
-  const _RebuildOnChange({
+  const _ToastAnimationBuilder({
     required this.listenable,
     required this.builder,
     this.child,
   });
 
   @override
-  State<_RebuildOnChange> createState() => _RebuildOnChangeState();
+  State<_ToastAnimationBuilder> createState() => _ToastAnimationBuilderState();
 }
 
-class _RebuildOnChangeState extends State<_RebuildOnChange> {
+class _ToastAnimationBuilderState extends State<_ToastAnimationBuilder> {
   @override
   void initState() {
     super.initState();
@@ -362,7 +326,7 @@ class _RebuildOnChangeState extends State<_RebuildOnChange> {
   }
 
   @override
-  void didUpdateWidget(_RebuildOnChange old) {
+  void didUpdateWidget(_ToastAnimationBuilder old) {
     super.didUpdateWidget(old);
     if (old.listenable != widget.listenable) {
       old.listenable.removeListener(_onChanged);
