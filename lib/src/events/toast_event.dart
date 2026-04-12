@@ -359,7 +359,7 @@ class ToastEvent {
 /// values, allowing patterns like loading → success or loading → error.
 ///
 /// ```dart
-/// final ctrl = ToastKit.loading('Saving…');
+/// final ctrl = ToastKit.showLoading('Saving…');
 /// try {
 ///   await saveData();
 ///   ctrl.success('Saved!');

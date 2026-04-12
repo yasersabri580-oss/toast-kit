@@ -205,10 +205,9 @@ class NotificationRouter {
 
   ToastEvent? _findSamePriorityVisible(ToastPriority priority) {
     final events = queueManager.visibleEvents;
-    try {
-      return events.firstWhere((e) => e.priority == priority);
-    } catch (_) {
-      return null;
+    for (final e in events) {
+      if (e.priority == priority) return e;
     }
+    return null;
   }
 }
