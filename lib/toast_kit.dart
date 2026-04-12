@@ -50,6 +50,7 @@ export 'src/gestures/toast_gesture_handler.dart';
 
 // Theme
 export 'src/theme/toast_theme.dart';
+export 'src/theme/theme_resolver.dart';
 
 // Layout
 export 'src/layout/toast_position_calculator.dart';
