@@ -55,6 +55,7 @@ class _NetworkRetryScenarioState extends State<NetworkRetryScenario> {
           variant: ToastVariant.fullWidth,
           persistent: true,
           dismissible: true,
+          deduplicationKey: 'offline-banner',
           channel: 'network',
         ));
       },
