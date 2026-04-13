@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 import '../core/toast_config.dart';
 
 /// Configuration for the [NotificationRouter] decision engine.

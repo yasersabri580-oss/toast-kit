@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide RouterConfig;
 import 'package:toast_kit/toast_kit.dart';
 
 import 'scenarios/api_error.dart';

@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide RouterConfig;
 
 import 'toast_config.dart';
 import '../events/toast_event.dart';
@@ -131,7 +131,7 @@ class ToastKit {
     List<ToastChannel>? channels,
     List<ToastPlugin>? plugins,
   }) {
-    _instance?.dispose();
+    ToastKit.dispose();
     _instance = ToastKit._(
       navigatorKey: navigatorKey,
       config: config ?? const ToastConfig(),

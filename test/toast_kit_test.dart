@@ -1,18 +1,18 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide RouterConfig;
 import 'package:flutter_test/flutter_test.dart';
 
-import '../lib/src/core/toast_config.dart';
-import '../lib/src/events/toast_event.dart';
-import '../lib/src/events/event_bus.dart';
-import '../lib/src/queue/queue_manager.dart';
-import '../lib/src/router/notification_router.dart';
-import '../lib/src/router/router_config.dart';
-import '../lib/src/theme/toast_theme.dart';
-import '../lib/src/layout/toast_position_calculator.dart';
-import '../lib/src/animation/animation_curves.dart';
-import '../lib/src/channels/toast_channel.dart';
-import '../lib/src/persistence/toast_persistence.dart';
-import '../lib/src/stacking/group_collapser.dart';
+import 'package:toast_kit/src/core/toast_config.dart';
+import 'package:toast_kit/src/events/toast_event.dart';
+import 'package:toast_kit/src/events/event_bus.dart';
+import 'package:toast_kit/src/queue/queue_manager.dart';
+import 'package:toast_kit/src/router/notification_router.dart';
+import 'package:toast_kit/src/router/router_config.dart';
+import 'package:toast_kit/src/theme/toast_theme.dart';
+import 'package:toast_kit/src/layout/toast_position_calculator.dart';
+import 'package:toast_kit/src/animation/animation_curves.dart';
+import 'package:toast_kit/src/channels/toast_channel.dart';
+import 'package:toast_kit/src/persistence/toast_persistence.dart';
+import 'package:toast_kit/src/stacking/group_collapser.dart';
 
 void main() {
   // ========================================================================
