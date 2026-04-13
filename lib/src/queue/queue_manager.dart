@@ -224,11 +224,10 @@ class QueueManager {
           list.insert(idx, event);
         }
         _queue.clear();
-        _queuedIds.clear();
+        _queuedIds
+          ..clear()
+          ..addAll(list.map((e) => e.id));
         _queue.addAll(list);
-        for (final e in list) {
-          _queuedIds.add(e.id);
-        }
         break;
     }
   }

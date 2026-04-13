@@ -163,8 +163,9 @@ class _DemoScreenState extends State<DemoScreen> {
   Future<void> _progressToastStressTest() async {
     final ctrl = ToastKit.showLoading('Uploading file…');
 
-    // Simulate progress updates.
-    for (int pct = 0; pct <= 100; pct += 20) {
+    // Simulate progress updates in 20% increments.
+    const int progressStepPercent = 20;
+    for (int pct = 0; pct <= 100; pct += progressStepPercent) {
       await Future.delayed(const Duration(milliseconds: 400));
       ctrl.update(
         progressValue: pct / 100.0,
