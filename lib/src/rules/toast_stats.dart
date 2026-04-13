@@ -37,11 +37,11 @@ class ToastStats {
       case ToastType.error:
         errorCount++;
         _recentErrors.add(DateTime.now());
-        // Prevent unbounded growth: once we exceed the limit, trim the oldest
-        // half of entries. This amortises the cost of pruning while keeping
-        // the list bounded.
+        // Prevent unbounded growth: once we exceed the limit, remove only
+        // the oldest entries to get back under the limit while preserving
+        // the most recent error timestamps for windowed analysis.
         if (_recentErrors.length > _maxRecentErrors) {
-          _recentErrors.removeRange(0, _recentErrors.length ~/ 2);
+          _recentErrors.removeRange(0, _recentErrors.length - _maxRecentErrors);
         }
         break;
       case ToastType.warning:
