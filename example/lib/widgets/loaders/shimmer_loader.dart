@@ -63,19 +63,3 @@ class _ShimmerLoaderState extends State<ShimmerLoader>
   }
 }
 
-/// Convenience widget that wraps [AnimatedBuilder] to avoid deprecation.
-class AnimatedBuilder extends StatelessWidget {
-  const AnimatedBuilder({
-    super.key,
-    required this.animation,
-    required this.builder,
-  });
-
-  final Animation<double> animation;
-  final Widget Function(BuildContext, Widget?) builder;
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(animation: animation, builder: builder);
-  }
-}
