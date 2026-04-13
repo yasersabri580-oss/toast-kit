@@ -131,10 +131,13 @@ class _ToastKitExampleAppState extends State<ToastKitExampleApp> {
           maxVisibleToasts: 3,
           enableQueue: true,
           queueMode: QueueMode.fifo,
+          maxQueueSize: 50,
         ),
         routerConfig: const RouterConfig(
           enableDeduplication: true,
           deduplicationWindow: Duration(seconds: 2),
+          enableThrottling: true,
+          throttleInterval: Duration(milliseconds: 300),
         ),
         channels: [
           ToastChannel.auth,

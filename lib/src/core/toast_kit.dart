@@ -114,6 +114,13 @@ class ToastKit {
   final ToastPersistence? _persistence;
   late final GroupCollapser _groupCollapser;
 
+  /// ID of the currently active progress / loading toast, if any.
+  ///
+  /// Progress toasts are exclusive — only one is allowed at a time. If a new
+  /// progress toast is requested while one is active, the existing one is
+  /// dismissed first.
+  String? _activeProgressToastId;
+
   // -----------------------------------------------------------------------
   // Initialization
   // -----------------------------------------------------------------------
@@ -168,6 +175,30 @@ class ToastKit {
     // The controller is created in _presentToast. Return it (or a deferred
     // version if the event goes through the queue first).
     return inst._getOrCreateDeferredController(event);
+  }
+
+  /// Show a toast, replacing any existing toast with the same
+  /// [deduplicationKey] or message.
+  ///
+  /// This is useful for progress updates or status changes where you want
+  /// to ensure only the latest state is visible.
+  static void showOrReplace(ToastEvent event) {
+    final inst = instance;
+
+    // Find and dismiss any existing toast with a matching dedup key or
+    // message.
+    final matchKey = event.deduplicationKey ?? event.message;
+    if (matchKey != null) {
+      for (final visible in inst._queueManager.visibleEvents) {
+        final visibleKey = visible.deduplicationKey ?? visible.message;
+        if (visibleKey == matchKey) {
+          inst._dismissInternal(visible.id);
+          break;
+        }
+      }
+    }
+
+    show(event);
   }
 
   /// Show a success toast.
@@ -437,31 +468,22 @@ class ToastKit {
 
   /// Dismiss a specific toast by ID.
   static void dismiss(String id) {
-    final inst = instance;
-    final event = inst._queueManager.visibleEvents
-        .cast<ToastEvent?>()
-        .firstWhere((e) => e?.id == id, orElse: () => null);
-    inst._overlayEngine.removeToast(id, onDismissed: () {
-      if (event != null) {
-        inst._pluginHub.notifyToastDismissed(event, DismissReason.programmatic);
-      }
-      if (event?.channel != null) {
-        inst._channelRegistry.markDismissed(event!.channel!);
-        inst._channelManager.markDismissed(event.channel!);
-        inst._ruleEngine.recordDismissed(event.channel!);
-      }
-      inst._queueManager.markDismissed(id);
-      inst._controllers[id]?.dispose();
-      inst._controllers.remove(id);
-      inst._persistence?.remove(id);
-    });
+    instance._dismissInternal(id);
   }
 
-  /// Dismiss all visible toasts.
+  /// Dismiss all visible toasts and clear the waiting queue.
   static void dismissAll() {
-    for (final id in instance._overlayEngine.activeIds.toList()) {
-      dismiss(id);
+    final inst = instance;
+    // Clear the queue first to prevent promotions while dismissing.
+    inst._queueManager.clearQueue();
+    for (final id in inst._overlayEngine.activeIds.toList()) {
+      inst._dismissInternal(id);
     }
+  }
+
+  /// Clear the waiting queue without affecting currently visible toasts.
+  static void clearQueue() {
+    instance._queueManager.clearQueue();
   }
 
   /// Broadcast stream of all events.
@@ -480,6 +502,7 @@ class ToastKit {
     inst._channelManager.clear();
     inst._pluginHub.dispose();
     inst._ruleEngine.clear();
+    inst._router.clear();
     for (final c in inst._controllers.values) {
       c.dispose();
     }
@@ -510,6 +533,13 @@ class ToastKit {
       }
     }
 
+    // Progress / loading toast exclusivity: only one at a time.
+    if (_isLoadingType(event.type)) {
+      if (_activeProgressToastId != null) {
+        _dismissInternal(_activeProgressToastId!);
+      }
+    }
+
     final decision = _router.route(event);
     switch (decision) {
       case ShowDecision():
@@ -522,7 +552,7 @@ class ToastKit {
         break;
       case ReplaceDecision(:final targetId):
         _pluginHub.notifyToastReplaced(event, targetId);
-        dismiss(targetId);
+        _dismissInternal(targetId);
         _queueManager.enqueue(event);
         break;
       case DropDecision(:final reason):
@@ -549,6 +579,11 @@ class ToastKit {
     final animObj = AnimationFactory.fromType(animType);
     final duration = event.duration ?? _config.defaultDuration;
 
+    // Track progress toast exclusivity.
+    if (_isLoadingType(event.type)) {
+      _activeProgressToastId = event.id;
+    }
+
     // Track channel usage.
     if (event.channel != null) {
       _channelRegistry.markActive(event.channel!);
@@ -558,14 +593,19 @@ class ToastKit {
     // Notify plugins that toast is shown.
     _pluginHub.notifyToastShown(event);
 
-    final controller = ToastController(
+    // Reuse existing controller if one was created in advance (deferred)
+    // and is still valid.
+    final existing = _controllers[event.id];
+    final controller = (existing != null && !existing.isDisposed)
+        ? existing
+        : ToastController(
       id: event.id,
-      dismiss: () => dismiss(event.id),
+      dismiss: () => _dismissInternal(event.id),
       pause: () => _overlayEngine.pauseTimer(event.id),
       resume: () => _overlayEngine.resumeTimer(
         event.id,
         duration,
-        onExpired: () => dismiss(event.id),
+        onExpired: () => _dismissInternal(event.id),
       ),
       initialMessage: event.message ?? '',
       initialState: _toastTypeToState(event.type),
@@ -590,7 +630,7 @@ class ToastKit {
     // Wrap with gesture handler.
     toastWidget = ToastGestureHandler(
       onTap: event.onTap,
-      onSwipeDismiss: event.dismissible ? () => dismiss(event.id) : null,
+      onSwipeDismiss: event.dismissible ? () => _dismissInternal(event.id) : null,
       enableSwipeDismiss: event.dismissible,
       onPauseTimer: controller.pause,
       onResumeTimer: controller.resume,
@@ -605,20 +645,50 @@ class ToastKit {
       animation: animObj,
       autoDismiss: event.persistent ? null : duration,
       onDismissed: () {
-        event.onDismiss?.call();
-        _pluginHub.notifyToastDismissed(event, DismissReason.timeout);
-        if (event.channel != null) {
-          _channelRegistry.markDismissed(event.channel!);
-          _channelManager.markDismissed(event.channel!);
-          _ruleEngine.recordDismissed(event.channel!);
-        }
-        _queueManager.markDismissed(event.id);
-        _controllers[event.id]?.dispose();
-        _controllers.remove(event.id);
-        _persistence?.remove(event.id);
+        _onToastDismissed(event, DismissReason.timeout);
       },
     );
   }
+
+  /// Centralised dismissal logic used by both public [dismiss] and internal
+  /// callers. This avoids duplicating cleanup code.
+  void _dismissInternal(String id) {
+    final event = _queueManager.visibleEvents
+        .cast<ToastEvent?>()
+        .firstWhere((e) => e?.id == id, orElse: () => null);
+    _overlayEngine.removeToast(id, onDismissed: () {
+      if (event != null) {
+        _onToastDismissed(event, DismissReason.programmatic);
+      } else {
+        // Event might have already been removed from the visible list
+        // but the overlay entry still existed.
+        _queueManager.markDismissed(id);
+        _controllers[id]?.dispose();
+        _controllers.remove(id);
+      }
+    });
+  }
+
+  /// Shared cleanup logic invoked after a toast is removed from the overlay.
+  void _onToastDismissed(ToastEvent event, DismissReason reason) {
+    _pluginHub.notifyToastDismissed(event, reason);
+    if (event.channel != null) {
+      _channelRegistry.markDismissed(event.channel!);
+      _channelManager.markDismissed(event.channel!);
+      _ruleEngine.recordDismissed(event.channel!);
+    }
+    if (_activeProgressToastId == event.id) {
+      _activeProgressToastId = null;
+    }
+    _queueManager.markDismissed(event.id);
+    _controllers[event.id]?.dispose();
+    _controllers.remove(event.id);
+    _persistence?.remove(event.id);
+  }
+
+  /// Whether the given [type] represents a loading toast.
+  static bool _isLoadingType(ToastType type) =>
+      type == ToastType.loading;
 
   /// Convert a [ToastType] to the corresponding [ToastState].
   static ToastState _toastTypeToState(ToastType type) {
@@ -649,12 +719,12 @@ class ToastKit {
     // is actually presented.
     final controller = ToastController(
       id: event.id,
-      dismiss: () => dismiss(event.id),
+      dismiss: () => _dismissInternal(event.id),
       pause: () => _overlayEngine.pauseTimer(event.id),
       resume: () => _overlayEngine.resumeTimer(
         event.id,
         event.duration ?? _config.defaultDuration,
-        onExpired: () => dismiss(event.id),
+        onExpired: () => _dismissInternal(event.id),
       ),
       initialMessage: event.message ?? '',
       initialState: _toastTypeToState(event.type),

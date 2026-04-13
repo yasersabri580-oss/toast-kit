@@ -137,6 +137,59 @@ class _DemoScreenState extends State<DemoScreen> {
       };
 
   // ---------------------------------------------------------------------------
+  // Stress test helpers
+  // ---------------------------------------------------------------------------
+
+  /// Fire 20 toasts as fast as possible to validate queue / overlay stability.
+  void _stressTest20Toasts() {
+    const types = [
+      ToastType.success,
+      ToastType.error,
+      ToastType.warning,
+      ToastType.info,
+    ];
+    for (int i = 0; i < 20; i++) {
+      final type = types[i % types.length];
+      ToastKit.show(ToastEvent(
+        type: type,
+        message: 'Stress toast #${i + 1}',
+        icon: _iconForType(type),
+      ));
+    }
+  }
+
+  /// Simulate rapid progress toast demo — start a progress upload, then
+  /// quickly trigger additional toasts to verify exclusivity.
+  Future<void> _progressToastStressTest() async {
+    final ctrl = ToastKit.showLoading('Uploading file…');
+
+    // Simulate progress updates in 20% increments.
+    const int progressStepPercent = 20;
+    for (int pct = 0; pct <= 100; pct += progressStepPercent) {
+      await Future.delayed(const Duration(milliseconds: 400));
+      ctrl.update(
+        progressValue: pct / 100.0,
+        message: 'Uploading… $pct%',
+      );
+    }
+    ctrl.success('Upload complete!');
+
+    // Fire a few more toasts immediately to verify no overlap.
+    await Future.delayed(const Duration(milliseconds: 200));
+    ToastKit.success('Next action ready');
+  }
+
+  /// Simulate rapid identical clicks (dedup + rate limiting validation).
+  void _rapidClickSimulation() {
+    for (int i = 0; i < 10; i++) {
+      ToastKit.show(ToastEvent.error(
+        message: 'Rapid click error',
+        deduplicationKey: 'rapid-click',
+      ));
+    }
+  }
+
+  // ---------------------------------------------------------------------------
   // Build
   // ---------------------------------------------------------------------------
 
@@ -296,7 +349,57 @@ class _DemoScreenState extends State<DemoScreen> {
 
                 const SizedBox(height: 16),
 
-                // ---- 5. Variant Showcase ----
+                // ---- 4b. Stress Testing ----
+                SectionCard(
+                  title: 'Stress Testing',
+                  subtitle:
+                      'Validate stability under extreme load — no overlap, '
+                      'no leaks',
+                  icon: Icons.speed_rounded,
+                  iconColor: Colors.red,
+                  children: [
+                    ActionButton(
+                      label: 'Trigger 20 Toasts',
+                      icon: Icons.flash_on_rounded,
+                      onPressed: _stressTest20Toasts,
+                      color: Colors.red.shade700,
+                    ),
+                    const SizedBox(height: 8),
+                    ActionButton(
+                      label: 'Progress Toast + Others',
+                      icon: Icons.upload_rounded,
+                      onPressed: _progressToastStressTest,
+                      color: Colors.deepOrange,
+                    ),
+                    const SizedBox(height: 8),
+                    ActionButton(
+                      label: 'Rapid Click Simulation (10×)',
+                      icon: Icons.mouse_rounded,
+                      onPressed: _rapidClickSimulation,
+                      color: Colors.red.shade400,
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          ToastKit.dismissAll();
+                          ToastKit.info('All toasts dismissed & queue cleared');
+                        },
+                        icon: const Icon(
+                          Icons.cleaning_services_rounded,
+                          size: 18,
+                        ),
+                        label: const Text('Dismiss All & Clear Queue'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
                 SectionCard(
                   title: 'Variant Showcase',
                   subtitle: 'Visual styles available out-of-the-box',

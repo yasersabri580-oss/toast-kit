@@ -1,6 +1,7 @@
 // ignore_for_file: unused_element_parameter
 
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../core/toast_config.dart';
@@ -28,6 +29,14 @@ class _EntryData {
 ///
 /// This is the render layer of ToastKit — it knows how to mount, animate,
 /// position, and unmount overlay entries without leaking memory.
+///
+/// **Stability features:**
+/// - Duplicate entry guard: calling [showToast] with an ID that already has
+///   an active overlay entry is a no-op (prevents stacking duplicates).
+/// - Safe removal: [removeToast] is idempotent and guards against double-
+///   removal via the [_EntryData.isRemoving] flag.
+/// - Resource cleanup: [dispose] cancels all timers and removes all entries
+///   synchronously without waiting for exit animations.
 class OverlayEngine {
 
   OverlayEngine({
@@ -39,6 +48,8 @@ class OverlayEngine {
   ToastConfig _config;
 
   final Map<String, _EntryData> _entries = <String, _EntryData>{};
+
+  bool _isDisposed = false;
 
   /// The current toast configuration.
   ToastConfig get config => _config;
@@ -54,11 +65,18 @@ class OverlayEngine {
   /// IDs of all active toasts.
   Iterable<String> get activeIds => _entries.keys;
 
+  /// Whether an entry for the given [id] is currently mounted.
+  bool hasEntry(String id) => _entries.containsKey(id);
+
   // -----------------------------------------------------------------------
   // Show / Remove
   // -----------------------------------------------------------------------
 
   /// Mount a toast widget in the overlay. Returns the toast ID.
+  ///
+  /// If an entry with the same [id] already exists (and is not currently
+  /// being removed), this method returns immediately without creating a
+  /// duplicate overlay entry.
   String showToast({
     required String id,
     required Widget toastWidget,
@@ -68,10 +86,18 @@ class OverlayEngine {
     Duration? autoDismiss,
     VoidCallback? onDismissed,
   }) {
+    if (_isDisposed) return id;
+
+    // Duplicate guard — prevent overlapping overlays for the same ID.
+    if (_entries.containsKey(id) && !_entries[id]!.isRemoving) {
+      return id;
+    }
+
     final overlay = _navigatorKey.currentState?.overlay;
     if (overlay == null) {
       // Overlay not yet available — retry on next frame.
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_isDisposed) return;
         showToast(
           id: id,
           toastWidget: toastWidget,
@@ -158,6 +184,9 @@ class OverlayEngine {
   }
 
   /// Remove a toast with an exit animation.
+  ///
+  /// This method is idempotent — calling it on an already-removing or
+  /// non-existent toast is safe and has no effect.
   void removeToast(String id, {VoidCallback? onDismissed}) {
     final data = _entries[id];
     if (data == null || data.isRemoving) return;
@@ -165,9 +194,7 @@ class OverlayEngine {
     data.autoTimer?.cancel();
 
     data.animController.reverse().then((_) {
-      data.entry.remove();
-      data.animController.dispose();
-      _entries.remove(id);
+      _safeRemoveEntry(id, data);
       onDismissed?.call();
     });
   }
@@ -196,6 +223,8 @@ class OverlayEngine {
 
   /// Release all resources.
   void dispose() {
+    if (_isDisposed) return;
+    _isDisposed = true;
     for (final data in _entries.values) {
       data.autoTimer?.cancel();
       data.entry.remove();
@@ -207,6 +236,21 @@ class OverlayEngine {
   // -----------------------------------------------------------------------
   // Helpers
   // -----------------------------------------------------------------------
+
+  /// Safely remove a single overlay entry and clean up its resources.
+  void _safeRemoveEntry(String id, _EntryData data) {
+    try {
+      data.entry.remove();
+    } catch (e) {
+      debugPrint('ToastKit: overlay entry removal failed for "$id": $e');
+    }
+    try {
+      data.animController.dispose();
+    } catch (e) {
+      debugPrint('ToastKit: animation controller dispose failed for "$id": $e');
+    }
+    _entries.remove(id);
+  }
 
   int _stackIndexFor(String id, ToastPosition position) {
     int idx = 0;

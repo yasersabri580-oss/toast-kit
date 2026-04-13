@@ -51,6 +51,12 @@ class QueueState {
 ///
 /// Enforces [ToastConfig.maxVisibleToasts], ordering via [QueueMode], and
 /// auto-promotes the next queued event when a visible toast is dismissed.
+///
+/// **Stability features:**
+/// - Bounded queue size via [ToastConfig.maxQueueSize] to prevent memory
+///   overflow under rapid-fire usage.
+/// - Processing lock to prevent race conditions when promoting queued events.
+/// - Duplicate ID guard to prevent the same event from being tracked twice.
 class QueueManager {
 
   /// Creates a [QueueManager].
@@ -67,10 +73,16 @@ class QueueManager {
   final Set<String> _visibleIds = <String>{};
   final Map<String, ToastEvent> _visibleEvents = <String, ToastEvent>{};
 
+  /// IDs of events currently in the waiting queue (for fast duplicate check).
+  final Set<String> _queuedIds = <String>{};
+
   final StreamController<QueueState> _stateController =
       StreamController<QueueState>.broadcast();
 
   bool _isDisposed = false;
+
+  /// Guard to prevent re-entrant [_promoteNext] calls.
+  bool _isProcessing = false;
 
   // -----------------------------------------------------------------------
   // Getters
@@ -98,21 +110,40 @@ class QueueManager {
 
   /// Add an event. If a visible slot is free it will be shown immediately;
   /// otherwise it is queued.
-  void enqueue(ToastEvent event) {
-    if (_isDisposed) return;
+  ///
+  /// Returns `true` if the event was accepted (shown or queued), `false` if
+  /// it was dropped due to a duplicate ID or because the queue is disabled
+  /// and no visible slots are available.
+  ///
+  /// When the queue exceeds [ToastConfig.maxQueueSize], the oldest queued
+  /// events are silently dropped to keep memory bounded — but the newly
+  /// enqueued event is still accepted (returns `true`).
+  bool enqueue(ToastEvent event) {
+    if (_isDisposed) return false;
+
+    // Duplicate ID guard — prevent the same event from being tracked twice.
+    if (_visibleIds.contains(event.id) || _queuedIds.contains(event.id)) {
+      debugPrint('ToastKit: duplicate event ID "${event.id}" ignored');
+      return false;
+    }
 
     if (!isFull) {
       _markVisible(event);
       onReadyToShow(event);
     } else if (_config.enableQueue) {
       _insertIntoQueue(event);
+      _enforceMaxQueueSize();
+    } else {
+      return false;
     }
     _emitState();
+    return true;
   }
 
   /// Remove an event from the queue before it is shown.
   void removeById(String id) {
     _queue.removeWhere((e) => e.id == id);
+    _queuedIds.remove(id);
     _emitState();
   }
 
@@ -131,13 +162,22 @@ class QueueManager {
   ToastEvent? dequeue() {
     if (_queue.isEmpty) return null;
     final event = _queue.removeFirst();
+    _queuedIds.remove(event.id);
     _emitState();
     return event;
+  }
+
+  /// Clear all queued events (visible toasts remain tracked).
+  void clearQueue() {
+    _queue.clear();
+    _queuedIds.clear();
+    _emitState();
   }
 
   /// Clear all queued **and** visible tracking.
   void clear() {
     _queue.clear();
+    _queuedIds.clear();
     _visibleIds.clear();
     _visibleEvents.clear();
     _emitState();
@@ -148,6 +188,7 @@ class QueueManager {
     if (_isDisposed) return;
     _isDisposed = true;
     _queue.clear();
+    _queuedIds.clear();
     _visibleIds.clear();
     _visibleEvents.clear();
     _stateController.close();
@@ -163,6 +204,7 @@ class QueueManager {
   }
 
   void _insertIntoQueue(ToastEvent event) {
+    _queuedIds.add(event.id);
     switch (_config.queueMode) {
       case QueueMode.fifo:
         _queue.addLast(event);
@@ -182,16 +224,35 @@ class QueueManager {
           list.insert(idx, event);
         }
         _queue.clear();
+        _queuedIds
+          ..clear()
+          ..addAll(list.map((e) => e.id));
         _queue.addAll(list);
         break;
     }
   }
 
+  /// Drop oldest queued events when the queue exceeds the configured limit.
+  void _enforceMaxQueueSize() {
+    final maxSize = _config.maxQueueSize;
+    if (maxSize <= 0) return; // 0 = unlimited
+    while (_queue.length > maxSize) {
+      final dropped = _queue.removeFirst();
+      _queuedIds.remove(dropped.id);
+    }
+  }
+
   void _promoteNext() {
-    if (_queue.isEmpty || isFull) return;
-    final next = _queue.removeFirst();
-    _markVisible(next);
-    onReadyToShow(next);
+    if (_isProcessing || _queue.isEmpty || isFull) return;
+    _isProcessing = true;
+    try {
+      final next = _queue.removeFirst();
+      _queuedIds.remove(next.id);
+      _markVisible(next);
+      onReadyToShow(next);
+    } finally {
+      _isProcessing = false;
+    }
   }
 
   void _emitState() {
