@@ -9,6 +9,12 @@ import 'toast_theme.dart';
 /// so only the fields explicitly set at a given level will override the parent.
 @immutable
 class ThemeResolver {
+
+  const ThemeResolver({
+    this.globalTheme,
+    this.channelThemes = const {},
+    this.variantThemes = const {},
+  });
   /// Optional application-wide theme override applied on top of the
   /// [ToastThemeProvider] base.
   final ToastThemeData? globalTheme;
@@ -18,12 +24,6 @@ class ThemeResolver {
 
   /// Per-variant theme overrides keyed by [ToastVariant].
   final Map<ToastVariant, ToastThemeData> variantThemes;
-
-  const ThemeResolver({
-    this.globalTheme,
-    this.channelThemes = const {},
-    this.variantThemes = const {},
-  });
 
   /// Resolves a [ToastThemeData] by walking the hierarchy:
   ///
@@ -144,13 +144,13 @@ class ThemeResolver {
 
 /// InheritedWidget that provides a [ThemeResolver] to the widget tree.
 class ThemeResolverProvider extends InheritedWidget {
-  final ThemeResolver resolver;
 
   const ThemeResolverProvider({
     super.key,
     required this.resolver,
     required super.child,
   });
+  final ThemeResolver resolver;
 
   /// Retrieve the closest [ThemeResolver] or fall back to a default instance.
   static ThemeResolver of(BuildContext context) {

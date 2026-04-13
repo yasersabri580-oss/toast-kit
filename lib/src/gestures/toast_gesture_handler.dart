@@ -6,6 +6,22 @@ import '../core/toast_config.dart';
 /// Handles tap, long-press, double-tap, swipe dismiss with velocity
 /// detection, drag, and hover (web/desktop) with timer pause/resume.
 class ToastGestureHandler extends StatefulWidget {
+
+  const ToastGestureHandler({
+    super.key,
+    required this.child,
+    this.onTap,
+    this.onLongPress,
+    this.onDoubleTap,
+    this.onSwipeDismiss,
+    this.onPauseTimer,
+    this.onResumeTimer,
+    this.swipeDismissDirection = SwipeDismissDirection.horizontal,
+    this.enableSwipeDismiss = true,
+    this.swipeThreshold = 0.4,
+    this.velocityThreshold = 700.0,
+    this.enableHover = true,
+  });
   /// The toast content widget.
   final Widget child;
 
@@ -41,22 +57,6 @@ class ToastGestureHandler extends StatefulWidget {
 
   /// Whether to pause the timer when the cursor hovers (web/desktop).
   final bool enableHover;
-
-  const ToastGestureHandler({
-    super.key,
-    required this.child,
-    this.onTap,
-    this.onLongPress,
-    this.onDoubleTap,
-    this.onSwipeDismiss,
-    this.onPauseTimer,
-    this.onResumeTimer,
-    this.swipeDismissDirection = SwipeDismissDirection.horizontal,
-    this.enableSwipeDismiss = true,
-    this.swipeThreshold = 0.4,
-    this.velocityThreshold = 700.0,
-    this.enableHover = true,
-  });
 
   @override
   State<ToastGestureHandler> createState() => _ToastGestureHandlerState();

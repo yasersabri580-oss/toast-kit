@@ -48,23 +48,6 @@ import '../rules/rule_engine.dart';
 /// }
 /// ```
 class ToastKit {
-  static ToastKit? _instance;
-
-  final GlobalKey<NavigatorState> _navigatorKey;
-  ToastConfig _config;
-  final EventBus _eventBus;
-  late final QueueManager _queueManager;
-  late final NotificationRouter _router;
-  late final OverlayEngine _overlayEngine;
-  StreamSubscription<ToastEvent>? _subscription;
-
-  final Map<String, ToastController> _controllers = {};
-  final ChannelRegistry _channelRegistry = ChannelRegistry();
-  final ChannelManager _channelManager = ChannelManager();
-  final PluginHub _pluginHub = PluginHub();
-  final RuleEngine _ruleEngine = RuleEngine();
-  ToastPersistence? _persistence;
-  late final GroupCollapser _groupCollapser;
 
   ToastKit._({
     required GlobalKey<NavigatorState> navigatorKey,
@@ -113,6 +96,23 @@ class ToastKit {
 
     _subscription = _eventBus.stream.listen(_onEvent);
   }
+  static ToastKit? _instance;
+
+  final GlobalKey<NavigatorState> _navigatorKey;
+  final ToastConfig _config;
+  final EventBus _eventBus;
+  late final QueueManager _queueManager;
+  late final NotificationRouter _router;
+  late final OverlayEngine _overlayEngine;
+  StreamSubscription<ToastEvent>? _subscription;
+
+  final Map<String, ToastController> _controllers = {};
+  final ChannelRegistry _channelRegistry = ChannelRegistry();
+  final ChannelManager _channelManager = ChannelManager();
+  final PluginHub _pluginHub = PluginHub();
+  final RuleEngine _ruleEngine = RuleEngine();
+  final ToastPersistence? _persistence;
+  late final GroupCollapser _groupCollapser;
 
   // -----------------------------------------------------------------------
   // Initialization

@@ -3,6 +3,13 @@ import 'toast_stats.dart';
 
 /// Context passed to rule actions when they trigger.
 class ToastRuleContext {
+
+  const ToastRuleContext({
+    required this.channel,
+    required this.stats,
+    required this.event,
+    required this.ruleId,
+  });
   /// The channel this rule is associated with.
   final String channel;
 
@@ -14,13 +21,6 @@ class ToastRuleContext {
 
   /// The rule that was triggered.
   final String ruleId;
-
-  const ToastRuleContext({
-    required this.channel,
-    required this.stats,
-    required this.event,
-    required this.ruleId,
-  });
 }
 
 /// A custom smart rule that triggers based on toast activity.
@@ -38,6 +38,14 @@ class ToastRuleContext {
 /// );
 /// ```
 class ToastRule {
+
+  /// Creates a [ToastRule].
+  const ToastRule({
+    required this.id,
+    required this.channel,
+    required this.condition,
+    required this.action,
+  });
   /// Unique identifier for this rule.
   final String id;
 
@@ -51,12 +59,4 @@ class ToastRule {
   /// Action to execute when the rule triggers. The app decides how
   /// to present UI — ToastKit does not show dialogs or navigate.
   final void Function(ToastRuleContext context) action;
-
-  /// Creates a [ToastRule].
-  const ToastRule({
-    required this.id,
-    required this.channel,
-    required this.condition,
-    required this.action,
-  });
 }

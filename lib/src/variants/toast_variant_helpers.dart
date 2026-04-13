@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../core/toast_config.dart';
-import '../events/toast_event.dart';
 import '../theme/toast_theme.dart';
 
 /// Shared helpers used by all variant widgets.

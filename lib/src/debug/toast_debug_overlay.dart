@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:collection';
-import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -16,6 +15,16 @@ import '../router/notification_router.dart';
 /// A single debug-log entry capturing the lifecycle of a toast event.
 @immutable
 class ToastDebugEntry {
+
+  /// Creates a [ToastDebugEntry].
+  const ToastDebugEntry({
+    required this.eventId,
+    required this.message,
+    required this.type,
+    required this.timestamp,
+    required this.routerDecision,
+    this.dismissReason,
+  });
   /// The [ToastEvent.id] this entry relates to.
   final String eventId;
 
@@ -33,16 +42,6 @@ class ToastDebugEntry {
 
   /// Set once the toast is dismissed; `null` while still active.
   final String? dismissReason;
-
-  /// Creates a [ToastDebugEntry].
-  const ToastDebugEntry({
-    required this.eventId,
-    required this.message,
-    required this.type,
-    required this.timestamp,
-    required this.routerDecision,
-    this.dismissReason,
-  });
 
   /// Returns a copy with the given fields replaced.
   ToastDebugEntry copyWith({String? dismissReason}) {
@@ -216,6 +215,14 @@ class ToastDebugLog {
 /// ToastDebugOverlay(debugLog: myDebugLog)
 /// ```
 class ToastDebugOverlay extends StatefulWidget {
+
+  /// Creates a [ToastDebugOverlay].
+  const ToastDebugOverlay({
+    super.key,
+    required this.debugLog,
+    this.activeCountStream,
+    this.queuedCountStream,
+  });
   /// The debug log instance to observe.
   final ToastDebugLog debugLog;
 
@@ -225,21 +232,13 @@ class ToastDebugOverlay extends StatefulWidget {
   /// Optional stream of queued toast count.
   final Stream<int>? queuedCountStream;
 
-  /// Creates a [ToastDebugOverlay].
-  const ToastDebugOverlay({
-    super.key,
-    required this.debugLog,
-    this.activeCountStream,
-    this.queuedCountStream,
-  });
-
   @override
   State<ToastDebugOverlay> createState() => _ToastDebugOverlayState();
 }
 
 class _ToastDebugOverlayState extends State<ToastDebugOverlay> {
   bool _expanded = false;
-  Offset _offset = Offset(8, 80);
+  Offset _offset = const Offset(8, 80);
 
   StreamSubscription<List<ToastDebugEntry>>? _logSub;
   List<ToastDebugEntry> _currentEntries = const [];
@@ -289,17 +288,17 @@ class _ToastDebugOverlayState extends State<ToastDebugOverlay> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: Color(0xDD1E1E1E),
+          color: const Color(0xDD1E1E1E),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.bug_report, color: Colors.greenAccent, size: 16),
+            const Icon(Icons.bug_report, color: Colors.greenAccent, size: 16),
             const SizedBox(width: 4),
             Text(
               'Toast Debug (${widget.debugLog.totalShown})',
-              style: TextStyle(
+              style: const TextStyle(
                 color: Colors.white70,
                 fontSize: 11,
                 fontFamily: 'monospace',
@@ -320,7 +319,7 @@ class _ToastDebugOverlayState extends State<ToastDebugOverlay> {
       width: 320,
       constraints: const BoxConstraints(maxHeight: 420),
       decoration: BoxDecoration(
-        color: Color(0xEE1E1E1E),
+        color: const Color(0xEE1E1E1E),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.white24),
       ),
@@ -329,7 +328,7 @@ class _ToastDebugOverlayState extends State<ToastDebugOverlay> {
         children: [
           _buildHeader(),
           _buildCounterRow(log),
-          Divider(color: Colors.white24, height: 1),
+          const Divider(color: Colors.white24, height: 1),
           Flexible(child: _buildEntryList()),
         ],
       ),
@@ -339,15 +338,15 @@ class _ToastDebugOverlayState extends State<ToastDebugOverlay> {
   Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: Color(0xFF2A2A2A),
         borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
       ),
       child: Row(
         children: [
-          Icon(Icons.bug_report, color: Colors.greenAccent, size: 14),
+          const Icon(Icons.bug_report, color: Colors.greenAccent, size: 14),
           const SizedBox(width: 4),
-          Expanded(
+          const Expanded(
             child: Text(
               'Toast Debug',
               style: TextStyle(
@@ -380,7 +379,7 @@ class _ToastDebugOverlayState extends State<ToastDebugOverlay> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       child: DefaultTextStyle(
-        style: TextStyle(
+        style: const TextStyle(
           color: Colors.white60,
           fontSize: 10,
           fontFamily: 'monospace',
@@ -417,7 +416,7 @@ class _ToastDebugOverlayState extends State<ToastDebugOverlay> {
 
   Widget _buildEntryList() {
     if (_currentEntries.isEmpty) {
-      return Padding(
+      return const Padding(
         padding: EdgeInsets.all(16),
         child: Text(
           'No events yet.',
@@ -443,7 +442,7 @@ class _ToastDebugOverlayState extends State<ToastDebugOverlay> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       decoration: BoxDecoration(
-        color: Color(0xFF2A2A2A),
+        color: const Color(0xFF2A2A2A),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Column(
@@ -458,7 +457,7 @@ class _ToastDebugOverlayState extends State<ToastDebugOverlay> {
                   entry.message.length > 40
                       ? '${entry.message.substring(0, 40)}…'
                       : entry.message,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 11,
                     fontFamily: 'monospace',
@@ -469,7 +468,7 @@ class _ToastDebugOverlayState extends State<ToastDebugOverlay> {
               ),
               Text(
                 _formatTime(entry.timestamp),
-                style: TextStyle(
+                style: const TextStyle(
                   color: Colors.white30,
                   fontSize: 9,
                   fontFamily: 'monospace',
@@ -480,7 +479,7 @@ class _ToastDebugOverlayState extends State<ToastDebugOverlay> {
           const SizedBox(height: 2),
           Text(
             entry.routerDecision,
-            style: TextStyle(
+            style: const TextStyle(
               color: Colors.white54,
               fontSize: 9,
               fontFamily: 'monospace',
@@ -489,7 +488,7 @@ class _ToastDebugOverlayState extends State<ToastDebugOverlay> {
           if (entry.dismissReason != null)
             Text(
               'dismissed: ${entry.dismissReason}',
-              style: TextStyle(
+              style: const TextStyle(
                 color: Colors.orangeAccent,
                 fontSize: 9,
                 fontFamily: 'monospace',

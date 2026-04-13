@@ -16,6 +16,19 @@ import '../core/toast_config.dart';
 /// ```
 @immutable
 class ToastChannel {
+
+  /// Creates a [ToastChannel].
+  const ToastChannel({
+    required this.id,
+    required this.label,
+    this.maxVisible,
+    this.defaultPriority,
+    this.defaultPosition,
+    this.defaultDuration,
+    this.defaultAnimation,
+    this.defaultVariant,
+    this.enabled = true,
+  });
   /// Unique identifier for this channel.
   final String id;
 
@@ -42,19 +55,6 @@ class ToastChannel {
 
   /// Whether this channel is enabled. Disabled channels silently drop events.
   final bool enabled;
-
-  /// Creates a [ToastChannel].
-  const ToastChannel({
-    required this.id,
-    required this.label,
-    this.maxVisible,
-    this.defaultPriority,
-    this.defaultPosition,
-    this.defaultDuration,
-    this.defaultAnimation,
-    this.defaultVariant,
-    this.enabled = true,
-  });
 
   /// Pre-defined authentication channel.
   static const auth = ToastChannel(

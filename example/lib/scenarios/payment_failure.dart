@@ -38,7 +38,7 @@ class _PaymentFailureScenarioState extends State<PaymentFailureScenario> {
     // Config-based rule: trigger after 3 payment errors.
     ToastKit.configureRule(
       'payment',
-      RuleConfig(
+      const RuleConfig(
         errorThreshold: 3,
         deduplicateWindow: Duration(seconds: 30),
         maxTriggers: 1,

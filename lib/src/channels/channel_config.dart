@@ -11,6 +11,17 @@ import 'package:flutter/foundation.dart';
 /// ```
 @immutable
 class ChannelConfig {
+
+  /// Creates a [ChannelConfig] with sensible defaults.
+  const ChannelConfig({
+    this.maxVisible,
+    this.duration,
+    this.interruptCurrent = false,
+    this.enableDeduplication = false,
+    this.deduplicationWindow = const Duration(seconds: 2),
+    this.enableThrottling = false,
+    this.throttleInterval = const Duration(milliseconds: 500),
+  });
   /// Maximum number of toasts visible at once for this channel.
   final int? maxVisible;
 
@@ -32,17 +43,6 @@ class ChannelConfig {
 
   /// Minimum interval between toasts on this channel.
   final Duration throttleInterval;
-
-  /// Creates a [ChannelConfig] with sensible defaults.
-  const ChannelConfig({
-    this.maxVisible,
-    this.duration,
-    this.interruptCurrent = false,
-    this.enableDeduplication = false,
-    this.deduplicationWindow = const Duration(seconds: 2),
-    this.enableThrottling = false,
-    this.throttleInterval = const Duration(milliseconds: 500),
-  });
 
   /// Returns a copy with the given fields replaced.
   ChannelConfig copyWith({

@@ -4,27 +4,6 @@ import '../core/toast_config.dart';
 /// Design token system for ToastKit.
 @immutable
 class ToastThemeData {
-  final Color backgroundColor;
-  final Color foregroundColor;
-  final Color iconColor;
-  final Color successColor;
-  final Color errorColor;
-  final Color warningColor;
-  final Color infoColor;
-  final BorderRadius borderRadius;
-  final double elevation;
-  final Color shadowColor;
-  final double blurIntensity;
-  final EdgeInsets padding;
-  final EdgeInsets margin;
-  final TextStyle textStyle;
-  final TextStyle titleStyle;
-  final double iconSize;
-  final double maxWidth;
-  final double minHeight;
-  final Color? borderColor;
-  final double borderWidth;
-  final ToastDensity density;
 
   const ToastThemeData({
     required this.backgroundColor,
@@ -111,6 +90,27 @@ class ToastThemeData {
         ? ToastThemeData.dark()
         : ToastThemeData.light();
   }
+  final Color backgroundColor;
+  final Color foregroundColor;
+  final Color iconColor;
+  final Color successColor;
+  final Color errorColor;
+  final Color warningColor;
+  final Color infoColor;
+  final BorderRadius borderRadius;
+  final double elevation;
+  final Color shadowColor;
+  final double blurIntensity;
+  final EdgeInsets padding;
+  final EdgeInsets margin;
+  final TextStyle textStyle;
+  final TextStyle titleStyle;
+  final double iconSize;
+  final double maxWidth;
+  final double minHeight;
+  final Color? borderColor;
+  final double borderWidth;
+  final ToastDensity density;
 
   ToastThemeData copyWith({
     Color? backgroundColor,
@@ -177,13 +177,13 @@ class ToastThemeData {
 
 /// InheritedWidget that provides [ToastThemeData] to the widget tree.
 class ToastThemeProvider extends InheritedWidget {
-  final ToastThemeData theme;
 
   const ToastThemeProvider({
     super.key,
     required this.theme,
     required super.child,
   });
+  final ToastThemeData theme;
 
   /// Retrieve the closest [ToastThemeData] or fall back to the light theme.
   static ToastThemeData of(BuildContext context) {

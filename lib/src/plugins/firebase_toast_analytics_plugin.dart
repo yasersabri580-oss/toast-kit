@@ -24,15 +24,15 @@ import 'toast_plugin.dart';
 /// on `firebase_analytics`. Replace [_logEvent] with your actual
 /// `FirebaseAnalytics.logEvent` call.
 class FirebaseToastAnalyticsPlugin extends ToastAnalyticsPlugin {
-  /// Callback that logs an event to your analytics backend.
-  /// Signature matches `FirebaseAnalytics.logEvent`.
-  final void Function({required String name, Map<String, Object>? parameters})
-      logEvent;
 
   /// Creates a [FirebaseToastAnalyticsPlugin].
   ///
   /// Pass a [logEvent] callback that forwards to your analytics SDK.
   FirebaseToastAnalyticsPlugin({required this.logEvent});
+  /// Callback that logs an event to your analytics backend.
+  /// Signature matches `FirebaseAnalytics.logEvent`.
+  final void Function({required String name, Map<String, Object>? parameters})
+      logEvent;
 
   @override
   String get name => 'firebase_analytics';

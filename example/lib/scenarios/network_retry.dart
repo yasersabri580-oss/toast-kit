@@ -37,7 +37,7 @@ class _NetworkRetryScenarioState extends State<NetworkRetryScenario> {
     // Rule: after 3 network errors, suggest checking connection.
     ToastKit.configureRule(
       'network',
-      RuleConfig(
+      const RuleConfig(
         errorThreshold: 3,
         deduplicateWindow: Duration(seconds: 15),
         maxTriggers: 2,

@@ -55,6 +55,22 @@ enum DismissReason {
 /// events to Firebase, Sentry, or a custom backend.
 @immutable
 class ToastTelemetryEvent {
+
+  /// Creates a [ToastTelemetryEvent].
+  const ToastTelemetryEvent({
+    required this.eventId,
+    required this.type,
+    this.toastId,
+    this.channel,
+    this.toastType,
+    this.variant,
+    required this.timestamp,
+    this.dismissReason,
+    this.actionLabel,
+    this.ruleId,
+    this.queuePosition,
+    this.metadata,
+  });
   /// Unique event identifier.
   final String eventId;
 
@@ -90,22 +106,6 @@ class ToastTelemetryEvent {
 
   /// Optional additional data.
   final Map<String, dynamic>? metadata;
-
-  /// Creates a [ToastTelemetryEvent].
-  const ToastTelemetryEvent({
-    required this.eventId,
-    required this.type,
-    this.toastId,
-    this.channel,
-    this.toastType,
-    this.variant,
-    required this.timestamp,
-    this.dismissReason,
-    this.actionLabel,
-    this.ruleId,
-    this.queuePosition,
-    this.metadata,
-  });
 
   /// Converts this event to a map for serialization.
   Map<String, dynamic> toMap() {

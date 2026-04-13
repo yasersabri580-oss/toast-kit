@@ -37,7 +37,7 @@ class _FormValidationScenarioState extends State<FormValidationScenario> {
     // Rule: after 5 validation errors, suggest help.
     ToastKit.configureRule(
       'form',
-      RuleConfig(
+      const RuleConfig(
         errorThreshold: 5,
         deduplicateWindow: Duration(seconds: 30),
         maxTriggers: 1,

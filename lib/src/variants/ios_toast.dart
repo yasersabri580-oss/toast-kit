@@ -1,15 +1,14 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../events/toast_event.dart';
-import '../theme/toast_theme.dart';
 import 'toast_variant_helpers.dart';
 
 /// iOS Human Interface style notification with subtle blur.
 class IosToast extends StatelessWidget {
-  final ToastEvent event;
-  final ToastController controller;
 
   const IosToast({super.key, required this.event, required this.controller});
+  final ToastEvent event;
+  final ToastController controller;
 
   @override
   Widget build(BuildContext context) {

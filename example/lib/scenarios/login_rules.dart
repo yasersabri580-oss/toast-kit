@@ -37,7 +37,7 @@ class _LoginRulesScenarioState extends State<LoginRulesScenario> {
     // Config-based rule: warn after 3 errors, once per 60 seconds.
     ToastKit.configureRule(
       'auth',
-      RuleConfig(
+      const RuleConfig(
         errorThreshold: 3,
         deduplicateWindow: Duration(seconds: 60),
         maxTriggers: 1,

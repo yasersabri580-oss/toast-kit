@@ -1,18 +1,14 @@
+// ignore_for_file: unused_element_parameter
+
 import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../core/toast_config.dart';
-import '../events/toast_event.dart';
 import '../animation/animation_factory.dart';
 import '../layout/toast_position_calculator.dart';
 
 /// Data associated with a single overlay entry.
 class _EntryData {
-  final OverlayEntry entry;
-  final ToastPosition position;
-  final AnimationController animController;
-  Timer? autoTimer;
-  bool isRemoving;
 
   _EntryData({
     required this.entry,
@@ -21,6 +17,11 @@ class _EntryData {
     this.autoTimer,
     this.isRemoving = false,
   });
+  final OverlayEntry entry;
+  final ToastPosition position;
+  final AnimationController animController;
+  Timer? autoTimer;
+  bool isRemoving;
 }
 
 /// Manages the Flutter [Overlay] to display toast widgets.
@@ -28,16 +29,16 @@ class _EntryData {
 /// This is the render layer of ToastKit — it knows how to mount, animate,
 /// position, and unmount overlay entries without leaking memory.
 class OverlayEngine {
-  final GlobalKey<NavigatorState> _navigatorKey;
-  ToastConfig _config;
-
-  final Map<String, _EntryData> _entries = <String, _EntryData>{};
 
   OverlayEngine({
     required GlobalKey<NavigatorState> navigatorKey,
     required ToastConfig config,
   })  : _navigatorKey = navigatorKey,
         _config = config;
+  final GlobalKey<NavigatorState> _navigatorKey;
+  ToastConfig _config;
+
+  final Map<String, _EntryData> _entries = <String, _EntryData>{};
 
   /// The current toast configuration.
   ToastConfig get config => _config;

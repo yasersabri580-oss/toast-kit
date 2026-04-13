@@ -7,10 +7,10 @@ import '../core/toast_config.dart';
 ///
 /// Obtained via `ToastKit.channel("name")`.
 class ChannelHandle {
-  final String _channelName;
-  final void Function(ToastEvent) _emit;
 
   ChannelHandle(this._channelName, this._emit);
+  final String _channelName;
+  final void Function(ToastEvent) _emit;
 
   /// Show a success toast on this channel.
   void success(String message, {
@@ -120,12 +120,6 @@ class ChannelHandle {
 /// Provides safe registration, override, and lookup of channels. A default
 /// channel always exists.
 class ChannelManager {
-  /// The default channel name.
-  static const String defaultChannelName = 'default';
-
-  final Map<String, ToastChannel> _channels = {};
-  final Map<String, ChannelConfig> _configs = {};
-  final Map<String, int> _activeCounts = {};
 
   ChannelManager() {
     // Always register a default channel.
@@ -136,6 +130,12 @@ class ChannelManager {
     _configs[defaultChannelName] = const ChannelConfig();
     _activeCounts[defaultChannelName] = 0;
   }
+  /// The default channel name.
+  static const String defaultChannelName = 'default';
+
+  final Map<String, ToastChannel> _channels = {};
+  final Map<String, ChannelConfig> _configs = {};
+  final Map<String, int> _activeCounts = {};
 
   /// Register a channel with optional config. Replaces any existing channel
   /// with the same name (idempotent override).

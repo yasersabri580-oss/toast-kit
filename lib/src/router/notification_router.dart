@@ -31,24 +31,24 @@ class QueueDecision extends RouterDecision {
 
 /// Replace an existing visible toast.
 class ReplaceDecision extends RouterDecision {
-  final String targetId;
   const ReplaceDecision(this.targetId);
+  final String targetId;
   @override
   String toString() => 'RouterDecision.replace($targetId)';
 }
 
 /// Silently drop the event.
 class DropDecision extends RouterDecision {
-  final String reason;
   const DropDecision(this.reason);
+  final String reason;
   @override
   String toString() => 'RouterDecision.drop($reason)';
 }
 
 /// Event is a duplicate and will not be shown.
 class DeduplicateDecision extends RouterDecision {
-  final String existingId;
   const DeduplicateDecision(this.existingId);
+  final String existingId;
   @override
   String toString() => 'RouterDecision.deduplicate($existingId)';
 }
@@ -58,9 +58,9 @@ class DeduplicateDecision extends RouterDecision {
 // ---------------------------------------------------------------------------
 
 class _DeduplicationEntry {
+  _DeduplicationEntry(this.toastId, this.timestamp);
   final String toastId;
   final DateTime timestamp;
-  _DeduplicationEntry(this.toastId, this.timestamp);
 }
 
 // ---------------------------------------------------------------------------
@@ -76,17 +76,17 @@ class _DeduplicationEntry {
 /// 3. Urgent interruption
 /// 4. Capacity / replacement strategy
 class NotificationRouter {
+
+  NotificationRouter({
+    required this.queueManager,
+    RouterConfig config = const RouterConfig(),
+  }) : _config = config;
   final QueueManager queueManager;
   RouterConfig _config;
 
   final Map<ToastType, DateTime> _lastEmitByType = <ToastType, DateTime>{};
   final Map<String, _DeduplicationEntry> _deduplicationLog =
       <String, _DeduplicationEntry>{};
-
-  NotificationRouter({
-    required this.queueManager,
-    RouterConfig config = const RouterConfig(),
-  }) : _config = config;
 
   RouterConfig get config => _config;
 

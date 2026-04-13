@@ -279,6 +279,21 @@ enum ReplacementStrategy {
 /// Global configuration for ToastKit SDK.
 @immutable
 class ToastConfig {
+
+  /// Creates a [ToastConfig] with sensible defaults.
+  const ToastConfig({
+    this.defaultPosition = ToastPosition.top,
+    this.defaultDuration = const Duration(seconds: 3),
+    this.maxVisibleToasts = 3,
+    this.enableQueue = true,
+    this.queueMode = QueueMode.fifo,
+    this.defaultAnimationDuration = const Duration(milliseconds: 300),
+    this.defaultAnimation = ToastAnimationType.slideFromTop,
+    this.safeAreaEnabled = true,
+    this.keyboardAvoidance = true,
+    this.density = ToastDensity.comfortable,
+    this.toastSpacing = 8.0,
+  });
   /// Default screen position for toasts.
   final ToastPosition defaultPosition;
 
@@ -311,21 +326,6 @@ class ToastConfig {
 
   /// Vertical spacing between stacked toasts.
   final double toastSpacing;
-
-  /// Creates a [ToastConfig] with sensible defaults.
-  const ToastConfig({
-    this.defaultPosition = ToastPosition.top,
-    this.defaultDuration = const Duration(seconds: 3),
-    this.maxVisibleToasts = 3,
-    this.enableQueue = true,
-    this.queueMode = QueueMode.fifo,
-    this.defaultAnimationDuration = const Duration(milliseconds: 300),
-    this.defaultAnimation = ToastAnimationType.slideFromTop,
-    this.safeAreaEnabled = true,
-    this.keyboardAvoidance = true,
-    this.density = ToastDensity.comfortable,
-    this.toastSpacing = 8.0,
-  });
 
   /// Returns a copy with the given fields replaced.
   ToastConfig copyWith({

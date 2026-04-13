@@ -1,18 +1,18 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import '../lib/src/core/toast_config.dart';
-import '../lib/src/events/toast_event.dart';
-import '../lib/src/channels/toast_channel.dart';
-import '../lib/src/channels/channel_config.dart';
-import '../lib/src/channels/channel_manager.dart';
-import '../lib/src/plugins/toast_plugin.dart';
-import '../lib/src/plugins/plugin_hub.dart';
-import '../lib/src/plugins/firebase_toast_analytics_plugin.dart';
-import '../lib/src/analytics/toast_telemetry_event.dart';
-import '../lib/src/rules/rule_config.dart';
-import '../lib/src/rules/toast_rule.dart';
-import '../lib/src/rules/toast_stats.dart';
-import '../lib/src/rules/rule_engine.dart';
+import 'package:toast_kit/src/core/toast_config.dart';
+import 'package:toast_kit/src/events/toast_event.dart';
+import 'package:toast_kit/src/channels/toast_channel.dart';
+import 'package:toast_kit/src/channels/channel_config.dart';
+import 'package:toast_kit/src/channels/channel_manager.dart';
+import 'package:toast_kit/src/plugins/toast_plugin.dart';
+import 'package:toast_kit/src/plugins/plugin_hub.dart';
+import 'package:toast_kit/src/plugins/firebase_toast_analytics_plugin.dart';
+import 'package:toast_kit/src/analytics/toast_telemetry_event.dart';
+import 'package:toast_kit/src/rules/rule_config.dart';
+import 'package:toast_kit/src/rules/toast_rule.dart';
+import 'package:toast_kit/src/rules/toast_stats.dart';
+import 'package:toast_kit/src/rules/rule_engine.dart';
 
 // ==========================================================================
 // Test helpers
@@ -20,6 +20,8 @@ import '../lib/src/rules/rule_engine.dart';
 
 /// A simple recording plugin for testing.
 class RecordingPlugin extends ToastPlugin {
+
+  RecordingPlugin({this.name = 'recording'});
   @override
   final String name;
 
@@ -34,8 +36,6 @@ class RecordingPlugin extends ToastPlugin {
   final List<String> registeredChannels = [];
   final List<String> triggeredRules = [];
   final List<ToastTelemetryEvent> telemetryEvents = [];
-
-  RecordingPlugin({this.name = 'recording'});
 
   @override
   void onToastShown(ToastEvent event) {

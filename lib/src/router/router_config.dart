@@ -5,6 +5,15 @@ import '../core/toast_config.dart';
 /// Configuration for the [NotificationRouter] decision engine.
 @immutable
 class RouterConfig {
+
+  const RouterConfig({
+    this.enableDeduplication = true,
+    this.deduplicationWindow = const Duration(seconds: 2),
+    this.enableThrottling = false,
+    this.throttleInterval = const Duration(milliseconds: 500),
+    this.replacementStrategy = ReplacementStrategy.dropNew,
+    this.urgentInterruptsLower = true,
+  });
   /// Whether to coalesce events with the same deduplication key.
   final bool enableDeduplication;
 
@@ -22,15 +31,6 @@ class RouterConfig {
 
   /// Whether urgent events can interrupt lower-priority visible toasts.
   final bool urgentInterruptsLower;
-
-  const RouterConfig({
-    this.enableDeduplication = true,
-    this.deduplicationWindow = const Duration(seconds: 2),
-    this.enableThrottling = false,
-    this.throttleInterval = const Duration(milliseconds: 500),
-    this.replacementStrategy = ReplacementStrategy.dropNew,
-    this.urgentInterruptsLower = true,
-  });
 
   RouterConfig copyWith({
     bool? enableDeduplication,

@@ -9,6 +9,12 @@ import '../events/toast_event.dart';
 /// Snapshot of the current queue state.
 @immutable
 class QueueState {
+
+  const QueueState({
+    required this.visibleCount,
+    required this.queuedCount,
+    required this.maxVisible,
+  });
   /// Number of toasts currently visible.
   final int visibleCount;
 
@@ -17,12 +23,6 @@ class QueueState {
 
   /// Maximum number of visible toasts.
   final int maxVisible;
-
-  const QueueState({
-    required this.visibleCount,
-    required this.queuedCount,
-    required this.maxVisible,
-  });
 
   /// Whether the visible-slot limit has been reached.
   bool get isFull => visibleCount >= maxVisible;
@@ -52,6 +52,12 @@ class QueueState {
 /// Enforces [ToastConfig.maxVisibleToasts], ordering via [QueueMode], and
 /// auto-promotes the next queued event when a visible toast is dismissed.
 class QueueManager {
+
+  /// Creates a [QueueManager].
+  QueueManager({
+    required ToastConfig config,
+    required this.onReadyToShow,
+  }) : _config = config;
   ToastConfig _config;
 
   /// Callback when a queued toast is promoted and ready to display.
@@ -65,12 +71,6 @@ class QueueManager {
       StreamController<QueueState>.broadcast();
 
   bool _isDisposed = false;
-
-  /// Creates a [QueueManager].
-  QueueManager({
-    required ToastConfig config,
-    required this.onReadyToShow,
-  }) : _config = config;
 
   // -----------------------------------------------------------------------
   // Getters

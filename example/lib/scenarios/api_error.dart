@@ -63,7 +63,7 @@ class _ApiErrorScenarioState extends State<ApiErrorScenario> {
     // Config-based rule: after 5 errors, trigger once per 30 seconds.
     ToastKit.configureRule(
       'network',
-      RuleConfig(
+      const RuleConfig(
         errorThreshold: 5,
         deduplicateWindow: Duration(seconds: 30),
         maxTriggers: 2,

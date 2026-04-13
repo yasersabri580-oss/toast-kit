@@ -175,21 +175,21 @@ class CustomUiScenario extends StatelessWidget {
               ),
             ],
           ),
-          child: ListTile(
-            leading: const CircleAvatar(
+          child: const ListTile(
+            leading: CircleAvatar(
               backgroundColor: Color(0xFF6C63FF),
               child: Text('JD', style: TextStyle(color: Colors.white)),
             ),
-            title: const Text(
+            title: Text(
               'John Doe',
               style: TextStyle(fontWeight: FontWeight.w600),
             ),
-            subtitle: const Text('Sent you a message: "Hey! Are you free?"'),
-            trailing: const Text(
+            subtitle: Text('Sent you a message: "Hey! Are you free?"'),
+            trailing: Text(
               'now',
               style: TextStyle(color: Colors.grey, fontSize: 12),
             ),
-            contentPadding: const EdgeInsets.symmetric(
+            contentPadding: EdgeInsets.symmetric(
               horizontal: 16,
               vertical: 4,
             ),

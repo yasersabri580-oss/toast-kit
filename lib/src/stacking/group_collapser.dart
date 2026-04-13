@@ -6,6 +6,11 @@ import '../events/toast_event.dart';
 /// a configured window, the [GroupCollapser] can merge them into a single
 /// grouped toast with a count badge.
 class GroupCollapser {
+
+  GroupCollapser({
+    this.groupWindow = const Duration(seconds: 5),
+    this.collapseThreshold = 3,
+  });
   /// Time window within which repeated messages are grouped.
   final Duration groupWindow;
 
@@ -13,11 +18,6 @@ class GroupCollapser {
   final int collapseThreshold;
 
   final Map<String, _GroupEntry> _groups = {};
-
-  GroupCollapser({
-    this.groupWindow = const Duration(seconds: 5),
-    this.collapseThreshold = 3,
-  });
 
   /// Determine the grouping key for an event.
   ///
@@ -81,13 +81,13 @@ class GroupCollapser {
 }
 
 class _GroupEntry {
-  final DateTime firstSeen;
-  int count;
-  String lastId;
 
   _GroupEntry({
     required this.firstSeen,
     required this.count,
     required this.lastId,
   });
+  final DateTime firstSeen;
+  int count;
+  String lastId;
 }

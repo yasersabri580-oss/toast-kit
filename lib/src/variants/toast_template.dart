@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../core/toast_config.dart';
 import '../events/toast_event.dart';
-import '../theme/toast_theme.dart';
 import 'toast_variant_helpers.dart';
 
 /// A template-based API for building custom toast layouts without

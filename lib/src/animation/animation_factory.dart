@@ -211,7 +211,7 @@ class ShakeAnimation extends ToastAnimation {
   @override
   Widget buildEnterAnimation(Widget child, Animation<double> animation) {
     return _ToastAnimationBuilder(
-      animation: animation,
+      listenable: animation,
       builder: (context, child) {
         final shake = math.sin(animation.value * math.pi * 4) *
             (1 - animation.value) *
@@ -238,7 +238,7 @@ class BlurAnimation extends ToastAnimation {
   @override
   Widget buildEnterAnimation(Widget child, Animation<double> animation) {
     return _ToastAnimationBuilder(
-      animation: animation,
+      listenable: animation,
       builder: (context, child) {
         final sigma = (1 - animation.value) * 8.0;
         return ImageFiltered(
@@ -253,7 +253,7 @@ class BlurAnimation extends ToastAnimation {
   @override
   Widget buildExitAnimation(Widget child, Animation<double> animation) {
     return _ToastAnimationBuilder(
-      animation: animation,
+      listenable: animation,
       builder: (context, child) {
         final sigma = (1 - animation.value) * 8.0;
         return ImageFiltered(
@@ -273,7 +273,7 @@ class GlowAnimation extends ToastAnimation {
   @override
   Widget buildEnterAnimation(Widget child, Animation<double> animation) {
     return _ToastAnimationBuilder(
-      animation: animation,
+      listenable: animation,
       builder: (context, child) {
         final glow = animation.value * 12.0;
         return Container(
@@ -304,15 +304,15 @@ class GlowAnimation extends ToastAnimation {
 // ---------------------------------------------------------------------------
 
 class _ToastAnimationBuilder extends StatefulWidget {
-  final Listenable listenable;
-  final Widget Function(BuildContext, Widget?) builder;
-  final Widget? child;
 
   const _ToastAnimationBuilder({
     required this.listenable,
     required this.builder,
     this.child,
   });
+  final Listenable listenable;
+  final Widget Function(BuildContext, Widget?) builder;
+  final Widget? child;
 
   @override
   State<_ToastAnimationBuilder> createState() => _ToastAnimationBuilderState();
@@ -438,15 +438,15 @@ class AnimationFactory {
 }
 
 class _CustomAnimation extends ToastAnimation {
-  final Widget Function(Widget, Animation<double>) enterBuilder;
-  final Widget Function(Widget, Animation<double>) exitBuilder;
-  final Duration animDuration;
 
   _CustomAnimation({
     required this.enterBuilder,
     required this.exitBuilder,
     required this.animDuration,
   });
+  final Widget Function(Widget, Animation<double>) enterBuilder;
+  final Widget Function(Widget, Animation<double>) exitBuilder;
+  final Duration animDuration;
 
   @override
   Duration get duration => animDuration;

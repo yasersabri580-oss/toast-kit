@@ -14,6 +14,13 @@ import 'package:flutter/foundation.dart';
 /// ```
 @immutable
 class RuleConfig {
+
+  /// Creates a [RuleConfig].
+  const RuleConfig({
+    this.errorThreshold = 5,
+    this.deduplicateWindow = const Duration(seconds: 30),
+    this.maxTriggers = 0,
+  });
   /// Number of errors on a channel before the rule triggers.
   final int errorThreshold;
 
@@ -22,13 +29,6 @@ class RuleConfig {
 
   /// Maximum number of times this rule can trigger (0 = unlimited).
   final int maxTriggers;
-
-  /// Creates a [RuleConfig].
-  const RuleConfig({
-    this.errorThreshold = 5,
-    this.deduplicateWindow = const Duration(seconds: 30),
-    this.maxTriggers = 0,
-  });
 
   @override
   bool operator ==(Object other) {

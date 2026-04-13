@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
 import '../events/toast_event.dart';
-import '../theme/toast_theme.dart';
 import 'toast_variant_helpers.dart';
 
 /// Material Design 3 style toast with elevation and rounded corners.
 class MaterialToast extends StatelessWidget {
-  final ToastEvent event;
-  final ToastController controller;
 
   const MaterialToast({
     super.key,
     required this.event,
     required this.controller,
   });
+  final ToastEvent event;
+  final ToastController controller;
 
   @override
   Widget build(BuildContext context) {

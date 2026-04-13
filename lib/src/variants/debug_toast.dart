@@ -1,21 +1,20 @@
 import 'package:flutter/material.dart';
 import '../events/toast_event.dart';
-import '../theme/toast_theme.dart';
 import 'toast_variant_helpers.dart';
 
 /// Developer / debug toast with monospace font and metadata.
 class DebugToast extends StatelessWidget {
-  final ToastEvent event;
-  final ToastController controller;
 
   const DebugToast({super.key, required this.event, required this.controller});
+  final ToastEvent event;
+  final ToastController controller;
 
   @override
   Widget build(BuildContext context) {
     final theme = resolveTheme(context);
     final accent = colorForType(event.type, theme);
 
-    final mono = const TextStyle(fontFamily: 'monospace', fontSize: 12, height: 1.5);
+    const mono = TextStyle(fontFamily: 'monospace', fontSize: 12, height: 1.5);
 
     return Container(
       constraints: BoxConstraints(maxWidth: theme.maxWidth),

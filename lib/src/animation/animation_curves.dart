@@ -19,8 +19,8 @@ class BounceCurve extends Curve {
 
 /// Elastic overshoot curve.
 class ElasticCurve extends Curve {
-  final double period;
   const ElasticCurve({this.period = 0.4});
+  final double period;
 
   @override
   double transformInternal(double t) {
@@ -33,15 +33,15 @@ class ElasticCurve extends Curve {
 
 /// Physics-based spring curve.
 class SpringCurve extends Curve {
-  final double damping;
-  final double stiffness;
-  final double mass;
 
   const SpringCurve({
     this.damping = 12.0,
     this.stiffness = 180.0,
     this.mass = 1.0,
   });
+  final double damping;
+  final double stiffness;
+  final double mass;
 
   @override
   double transformInternal(double t) {
@@ -57,8 +57,8 @@ class SpringCurve extends Curve {
 
 /// Slight overshoot then settle.
 class OvershootCurve extends Curve {
-  final double tension;
   const OvershootCurve({this.tension = 2.0});
+  final double tension;
 
   @override
   double transformInternal(double t) {
