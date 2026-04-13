@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:toast_kit/toast_kit.dart';
 
@@ -12,6 +13,7 @@ import 'package:toast_kit/toast_kit.dart';
 // - configureRule for retry exhaustion warnings
 // - Action toasts for manual retry
 // - Deduplication to avoid toast flooding during retries
+// - Generation-based concurrency guard to prevent overlapping retry loops
 // ---------------------------------------------------------------------------
 
 class NetworkRetryScenario extends StatefulWidget {
@@ -24,6 +26,11 @@ class NetworkRetryScenario extends StatefulWidget {
 class _NetworkRetryScenarioState extends State<NetworkRetryScenario> {
   final _random = Random();
   bool _isRetrying = false;
+
+  /// Monotonically increasing generation counter.  Each call to
+  /// [_fetchWithRetry] bumps the generation; the in-flight loop checks its
+  /// own generation against the current value and aborts when stale.
+  int _retryGeneration = 0;
 
   @override
   void initState() {
@@ -63,33 +70,56 @@ class _NetworkRetryScenarioState extends State<NetworkRetryScenario> {
   }
 
   /// Fetch data with automatic retry and progressive toast feedback.
+  ///
+  /// Uses [_retryGeneration] as a concurrency guard — if a new retry loop
+  /// is started (e.g. via the "Retry Again" action toast), the previous
+  /// in-flight loop detects the generation mismatch and exits early.
   Future<String?> _fetchWithRetry({int maxRetries = 3}) async {
+    // Bump generation to cancel any stale retry loop.
+    _retryGeneration++;
+    final myGeneration = _retryGeneration;
+
+    if (_isRetrying) {
+      debugPrint('[NetworkRetry] Cancelling stale retry loop');
+      ToastKit.dismissAll();
+    }
     setState(() => _isRetrying = true);
 
     for (var attempt = 1; attempt <= maxRetries; attempt++) {
+      // Bail out if a newer retry loop was started.
+      if (_retryGeneration != myGeneration) return null;
+
       try {
         // Simulate network request.
         await Future.delayed(Duration(seconds: 1 + attempt));
+        if (_retryGeneration != myGeneration) return null;
 
         // 30% success rate for demo purposes.
         if (_random.nextInt(10) < 3) {
           ToastKit.success('Data loaded successfully!');
-          setState(() => _isRetrying = false);
+          if (mounted) setState(() => _isRetrying = false);
           return 'Fetched data at ${DateTime.now()}';
         }
 
         throw Exception('Server responded with 500');
       } catch (e) {
-        ToastKit.error(
-          'Attempt $attempt/$maxRetries failed',
+        if (_retryGeneration != myGeneration) return null;
+
+        // Use showOrReplace so each retry attempt replaces the previous
+        // error/info toast instead of stacking them.
+        ToastKit.showOrReplace(ToastEvent.error(
+          message: 'Attempt $attempt/$maxRetries failed',
+          deduplicationKey: 'network-retry-error',
           channel: 'network',
-        );
+        ));
 
         if (attempt == maxRetries) {
-          // All retries exhausted.
+          // All retries exhausted — show an action toast.
           ToastKit.show(ToastEvent.error(
-            message: 'All $maxRetries retries failed. Please try again later.',
+            message:
+                'All $maxRetries retries failed. Please try again later.',
             variant: ToastVariant.action,
+            deduplicationKey: 'network-retry-exhausted',
             actions: [
               ToastAction(
                 label: 'Retry Again',
@@ -98,18 +128,21 @@ class _NetworkRetryScenarioState extends State<NetworkRetryScenario> {
             ],
             channel: 'network',
           ));
-          setState(() => _isRetrying = false);
+          if (mounted) setState(() => _isRetrying = false);
           return null;
         }
 
-        // Exponential backoff feedback.
+        // Exponential backoff feedback — replaces the retry error toast.
         final waitSeconds = attempt * 2;
-        ToastKit.info('Retrying in $waitSeconds seconds…');
+        ToastKit.showOrReplace(ToastEvent.info(
+          message: 'Retrying in $waitSeconds seconds…',
+          deduplicationKey: 'network-retry-backoff',
+        ));
         await Future.delayed(Duration(seconds: waitSeconds));
       }
     }
 
-    setState(() => _isRetrying = false);
+    if (mounted) setState(() => _isRetrying = false);
     return null;
   }
 
@@ -155,7 +188,8 @@ class _NetworkRetryScenarioState extends State<NetworkRetryScenario> {
           FilledButton.icon(
             onPressed: _isRetrying ? null : () => _fetchWithRetry(),
             icon: const Icon(Icons.refresh),
-            label: Text(_isRetrying ? 'Retrying…' : 'Fetch with Retry (3 attempts)'),
+            label: Text(
+                _isRetrying ? 'Retrying…' : 'Fetch with Retry (3 attempts)'),
           ),
           const SizedBox(height: 12),
           FilledButton.icon(

@@ -121,6 +121,13 @@ class ToastKit {
   /// dismissed first.
   String? _activeProgressToastId;
 
+  /// `true` while [dismissAll] is tearing down visible toasts.
+  ///
+  /// Suppresses queue-promotion inside [_onToastDismissed] so that events
+  /// added after [dismissAll] clears the queue are not immediately promoted
+  /// before all exit animations complete.
+  bool _isDismissingAll = false;
+
   // -----------------------------------------------------------------------
   // Initialization
   // -----------------------------------------------------------------------
@@ -472,13 +479,25 @@ class ToastKit {
   }
 
   /// Dismiss all visible toasts and clear the waiting queue.
+  ///
+  /// The queue is cleared first to prevent [QueueManager.markDismissed] from
+  /// promoting queued events while the visible entries are being torn down.
+  /// A [_isDismissingAll] flag suppresses queue-promotion in the per-toast
+  /// dismiss callbacks, providing an extra safety net against races.
   static void dismissAll() {
     final inst = instance;
+    inst._isDismissingAll = true;
     // Clear the queue first to prevent promotions while dismissing.
     inst._queueManager.clearQueue();
-    for (final id in inst._overlayEngine.activeIds.toList()) {
+    final activeIds = inst._overlayEngine.activeIds.toList();
+    for (final id in activeIds) {
       inst._dismissInternal(id);
     }
+    // Synchronously clean up any remaining queue/visible tracking so the
+    // system is in a consistent idle state immediately, even though overlay
+    // exit animations may still be running.
+    inst._queueManager.clear();
+    inst._isDismissingAll = false;
   }
 
   /// Clear the waiting queue without affecting currently visible toasts.
@@ -531,9 +550,15 @@ class ToastKit {
     }
 
     // Progress / loading toast exclusivity: only one at a time.
+    // Dismiss the existing progress toast synchronously (start its exit
+    // animation) before routing the new event.  Clear the tracking ID
+    // eagerly so _onToastDismissed for the old toast does not null-out
+    // the ID that will be assigned to the new toast in _presentToast.
     if (_isLoadingType(event.type)) {
       if (_activeProgressToastId != null) {
-        _dismissInternal(_activeProgressToastId!);
+        final oldId = _activeProgressToastId!;
+        _activeProgressToastId = null;
+        _dismissInternal(oldId);
       }
     }
 
@@ -655,6 +680,11 @@ class ToastKit {
 
   /// Centralised dismissal logic used by both public [dismiss] and internal
   /// callers. This avoids duplicating cleanup code.
+  ///
+  /// The method is safe to call even if the toast has already been removed
+  /// from the overlay or queue; duplicate calls are no-ops because
+  /// [OverlayEngine.removeToast] is idempotent and [_onToastDismissed]
+  /// guards against double-cleanup via the controller's dispose flag.
   void _dismissInternal(String id) {
     final event = _queueManager.visibleEvents
         .cast<ToastEvent?>()
@@ -664,15 +694,21 @@ class ToastKit {
         _onToastDismissed(event, DismissReason.programmatic);
       } else {
         // Event might have already been removed from the visible list
-        // but the overlay entry still existed.
-        _queueManager.markDismissed(id);
-        _controllers[id]?.dispose();
-        _controllers.remove(id);
+        // but the overlay entry still existed.  Guard against double-
+        // cleanup by checking the controller first.
+        if (!_isDismissingAll) {
+          _queueManager.markDismissed(id);
+        }
+        final ctrl = _controllers.remove(id);
+        if (ctrl != null && !ctrl.isDisposed) ctrl.dispose();
       }
     });
   }
 
   /// Shared cleanup logic invoked after a toast is removed from the overlay.
+  ///
+  /// Guards against double-cleanup via the controller's [isDisposed] flag
+  /// and suppresses queue-promotion during [dismissAll].
   void _onToastDismissed(ToastEvent event, DismissReason reason) {
     _pluginHub.notifyToastDismissed(event, reason);
     if (event.channel != null) {
@@ -683,9 +719,11 @@ class ToastKit {
     if (_activeProgressToastId == event.id) {
       _activeProgressToastId = null;
     }
-    _queueManager.markDismissed(event.id);
-    _controllers[event.id]?.dispose();
-    _controllers.remove(event.id);
+    if (!_isDismissingAll) {
+      _queueManager.markDismissed(event.id);
+    }
+    final ctrl = _controllers.remove(event.id);
+    if (ctrl != null && !ctrl.isDisposed) ctrl.dispose();
     _persistence?.remove(event.id);
   }
 
