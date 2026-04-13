@@ -1,9 +1,0 @@
-.dart_tool/
-.packages
-build/
-pubspec.lock
-*.iml
-.idea/
-.vscode/
-*.swp
-*.swo
