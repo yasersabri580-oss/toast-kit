@@ -1,6 +1,7 @@
 // ignore_for_file: unused_element_parameter
 
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../core/toast_config.dart';
@@ -240,13 +241,13 @@ class OverlayEngine {
   void _safeRemoveEntry(String id, _EntryData data) {
     try {
       data.entry.remove();
-    } catch (_) {
-      // Entry may already have been removed (e.g. by dispose).
+    } catch (e) {
+      debugPrint('ToastKit: overlay entry removal failed for "$id": $e');
     }
     try {
       data.animController.dispose();
-    } catch (_) {
-      // Controller may already have been disposed.
+    } catch (e) {
+      debugPrint('ToastKit: animation controller dispose failed for "$id": $e');
     }
     _entries.remove(id);
   }

@@ -168,10 +168,7 @@ class NotificationRouter {
 
   RouterDecision? _checkDeduplication(ToastEvent event) {
     if (!_config.enableDeduplication) return null;
-
-    // Use explicit dedup key if provided, otherwise fall back to message text
-    // as an implicit dedup key to prevent identical toast spam.
-    final key = event.deduplicationKey ?? event.message;
+    final key = event.deduplicationKey;
     if (key == null) return null;
 
     final entry = _deduplicationLog[key];
@@ -204,9 +201,8 @@ class NotificationRouter {
 
   void _recordEmission(ToastEvent event) {
     _lastEmitByType[event.type] = DateTime.now();
-    final key = event.deduplicationKey ?? event.message;
-    if (key != null) {
-      _deduplicationLog[key] =
+    if (_config.enableDeduplication && event.deduplicationKey != null) {
+      _deduplicationLog[event.deduplicationKey!] =
           _DeduplicationEntry(event.id, DateTime.now());
     }
   }

@@ -123,6 +123,7 @@ class QueueManager {
 
     // Duplicate ID guard — prevent the same event from being tracked twice.
     if (_visibleIds.contains(event.id) || _queuedIds.contains(event.id)) {
+      debugPrint('ToastKit: duplicate event ID "${event.id}" ignored');
       return false;
     }
 

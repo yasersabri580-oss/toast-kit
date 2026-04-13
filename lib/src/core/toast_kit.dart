@@ -534,7 +534,7 @@ class ToastKit {
     }
 
     // Progress / loading toast exclusivity: only one at a time.
-    if (_isProgressType(event.type)) {
+    if (_isLoadingType(event.type)) {
       if (_activeProgressToastId != null) {
         _dismissInternal(_activeProgressToastId!);
       }
@@ -580,7 +580,7 @@ class ToastKit {
     final duration = event.duration ?? _config.defaultDuration;
 
     // Track progress toast exclusivity.
-    if (_isProgressType(event.type)) {
+    if (_isLoadingType(event.type)) {
       _activeProgressToastId = event.id;
     }
 
@@ -593,8 +593,12 @@ class ToastKit {
     // Notify plugins that toast is shown.
     _pluginHub.notifyToastShown(event);
 
-    // Reuse existing controller if one was created in advance (deferred).
-    final controller = _controllers[event.id] ?? ToastController(
+    // Reuse existing controller if one was created in advance (deferred)
+    // and is still valid.
+    final existing = _controllers[event.id];
+    final controller = (existing != null && !existing.isDisposed)
+        ? existing
+        : ToastController(
       id: event.id,
       dismiss: () => _dismissInternal(event.id),
       pause: () => _overlayEngine.pauseTimer(event.id),
@@ -682,8 +686,8 @@ class ToastKit {
     _persistence?.remove(event.id);
   }
 
-  /// Whether the given [type] represents a progress / loading toast.
-  static bool _isProgressType(ToastType type) =>
+  /// Whether the given [type] represents a loading toast.
+  static bool _isLoadingType(ToastType type) =>
       type == ToastType.loading;
 
   /// Convert a [ToastType] to the corresponding [ToastState].
