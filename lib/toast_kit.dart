@@ -57,6 +57,22 @@ export 'src/layout/toast_position_calculator.dart';
 
 // Channels
 export 'src/channels/toast_channel.dart';
+export 'src/channels/channel_config.dart';
+export 'src/channels/channel_manager.dart';
+
+// Plugins
+export 'src/plugins/toast_plugin.dart';
+export 'src/plugins/plugin_hub.dart';
+export 'src/plugins/firebase_toast_analytics_plugin.dart';
+
+// Analytics
+export 'src/analytics/toast_telemetry_event.dart';
+
+// Rules
+export 'src/rules/rule_config.dart';
+export 'src/rules/toast_rule.dart';
+export 'src/rules/toast_stats.dart';
+export 'src/rules/rule_engine.dart';
 
 // Persistence
 export 'src/persistence/toast_persistence.dart';
