@@ -60,15 +60,17 @@ class _NetworkDemoScreenState extends State<NetworkDemoScreen> {
         onAttempt: (attempt, max, error) {
           if (!mounted) return;
 
-          // Compute the delay the service will wait before the next retry.
-          final delaySec = (1 * 2.0 * (attempt + 1)).round();
+          // Mirror the retry service formula: baseDelay * (backoffMultiplier * attempt).
+          // With defaults (baseDelay=1s, multiplier=2.0): attempt 1 → 2s, attempt 2 → 4s.
+          // No delay after the final attempt.
+          final delaySec = attempt < max ? (2.0 * attempt).round() : 0;
 
           setState(() {
             _failures++;
             _channelErrors++;
             _backoffAttempts.add(_BackoffAttempt(
               attempt: attempt,
-              delaySec: attempt < max ? delaySec : 0,
+              delaySec: delaySec,
               status: _AttemptStatus.failed,
             ));
           });
