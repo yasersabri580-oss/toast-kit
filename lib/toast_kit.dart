@@ -50,6 +50,7 @@ export 'src/gestures/toast_gesture_handler.dart';
 
 // Theme
 export 'src/theme/toast_theme.dart';
+export 'src/theme/theme_resolver.dart';
 
 // Layout
 export 'src/layout/toast_position_calculator.dart';
@@ -62,6 +63,12 @@ export 'src/persistence/toast_persistence.dart';
 
 // Stacking
 export 'src/stacking/group_collapser.dart';
+
+// Accessibility
+export 'src/accessibility/toast_accessibility.dart';
+
+// Debug
+export 'src/debug/toast_debug_overlay.dart';
 
 // Variants
 export 'src/variants/toast_variant_helpers.dart';
