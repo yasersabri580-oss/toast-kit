@@ -112,7 +112,12 @@ class QueueManager {
   /// otherwise it is queued.
   ///
   /// Returns `true` if the event was accepted (shown or queued), `false` if
-  /// it was dropped (duplicate ID or queue overflow).
+  /// it was dropped due to a duplicate ID or because the queue is disabled
+  /// and no visible slots are available.
+  ///
+  /// When the queue exceeds [ToastConfig.maxQueueSize], the oldest queued
+  /// events are silently dropped to keep memory bounded — but the newly
+  /// enqueued event is still accepted (returns `true`).
   bool enqueue(ToastEvent event) {
     if (_isDisposed) return false;
 

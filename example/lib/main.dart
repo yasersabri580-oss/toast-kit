@@ -132,7 +132,6 @@ class _ToastKitExampleAppState extends State<ToastKitExampleApp> {
           enableQueue: true,
           queueMode: QueueMode.fifo,
           maxQueueSize: 50,
-          globalRateLimit: Duration(milliseconds: 150),
         ),
         routerConfig: const RouterConfig(
           enableDeduplication: true,

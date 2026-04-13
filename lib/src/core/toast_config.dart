@@ -294,7 +294,6 @@ class ToastConfig {
     this.density = ToastDensity.comfortable,
     this.toastSpacing = 8.0,
     this.maxQueueSize = 50,
-    this.globalRateLimit = const Duration(milliseconds: 150),
   });
   /// Default screen position for toasts.
   final ToastPosition defaultPosition;
@@ -336,13 +335,6 @@ class ToastConfig {
   /// recommended for production).
   final int maxQueueSize;
 
-  /// Minimum interval between consecutive toast displays.
-  ///
-  /// When toasts are triggered faster than this interval, excess events are
-  /// queued instead of displayed immediately. This prevents UI flooding under
-  /// rapid-fire usage. Set to [Duration.zero] to disable.
-  final Duration globalRateLimit;
-
   /// Returns a copy with the given fields replaced.
   ToastConfig copyWith({
     ToastPosition? defaultPosition,
@@ -357,7 +349,6 @@ class ToastConfig {
     ToastDensity? density,
     double? toastSpacing,
     int? maxQueueSize,
-    Duration? globalRateLimit,
   }) {
     return ToastConfig(
       defaultPosition: defaultPosition ?? this.defaultPosition,
@@ -373,7 +364,6 @@ class ToastConfig {
       density: density ?? this.density,
       toastSpacing: toastSpacing ?? this.toastSpacing,
       maxQueueSize: maxQueueSize ?? this.maxQueueSize,
-      globalRateLimit: globalRateLimit ?? this.globalRateLimit,
     );
   }
 
@@ -392,8 +382,7 @@ class ToastConfig {
         other.keyboardAvoidance == keyboardAvoidance &&
         other.density == density &&
         other.toastSpacing == toastSpacing &&
-        other.maxQueueSize == maxQueueSize &&
-        other.globalRateLimit == globalRateLimit;
+        other.maxQueueSize == maxQueueSize;
   }
 
   @override
@@ -410,6 +399,5 @@ class ToastConfig {
         density,
         toastSpacing,
         maxQueueSize,
-        globalRateLimit,
       );
 }

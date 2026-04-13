@@ -114,10 +114,6 @@ class ToastKit {
   final ToastPersistence? _persistence;
   late final GroupCollapser _groupCollapser;
 
-  /// Timestamp of the last toast that was actually displayed (for rate
-  /// limiting).
-  DateTime? _lastDisplayTime;
-
   /// ID of the currently active progress / loading toast, if any.
   ///
   /// Progress toasts are exclusive — only one is allowed at a time. If a new
@@ -544,22 +540,11 @@ class ToastKit {
       }
     }
 
-    // Global rate limiting — if toasts arrive faster than the configured
-    // rate, queue them instead of displaying immediately (the router will
-    // handle the actual decision, but we adjust timing here).
-    final rateLimited = _applyRateLimit();
-
     final decision = _router.route(event);
     switch (decision) {
       case ShowDecision():
-        if (rateLimited) {
-          // Rate-limited: queue instead of showing immediately.
-          _pluginHub.notifyToastQueued(event);
-          _queueManager.enqueue(event);
-        } else {
-          _pluginHub.notifyToastQueued(event);
-          _queueManager.enqueue(event);
-        }
+        _pluginHub.notifyToastQueued(event);
+        _queueManager.enqueue(event);
         break;
       case QueueDecision():
         _pluginHub.notifyToastQueued(event);
@@ -593,9 +578,6 @@ class ToastKit {
     final animType = event.animation ?? _config.defaultAnimation;
     final animObj = AnimationFactory.fromType(animType);
     final duration = event.duration ?? _config.defaultDuration;
-
-    // Update rate-limit timestamp.
-    _lastDisplayTime = DateTime.now();
 
     // Track progress toast exclusivity.
     if (_isProgressType(event.type)) {
@@ -698,15 +680,6 @@ class ToastKit {
     _controllers[event.id]?.dispose();
     _controllers.remove(event.id);
     _persistence?.remove(event.id);
-  }
-
-  /// Returns `true` if the global rate limit is active and not enough time
-  /// has elapsed since the last display.
-  bool _applyRateLimit() {
-    if (_config.globalRateLimit == Duration.zero) return false;
-    if (_lastDisplayTime == null) return false;
-    final elapsed = DateTime.now().difference(_lastDisplayTime!);
-    return elapsed < _config.globalRateLimit;
   }
 
   /// Whether the given [type] represents a progress / loading toast.
