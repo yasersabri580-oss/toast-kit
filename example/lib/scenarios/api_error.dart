@@ -95,6 +95,10 @@ class _ApiErrorScenarioState extends State<ApiErrorScenario> {
   }
 
   /// Fetch user profile with loading → success/error transition.
+  ///
+  /// Records channel errors via the event that is already visible (the
+  /// loading toast transitions to error state), rather than emitting a
+  /// second error toast which would cause stacking.
   Future<void> _fetchProfile() async {
     final ctrl = ToastKit.showLoading('Loading profile…');
     try {
@@ -102,10 +106,8 @@ class _ApiErrorScenarioState extends State<ApiErrorScenario> {
       ctrl.success('Welcome back, ${user['name']}!');
     } on TimeoutException {
       ctrl.error('Request timed out — please try again');
-      ToastKit.error('Profile request timeout', channel: 'network');
     } catch (e) {
       ctrl.error('Failed to load profile');
-      ToastKit.error('Profile fetch error', channel: 'network');
     }
   }
 
