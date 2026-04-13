@@ -515,9 +515,6 @@ class ToastKit {
   // -----------------------------------------------------------------------
 
   void _onEvent(ToastEvent event) {
-    // Record event in rule engine stats.
-    _ruleEngine.recordEvent(event);
-
     // Channel policy check.
     if (event.channel != null) {
       final channel = _channelRegistry[event.channel!];
@@ -543,14 +540,20 @@ class ToastKit {
     final decision = _router.route(event);
     switch (decision) {
       case ShowDecision():
+        // Record stats only for events that are actually shown (not
+        // deduplicated or dropped). This prevents inflated counters that
+        // cause rules to trigger prematurely under rapid-fire deduplication.
+        _ruleEngine.recordEvent(event);
         _pluginHub.notifyToastQueued(event);
         _queueManager.enqueue(event);
         break;
       case QueueDecision():
+        _ruleEngine.recordEvent(event);
         _pluginHub.notifyToastQueued(event);
         _queueManager.enqueue(event);
         break;
       case ReplaceDecision(:final targetId):
+        _ruleEngine.recordEvent(event);
         _pluginHub.notifyToastReplaced(event, targetId);
         _dismissInternal(targetId);
         _queueManager.enqueue(event);

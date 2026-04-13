@@ -25,6 +25,15 @@ class RuleEngine {
   /// Tracks the last trigger time for deduplication windows.
   final Map<String, DateTime> _lastTriggerTimes = {};
 
+  /// Guard against re-entrant [evaluate] calls.
+  ///
+  /// A rule action may emit a new toast (via [ToastKit.show]) which
+  /// synchronously re-enters the event pipeline and calls [evaluate] again.
+  /// Without this guard, a rule whose condition remains true (e.g.
+  /// `stats.errorCount >= N`) would recurse infinitely and cause a stack
+  /// overflow / app hang.
+  bool _isEvaluating = false;
+
   /// Callback invoked when a rule triggers (for plugin/analytics integration).
   void Function(String ruleId, String channel)? onRuleTriggered;
 
@@ -91,45 +100,58 @@ class RuleEngine {
 
   /// Evaluate all rules against the current event.
   /// Returns the list of rule IDs that triggered.
+  ///
+  /// If evaluation is already in progress (re-entrant call from a rule action
+  /// that emits a toast), the call is skipped to prevent infinite recursion.
   List<String> evaluate(ToastEvent event) {
     if (!hasRules) return const [];
+    // Prevent re-entrant evaluation. A rule action may call
+    // ToastKit.show() which synchronously re-enters this method via
+    // the EventBus broadcast stream. Without this guard the same rule
+    // fires recursively until the stack overflows.
+    if (_isEvaluating) return const [];
+    _isEvaluating = true;
 
-    final triggered = <String>[];
-    final channel = event.channel ?? 'default';
-    final stats = statsFor(channel);
+    try {
+      final triggered = <String>[];
+      final channel = event.channel ?? 'default';
+      final stats = statsFor(channel);
 
-    // Evaluate config-based rules.
-    final configRule = _configRules[channel];
-    if (configRule != null) {
-      final configRuleId = '_config_$channel';
-      if (_shouldTriggerConfigRule(configRuleId, configRule, stats)) {
-        _markTriggered(configRuleId);
-        triggered.add(configRuleId);
-        _safeCallback(() => onRuleTriggered?.call(configRuleId, channel));
+      // Evaluate config-based rules.
+      final configRule = _configRules[channel];
+      if (configRule != null) {
+        final configRuleId = '_config_$channel';
+        if (_shouldTriggerConfigRule(configRuleId, configRule, stats)) {
+          _markTriggered(configRuleId);
+          triggered.add(configRuleId);
+          _safeCallback(() => onRuleTriggered?.call(configRuleId, channel));
+        }
       }
+
+      // Evaluate custom rules.
+      for (final rule in _customRules.values) {
+        if (rule.channel != channel) continue;
+        if (!_shouldTriggerCustomRule(rule, stats, event)) continue;
+
+        _markTriggered(rule.id);
+        triggered.add(rule.id);
+
+        // Execute the rule action safely.
+        _safeCallback(() {
+          rule.action(ToastRuleContext(
+            channel: channel,
+            stats: stats,
+            event: event,
+            ruleId: rule.id,
+          ));
+        });
+        _safeCallback(() => onRuleTriggered?.call(rule.id, channel));
+      }
+
+      return triggered;
+    } finally {
+      _isEvaluating = false;
     }
-
-    // Evaluate custom rules.
-    for (final rule in _customRules.values) {
-      if (rule.channel != channel) continue;
-      if (!_shouldTriggerCustomRule(rule, stats, event)) continue;
-
-      _markTriggered(rule.id);
-      triggered.add(rule.id);
-
-      // Execute the rule action safely.
-      _safeCallback(() {
-        rule.action(ToastRuleContext(
-          channel: channel,
-          stats: stats,
-          event: event,
-          ruleId: rule.id,
-        ));
-      });
-      _safeCallback(() => onRuleTriggered?.call(rule.id, channel));
-    }
-
-    return triggered;
   }
 
   // -----------------------------------------------------------------------
@@ -192,6 +214,7 @@ class RuleEngine {
     _configRules.clear();
     _triggerCounts.clear();
     _lastTriggerTimes.clear();
+    _isEvaluating = false;
   }
 
   /// Reset only trigger counts and stats (keep rules).
@@ -199,5 +222,6 @@ class RuleEngine {
     _channelStats.clear();
     _triggerCounts.clear();
     _lastTriggerTimes.clear();
+    _isEvaluating = false;
   }
 }

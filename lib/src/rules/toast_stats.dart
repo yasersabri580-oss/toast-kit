@@ -26,6 +26,10 @@ class ToastStats {
   /// Timestamps of recent errors (for windowed analysis).
   final List<DateTime> _recentErrors = [];
 
+  /// Maximum number of entries kept in [_recentErrors] to prevent unbounded
+  /// memory growth when errors are generated rapidly over a long session.
+  static const int _maxRecentErrors = 500;
+
   /// Record a toast event.
   void record(ToastType type) {
     totalCount++;
@@ -33,6 +37,12 @@ class ToastStats {
       case ToastType.error:
         errorCount++;
         _recentErrors.add(DateTime.now());
+        // Prevent unbounded growth: once we exceed the limit, trim the oldest
+        // half of entries. This amortises the cost of pruning while keeping
+        // the list bounded.
+        if (_recentErrors.length > _maxRecentErrors) {
+          _recentErrors.removeRange(0, _recentErrors.length ~/ 2);
+        }
         break;
       case ToastType.warning:
         warningCount++;

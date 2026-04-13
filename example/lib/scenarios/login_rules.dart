@@ -56,6 +56,7 @@ class _LoginRulesScenarioState extends State<LoginRulesScenario> {
           message: 'Too many failed attempts. Account locked for 30 seconds.',
           persistent: true,
           dismissible: false,
+          deduplicationKey: 'login-lockout',
           channel: 'auth',
         ));
 
@@ -79,6 +80,7 @@ class _LoginRulesScenarioState extends State<LoginRulesScenario> {
         ToastKit.show(ToastEvent.info(
           message: 'Forgot your password?',
           variant: ToastVariant.action,
+          deduplicationKey: 'suggest-reset',
           actions: [
             ToastAction(
               label: 'Reset Password',

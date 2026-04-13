@@ -79,6 +79,7 @@ class _ApiErrorScenarioState extends State<ApiErrorScenario> {
         ToastKit.show(ToastEvent.warning(
           message: 'Frequent errors detected. Try offline mode?',
           variant: ToastVariant.action,
+          deduplicationKey: 'suggest-offline-mode',
           actions: [
             ToastAction(
               label: 'Go Offline',

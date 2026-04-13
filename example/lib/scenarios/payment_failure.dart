@@ -54,6 +54,7 @@ class _PaymentFailureScenarioState extends State<PaymentFailureScenario> {
         ToastKit.show(ToastEvent.info(
           message: 'Having trouble? Our support team can help.',
           variant: ToastVariant.action,
+          deduplicationKey: 'payment-support',
           actions: [
             ToastAction(
               label: 'Contact Support',
@@ -76,6 +77,7 @@ class _PaymentFailureScenarioState extends State<PaymentFailureScenario> {
         ToastKit.show(ToastEvent.warning(
           message: 'Try a different payment method?',
           variant: ToastVariant.action,
+          deduplicationKey: 'payment-alternative',
           actions: [
             ToastAction(
               label: 'Switch Card',
