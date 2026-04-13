@@ -77,6 +77,11 @@ class OverlayEngine {
   /// If an entry with the same [id] already exists (and is not currently
   /// being removed), this method returns immediately without creating a
   /// duplicate overlay entry.
+  ///
+  /// If the existing entry is in the process of being removed
+  /// ([_EntryData.isRemoving] is `true`), it is force-cleaned synchronously
+  /// before creating the new entry.  This prevents the old removal callback
+  /// from inadvertently removing the **new** entry from [_entries].
   String showToast({
     required String id,
     required Widget toastWidget,
@@ -89,8 +94,14 @@ class OverlayEngine {
     if (_isDisposed) return id;
 
     // Duplicate guard — prevent overlapping overlays for the same ID.
-    if (_entries.containsKey(id) && !_entries[id]!.isRemoving) {
-      return id;
+    final existing = _entries[id];
+    if (existing != null) {
+      if (!existing.isRemoving) {
+        return id;
+      }
+      // The old entry is animating out.  Force-cleanup synchronously so the
+      // deferred removal callback cannot interfere with the new entry.
+      _forceCleanupEntry(id, existing);
     }
 
     final overlay = _navigatorKey.currentState?.overlay;
@@ -238,6 +249,10 @@ class OverlayEngine {
   // -----------------------------------------------------------------------
 
   /// Safely remove a single overlay entry and clean up its resources.
+  ///
+  /// Only removes [id] from [_entries] when the stored value is still
+  /// [data].  A newer entry may have replaced [data] while the exit
+  /// animation was running; removing the newer entry would leak it.
   void _safeRemoveEntry(String id, _EntryData data) {
     try {
       data.entry.remove();
@@ -249,6 +264,25 @@ class OverlayEngine {
     } catch (e) {
       debugPrint('ToastKit: animation controller dispose failed for "$id": $e');
     }
+    // Only remove from the map if this is still the current entry.
+    if (identical(_entries[id], data)) {
+      _entries.remove(id);
+    }
+  }
+
+  /// Synchronously tear down an entry that is currently animating out.
+  ///
+  /// Used by [showToast] when it needs to reclaim an ID whose previous
+  /// entry is mid-removal.  The overlay entry and animation controller are
+  /// disposed immediately so no deferred callback can leak them.
+  void _forceCleanupEntry(String id, _EntryData data) {
+    data.autoTimer?.cancel();
+    try {
+      data.entry.remove();
+    } catch (_) {}
+    try {
+      data.animController.dispose();
+    } catch (_) {}
     _entries.remove(id);
   }
 

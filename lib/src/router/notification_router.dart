@@ -168,7 +168,13 @@ class NotificationRouter {
 
   RouterDecision? _checkDeduplication(ToastEvent event) {
     if (!_config.enableDeduplication) return null;
-    final key = event.deduplicationKey;
+
+    // Use the explicit deduplication key when available, otherwise fall back
+    // to a composite key of the event type and message text.  Including the
+    // type prevents false collisions when different toast types share the
+    // same message (e.g. an info "Retrying…" vs an error "Retrying…").
+    final key = event.deduplicationKey ??
+        (event.message != null ? '${event.type.name}:${event.message}' : null);
     if (key == null) return null;
 
     final entry = _deduplicationLog[key];
@@ -201,9 +207,15 @@ class NotificationRouter {
 
   void _recordEmission(ToastEvent event) {
     _lastEmitByType[event.type] = DateTime.now();
-    if (_config.enableDeduplication && event.deduplicationKey != null) {
-      _deduplicationLog[event.deduplicationKey!] =
-          _DeduplicationEntry(event.id, DateTime.now());
+    if (_config.enableDeduplication) {
+      final key = event.deduplicationKey ??
+          (event.message != null
+              ? '${event.type.name}:${event.message}'
+              : null);
+      if (key != null) {
+        _deduplicationLog[key] =
+            _DeduplicationEntry(event.id, DateTime.now());
+      }
     }
   }
 

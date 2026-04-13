@@ -141,7 +141,12 @@ class _DemoScreenState extends State<DemoScreen> {
   // ---------------------------------------------------------------------------
 
   /// Fire 20 toasts as fast as possible to validate queue / overlay stability.
+  ///
+  /// Each toast has a unique message (Stress toast #N), which the router's
+  /// message-based deduplication will coalesce within the dedup window.  This
+  /// verifies that the queue handles rapid bursts without overlap or leaks.
   void _stressTest20Toasts() {
+    debugPrint('[StressTest] Firing 20 toasts synchronously');
     const types = [
       ToastType.success,
       ToastType.error,
@@ -156,37 +161,45 @@ class _DemoScreenState extends State<DemoScreen> {
         icon: _iconForType(type),
       ));
     }
+    debugPrint('[StressTest] All 20 toasts enqueued');
   }
 
   /// Simulate rapid progress toast demo — start a progress upload, then
   /// quickly trigger additional toasts to verify exclusivity.
   Future<void> _progressToastStressTest() async {
+    debugPrint('[StressTest] Starting progress toast + other toasts');
     final ctrl = ToastKit.showLoading('Uploading file…');
 
     // Simulate progress updates in 20% increments.
     const int progressStepPercent = 20;
     for (int pct = 0; pct <= 100; pct += progressStepPercent) {
       await Future.delayed(const Duration(milliseconds: 400));
+      if (ctrl.isDisposed) break;
       ctrl.update(
         progressValue: pct / 100.0,
         message: 'Uploading… $pct%',
       );
     }
-    ctrl.success('Upload complete!');
+    if (!ctrl.isDisposed) {
+      ctrl.success('Upload complete!');
+    }
 
     // Fire a few more toasts immediately to verify no overlap.
     await Future.delayed(const Duration(milliseconds: 200));
     ToastKit.success('Next action ready');
+    debugPrint('[StressTest] Progress toast test complete');
   }
 
   /// Simulate rapid identical clicks (dedup + rate limiting validation).
   void _rapidClickSimulation() {
+    debugPrint('[StressTest] Firing 10 rapid identical error toasts');
     for (int i = 0; i < 10; i++) {
       ToastKit.show(ToastEvent.error(
         message: 'Rapid click error',
         deduplicationKey: 'rapid-click',
       ));
     }
+    debugPrint('[StressTest] Rapid click simulation complete');
   }
 
   // ---------------------------------------------------------------------------

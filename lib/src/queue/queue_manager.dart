@@ -148,8 +148,10 @@ class QueueManager {
   }
 
   /// Mark a visible toast as dismissed and auto-promote the next queued one.
+  ///
+  /// Calling this for an ID that is not currently visible is a safe no-op.
   void markDismissed(String id) {
-    _visibleIds.remove(id);
+    if (!_visibleIds.remove(id)) return; // already removed — nothing to do
     _visibleEvents.remove(id);
     _promoteNext();
     _emitState();
@@ -242,14 +244,21 @@ class QueueManager {
     }
   }
 
+  /// Promote queued events into visible slots until the visible-slot limit
+  /// is reached or the queue is empty.
+  ///
+  /// The [_isProcessing] guard prevents re-entrant calls (e.g. when
+  /// [onReadyToShow] synchronously triggers another dismiss/enqueue).
   void _promoteNext() {
     if (_isProcessing || _queue.isEmpty || isFull) return;
     _isProcessing = true;
     try {
-      final next = _queue.removeFirst();
-      _queuedIds.remove(next.id);
-      _markVisible(next);
-      onReadyToShow(next);
+      while (_queue.isNotEmpty && !isFull) {
+        final next = _queue.removeFirst();
+        _queuedIds.remove(next.id);
+        _markVisible(next);
+        onReadyToShow(next);
+      }
     } finally {
       _isProcessing = false;
     }
