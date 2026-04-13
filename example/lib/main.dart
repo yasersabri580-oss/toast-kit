@@ -1,12 +1,7 @@
 import 'package:flutter/material.dart' hide RouterConfig;
 import 'package:toast_kit/toast_kit.dart';
 
-import 'scenarios/api_error.dart';
-import 'scenarios/form_validation.dart';
-import 'scenarios/login_rules.dart';
-import 'scenarios/payment_failure.dart';
-import 'scenarios/network_retry.dart';
-import 'scenarios/custom_ui.dart';
+import 'screens/demo_screen.dart';
 
 void main() {
   runApp(const ToastKitExampleApp());
@@ -161,192 +156,71 @@ class _ToastKitExampleAppState extends State<ToastKitExampleApp> {
     super.dispose();
   }
 
+  // -- Theme ------------------------------------------------------------------
+
+  static const _seed = Colors.deepPurple;
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       navigatorKey: _navigatorKey,
-      title: 'ToastKit Example',
+      title: 'ToastKit Demo',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(colorSchemeSeed: Colors.deepPurple, useMaterial3: true),
+      // Light theme — Material 3
+      theme: ThemeData(
+        colorSchemeSeed: _seed,
+        useMaterial3: true,
+        brightness: Brightness.light,
+        appBarTheme: const AppBarTheme(centerTitle: true),
+        filledButtonTheme: FilledButtonThemeData(
+          style: FilledButton.styleFrom(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+        cardTheme: CardThemeData(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+      ),
+      // Dark theme — Material 3
       darkTheme: ThemeData(
-        colorSchemeSeed: Colors.deepPurple,
+        colorSchemeSeed: _seed,
         useMaterial3: true,
         brightness: Brightness.dark,
+        appBarTheme: const AppBarTheme(centerTitle: true),
+        filledButtonTheme: FilledButtonThemeData(
+          style: FilledButton.styleFrom(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+        cardTheme: CardThemeData(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
       ),
-      home: const HomePage(),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Home Page
-// ---------------------------------------------------------------------------
-class HomePage extends StatelessWidget {
-  const HomePage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('ToastKit SDK Demo'), centerTitle: true),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          // ---- Basic Toasts ----
-          _section('Basic Toasts'),
-          _row([
-            _btn('Success', Colors.green,
-                () => ToastKit.success('Operation completed!')),
-            _btn('Error', Colors.red,
-                () => ToastKit.error('Something went wrong.')),
-          ]),
-          const SizedBox(height: 8),
-          _row([
-            _btn('Warning', Colors.orange,
-                () => ToastKit.warning('Battery low.')),
-            _btn('Info', Colors.blue,
-                () => ToastKit.info('New update available.')),
-          ]),
-          const SizedBox(height: 8),
-          _btn('Loading → Success', Colors.purple, () async {
-            final ctrl = ToastKit.showLoading('Saving…');
-            await Future.delayed(const Duration(seconds: 2));
-            ctrl.success('Saved successfully!');
-          }),
-
-          // ---- Variants ----
-          const SizedBox(height: 24),
-          _section('Variants'),
-          _btn('Minimal', Colors.teal, () {
-            ToastKit.show(ToastEvent.success(
-                message: 'Minimal style', variant: ToastVariant.minimal));
-          }),
-          const SizedBox(height: 8),
-          _btn('Glassmorphism', Colors.indigo, () {
-            ToastKit.show(ToastEvent.info(
-                message: 'Frosted glass',
-                variant: ToastVariant.glassmorphism));
-          }),
-          const SizedBox(height: 8),
-          _btn('Gradient', Colors.pink, () {
-            ToastKit.show(ToastEvent.error(
-                message: 'Gradient background',
-                variant: ToastVariant.gradient));
-          }),
-          const SizedBox(height: 8),
-          _btn('Compact', Colors.cyan, () {
-            ToastKit.show(ToastEvent.success(
-                message: 'Compact!', variant: ToastVariant.compact));
-          }),
-          const SizedBox(height: 8),
-          _btn('Full Width', Colors.amber.shade800, () {
-            ToastKit.show(ToastEvent.warning(
-                message: 'Full-width banner',
-                variant: ToastVariant.fullWidth));
-          }),
-          const SizedBox(height: 8),
-          _btn('Debug', Colors.grey.shade800, () {
-            ToastKit.show(ToastEvent.info(
-                message: 'Debug info', variant: ToastVariant.debug));
-          }),
-
-          // ---- Action Toasts ----
-          const SizedBox(height: 24),
-          _section('Action Toasts'),
-          _btn('With Actions', Colors.deepOrange, () {
-            ToastKit.show(ToastEvent.error(
-              message: 'Failed to send',
-              variant: ToastVariant.action,
-              actions: [
-                ToastAction(label: 'Retry', onPressed: () {
-                  ToastKit.info('Retrying…');
-                }),
-                ToastAction(label: 'Cancel', onPressed: () {}),
-              ],
-            ));
-          }),
-
-          // ---- Positions ----
-          const SizedBox(height: 24),
-          _section('Positions'),
-          _row([
-            _btn('Top', Colors.blueGrey, () {
-              ToastKit.show(ToastEvent.info(
-                  message: 'Top', position: ToastPosition.top));
-            }),
-            _btn('Center', Colors.blueGrey, () {
-              ToastKit.show(ToastEvent.info(
-                  message: 'Center', position: ToastPosition.center));
-            }),
-            _btn('Bottom', Colors.blueGrey, () {
-              ToastKit.show(ToastEvent.info(
-                  message: 'Bottom', position: ToastPosition.bottom));
-            }),
-          ]),
-
-          // ---- Scenarios ----
-          const SizedBox(height: 24),
-          _section('Real-World Scenarios'),
-          _navBtn(context, 'API Error Handling',
-              Icons.cloud_off, const ApiErrorScenario()),
-          const SizedBox(height: 8),
-          _navBtn(context, 'Form Validation',
-              Icons.edit_document, const FormValidationScenario()),
-          const SizedBox(height: 8),
-          _navBtn(context, 'Login Rules',
-              Icons.lock, const LoginRulesScenario()),
-          const SizedBox(height: 8),
-          _navBtn(context, 'Payment Failure',
-              Icons.payment, const PaymentFailureScenario()),
-          const SizedBox(height: 8),
-          _navBtn(context, 'Network Retry',
-              Icons.wifi_off, const NetworkRetryScenario()),
-          const SizedBox(height: 8),
-          _navBtn(context, 'Custom UI',
-              Icons.palette, const CustomUiScenario()),
-
-          // ---- Management ----
-          const SizedBox(height: 24),
-          _section('Management'),
-          _btn('Dismiss All', Colors.red.shade900,
-              () => ToastKit.dismissAll()),
-          const SizedBox(height: 48),
-        ],
-      ),
-    );
-  }
-
-  // ---- Helpers ----
-
-  Widget _section(String title) => Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: Text(title,
-            style:
-                const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-      );
-
-  Widget _row(List<Widget> children) => Row(
-        children: children
-            .expand((c) => [Expanded(child: c), const SizedBox(width: 8)])
-            .toList()
-          ..removeLast(),
-      );
-
-  Widget _btn(String label, Color color, VoidCallback onTap) => FilledButton(
-        onPressed: onTap,
-        style: FilledButton.styleFrom(backgroundColor: color),
-        child: Text(label),
-      );
-
-  Widget _navBtn(
-      BuildContext context, String label, IconData icon, Widget page) {
-    return FilledButton.icon(
-      onPressed: () =>
-          Navigator.of(context).push(MaterialPageRoute(builder: (_) => page)),
-      icon: Icon(icon),
-      label: Text(label),
-      style: FilledButton.styleFrom(
-        backgroundColor: Colors.deepPurple.shade700,
-      ),
+      home: const DemoScreen(),
     );
   }
 }
