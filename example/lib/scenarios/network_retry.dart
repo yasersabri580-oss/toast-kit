@@ -81,7 +81,6 @@ class _NetworkRetryScenarioState extends State<NetworkRetryScenario> {
 
     if (_isRetrying) {
       debugPrint('[NetworkRetry] Cancelling stale retry loop');
-      ToastKit.dismissAll();
     }
     setState(() => _isRetrying = true);
 

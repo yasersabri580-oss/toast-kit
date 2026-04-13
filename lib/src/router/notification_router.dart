@@ -170,10 +170,11 @@ class NotificationRouter {
     if (!_config.enableDeduplication) return null;
 
     // Use the explicit deduplication key when available, otherwise fall back
-    // to the message text.  This ensures that identical messages emitted
-    // during retry loops or rapid-fire scenarios are coalesced even when no
-    // explicit key is provided.
-    final key = event.deduplicationKey ?? event.message;
+    // to a composite key of the event type and message text.  Including the
+    // type prevents false collisions when different toast types share the
+    // same message (e.g. an info "Retrying…" vs an error "Retrying…").
+    final key = event.deduplicationKey ??
+        (event.message != null ? '${event.type.name}:${event.message}' : null);
     if (key == null) return null;
 
     final entry = _deduplicationLog[key];
@@ -207,7 +208,10 @@ class NotificationRouter {
   void _recordEmission(ToastEvent event) {
     _lastEmitByType[event.type] = DateTime.now();
     if (_config.enableDeduplication) {
-      final key = event.deduplicationKey ?? event.message;
+      final key = event.deduplicationKey ??
+          (event.message != null
+              ? '${event.type.name}:${event.message}'
+              : null);
       if (key != null) {
         _deduplicationLog[key] =
             _DeduplicationEntry(event.id, DateTime.now());
