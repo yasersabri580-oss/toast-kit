@@ -11,7 +11,7 @@ class FakeApi {
   /// Simulates fetching a user profile.
   ///
   /// Returns a map with `name` and `email` on success.
-  /// Throws on failure (~60 % failure rate).
+  /// Throws on failure (~60% failure rate).
   Future<Map<String, String>> fetchProfile() async {
     await Future.delayed(const Duration(milliseconds: 1200));
     if (_random.nextDouble() < 0.6) {
@@ -22,7 +22,7 @@ class FakeApi {
 
   /// Simulates processing a payment.
   ///
-  /// Returns `true` on success (~30 % success rate).
+  /// Returns `true` on success (~30% success rate).
   /// Throws different failure types to demonstrate varied error toasts.
   Future<bool> processPayment(double amount) async {
     await Future.delayed(const Duration(milliseconds: 1500));
@@ -36,7 +36,7 @@ class FakeApi {
 
   /// Simulates submitting a form.
   ///
-  /// Returns `true` on success (~40 % success rate).
+  /// Returns `true` on success (~40% success rate).
   Future<bool> submitForm() async {
     await Future.delayed(const Duration(milliseconds: 1000));
     if (_random.nextDouble() < 0.4) return true;

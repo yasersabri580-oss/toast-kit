@@ -30,7 +30,7 @@ class _DemoScreenState extends State<DemoScreen> {
 
   void _showSuccess() => ToastKit.success('Operation completed successfully!');
   void _showError() => ToastKit.error('Something went wrong. Please retry.');
-  void _showWarning() => ToastKit.warning('Battery is below 20 %.');
+  void _showWarning() => ToastKit.warning('Battery is below 20%.');
   void _showInfo() => ToastKit.info('A new update is available.');
 
   // ---------------------------------------------------------------------------
