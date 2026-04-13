@@ -293,6 +293,8 @@ class ToastConfig {
     this.keyboardAvoidance = true,
     this.density = ToastDensity.comfortable,
     this.toastSpacing = 8.0,
+    this.maxQueueSize = 50,
+    this.globalRateLimit = const Duration(milliseconds: 150),
   });
   /// Default screen position for toasts.
   final ToastPosition defaultPosition;
@@ -327,6 +329,20 @@ class ToastConfig {
   /// Vertical spacing between stacked toasts.
   final double toastSpacing;
 
+  /// Maximum number of events that can wait in the queue.
+  ///
+  /// When the queue exceeds this limit, the oldest queued events are dropped
+  /// to prevent unbounded memory growth. Set to `0` for unlimited (not
+  /// recommended for production).
+  final int maxQueueSize;
+
+  /// Minimum interval between consecutive toast displays.
+  ///
+  /// When toasts are triggered faster than this interval, excess events are
+  /// queued instead of displayed immediately. This prevents UI flooding under
+  /// rapid-fire usage. Set to [Duration.zero] to disable.
+  final Duration globalRateLimit;
+
   /// Returns a copy with the given fields replaced.
   ToastConfig copyWith({
     ToastPosition? defaultPosition,
@@ -340,6 +356,8 @@ class ToastConfig {
     bool? keyboardAvoidance,
     ToastDensity? density,
     double? toastSpacing,
+    int? maxQueueSize,
+    Duration? globalRateLimit,
   }) {
     return ToastConfig(
       defaultPosition: defaultPosition ?? this.defaultPosition,
@@ -354,6 +372,8 @@ class ToastConfig {
       keyboardAvoidance: keyboardAvoidance ?? this.keyboardAvoidance,
       density: density ?? this.density,
       toastSpacing: toastSpacing ?? this.toastSpacing,
+      maxQueueSize: maxQueueSize ?? this.maxQueueSize,
+      globalRateLimit: globalRateLimit ?? this.globalRateLimit,
     );
   }
 
@@ -371,7 +391,9 @@ class ToastConfig {
         other.safeAreaEnabled == safeAreaEnabled &&
         other.keyboardAvoidance == keyboardAvoidance &&
         other.density == density &&
-        other.toastSpacing == toastSpacing;
+        other.toastSpacing == toastSpacing &&
+        other.maxQueueSize == maxQueueSize &&
+        other.globalRateLimit == globalRateLimit;
   }
 
   @override
@@ -387,5 +409,7 @@ class ToastConfig {
         keyboardAvoidance,
         density,
         toastSpacing,
+        maxQueueSize,
+        globalRateLimit,
       );
 }

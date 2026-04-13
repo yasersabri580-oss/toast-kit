@@ -75,6 +75,12 @@ class _DeduplicationEntry {
 /// 2. Throttling
 /// 3. Urgent interruption
 /// 4. Capacity / replacement strategy
+///
+/// **Stability features:**
+/// - Bounded deduplication log: expired entries are periodically pruned to
+///   prevent unbounded memory growth.
+/// - Message-based deduplication fallback: even without an explicit dedup key,
+///   identical messages shown within the dedup window are coalesced.
 class NotificationRouter {
 
   NotificationRouter({
@@ -87,6 +93,11 @@ class NotificationRouter {
   final Map<ToastType, DateTime> _lastEmitByType = <ToastType, DateTime>{};
   final Map<String, _DeduplicationEntry> _deduplicationLog =
       <String, _DeduplicationEntry>{};
+
+  /// Maximum number of entries kept in the deduplication log before a forced
+  /// cleanup pass. This prevents unbounded memory growth when many unique
+  /// deduplication keys are used.
+  static const int _maxDeduplicationEntries = 200;
 
   RouterConfig get config => _config;
 
@@ -145,13 +156,22 @@ class NotificationRouter {
     }
   }
 
+  /// Clear internal caches (useful for testing and dispose).
+  void clear() {
+    _lastEmitByType.clear();
+    _deduplicationLog.clear();
+  }
+
   // -----------------------------------------------------------------------
   // Pipeline steps
   // -----------------------------------------------------------------------
 
   RouterDecision? _checkDeduplication(ToastEvent event) {
     if (!_config.enableDeduplication) return null;
-    final key = event.deduplicationKey;
+
+    // Use explicit dedup key if provided, otherwise fall back to message text
+    // as an implicit dedup key to prevent identical toast spam.
+    final key = event.deduplicationKey ?? event.message;
     if (key == null) return null;
 
     final entry = _deduplicationLog[key];
@@ -162,6 +182,11 @@ class NotificationRouter {
       }
     }
     _deduplicationLog[key] = _DeduplicationEntry(event.id, DateTime.now());
+
+    // Prune expired entries when the log exceeds its size limit.
+    if (_deduplicationLog.length > _maxDeduplicationEntries) {
+      _pruneDeduplicationLog();
+    }
     return null;
   }
 
@@ -179,10 +204,19 @@ class NotificationRouter {
 
   void _recordEmission(ToastEvent event) {
     _lastEmitByType[event.type] = DateTime.now();
-    if (event.deduplicationKey != null) {
-      _deduplicationLog[event.deduplicationKey!] =
+    final key = event.deduplicationKey ?? event.message;
+    if (key != null) {
+      _deduplicationLog[key] =
           _DeduplicationEntry(event.id, DateTime.now());
     }
+  }
+
+  /// Remove expired entries from the deduplication log to free memory.
+  void _pruneDeduplicationLog() {
+    final now = DateTime.now();
+    _deduplicationLog.removeWhere(
+      (_, entry) => now.difference(entry.timestamp) >= _config.deduplicationWindow,
+    );
   }
 
   // -----------------------------------------------------------------------
