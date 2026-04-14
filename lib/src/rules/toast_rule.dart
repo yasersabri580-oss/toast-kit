@@ -34,6 +34,7 @@ class ToastRuleContext {
 ///     action: (context) {
 ///       // developer decides what to do
 ///     },
+///     maxTriggers: 1,
 ///   ),
 /// );
 /// ```
@@ -45,6 +46,8 @@ class ToastRule {
     required this.channel,
     required this.condition,
     required this.action,
+    this.maxTriggers = 0,
+    this.deduplicateWindow,
   });
   /// Unique identifier for this rule.
   final String id;
@@ -59,4 +62,11 @@ class ToastRule {
   /// Action to execute when the rule triggers. The app decides how
   /// to present UI — ToastKit does not show dialogs or navigate.
   final void Function(ToastRuleContext context) action;
+
+  /// Maximum number of times this rule can trigger (0 = unlimited).
+  final int maxTriggers;
+
+  /// Optional deduplication window. If set, the rule will not fire again
+  /// within this duration after the last trigger.
+  final Duration? deduplicateWindow;
 }

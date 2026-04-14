@@ -181,6 +181,21 @@ class RuleEngine {
 
   bool _shouldTriggerCustomRule(
       ToastRule rule, ToastStats stats, ToastEvent event) {
+    // Check max triggers.
+    if (rule.maxTriggers > 0) {
+      final count = _triggerCounts[rule.id] ?? 0;
+      if (count >= rule.maxTriggers) return false;
+    }
+
+    // Check deduplication window.
+    if (rule.deduplicateWindow != null) {
+      final lastTrigger = _lastTriggerTimes[rule.id];
+      if (lastTrigger != null) {
+        final elapsed = DateTime.now().difference(lastTrigger);
+        if (elapsed < rule.deduplicateWindow!) return false;
+      }
+    }
+
     // Evaluate the condition safely.
     try {
       return rule.condition(stats, event);
