@@ -36,6 +36,11 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
   final _titleCtrl = TextEditingController(text: 'Custom Toast');
   final _messageCtrl =
       TextEditingController(text: 'This is a fully customizable toast.');
+  final _subtitleCtrl = TextEditingController(text: '');
+  FontWeight _titleFontWeight = FontWeight.w600;
+  FontWeight _messageFontWeight = FontWeight.normal;
+  int _messageMaxLines = 3;
+  bool _titleItalic = false;
 
   // ---------------------------------------------------------------------------
   // Toast type
@@ -76,6 +81,23 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
   Color _borderColor = const Color(0xFF6366F1);
   bool _useGradientBg = false;
   Color _gradientEndColor = const Color(0xFF3B82F6);
+  Color? _textColorOverride;
+  Color _shadowColor = const Color(0xFF000000);
+  double _shadowOffsetX = 0.0;
+  double _shadowOffsetY = 4.0;
+  double _elevation = 0.0;
+  String _gradientDirection = 'horizontal';
+  double _letterSpacing = 0.0;
+  double _titleLetterSpacing = 0.2;
+  bool _iconBgEnabled = false;
+  Color _iconBgColor = const Color(0xFF6366F1);
+  String _iconBgShape = 'circle';
+  String _widthMode = 'auto';
+  double _horizontalMargin = 16.0;
+  double _verticalMargin = 0.0;
+  double _backdropBlur = 0.0;
+  bool _innerShadow = false;
+  bool _clipContent = true;
 
   // ---------------------------------------------------------------------------
   // Animation
@@ -95,6 +117,8 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
     (ToastAnimationType.blur, 'Blur', Icons.lens_blur),
     (ToastAnimationType.glow, 'Glow', Icons.light_mode),
   ];
+  double _animationDuration = 300.0;
+  String _animationCurve = 'easeInOut';
 
   // ---------------------------------------------------------------------------
   // Position
@@ -118,6 +142,14 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
   bool _dismissible = true;
   bool _persistent = false;
   ToastPriority _priority = ToastPriority.normal;
+  bool _hapticFeedback = true;
+  bool _tapToDismiss = false;
+  bool _showCloseButton = true;
+  bool _autoDismissOnAction = true;
+  String _stackOrder = 'above';
+  double _maxWidth = 400.0;
+  bool _soundEnabled = false;
+  bool _pauseOnHover = false;
 
   // ---------------------------------------------------------------------------
   // Actions
@@ -231,6 +263,101 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
       persistent: true,
       showActions: true,
     ),
+    _PresetTemplate(
+      name: 'Cyberpunk',
+      icon: Icons.memory,
+      bgColor: Color(0xFF0D0221),
+      accentColor: Color(0xFFFF00FF),
+      title: 'System Alert',
+      message: 'Neural link established successfully.',
+      iconIdx: 9,
+      animType: ToastAnimationType.glow,
+      position: ToastPosition.top,
+      borderWidth: 2.0,
+      borderColor: Color(0xFFFF00FF),
+      shadowBlur: 24,
+    ),
+    _PresetTemplate(
+      name: 'Ocean',
+      icon: Icons.water,
+      bgColor: Color(0xFF0A1929),
+      accentColor: Color(0xFF29B6F6),
+      title: 'Deep Blue',
+      message: 'Calm notification from the ocean.',
+      iconIdx: 3,
+      animType: ToastAnimationType.fade,
+      position: ToastPosition.bottom,
+      cornerRadius: 24,
+    ),
+    _PresetTemplate(
+      name: 'Retro',
+      icon: Icons.gamepad,
+      bgColor: Color(0xFFFFF8E1),
+      accentColor: Color(0xFFE65100),
+      title: 'Retro Toast',
+      message: 'Old school vibes with warm colors.',
+      iconIdx: 7,
+      animType: ToastAnimationType.bounce,
+      position: ToastPosition.bottom,
+      cornerRadius: 4,
+      padding: 14,
+      borderWidth: 2,
+      borderColor: Color(0xFFE65100),
+    ),
+    _PresetTemplate(
+      name: 'Pastel',
+      icon: Icons.palette,
+      bgColor: Color(0xFFFCE4EC),
+      accentColor: Color(0xFFAD1457),
+      title: 'Soft Notice',
+      message: 'Gentle pastel notification.',
+      iconIdx: 6,
+      animType: ToastAnimationType.scale,
+      position: ToastPosition.top,
+      cornerRadius: 20,
+      shadowBlur: 8,
+    ),
+    _PresetTemplate(
+      name: 'Dark Elegant',
+      icon: Icons.diamond,
+      bgColor: Color(0xFF121212),
+      accentColor: Color(0xFFD4AF37),
+      title: 'Premium Alert',
+      message: 'An elegantly styled notification.',
+      iconIdx: 7,
+      animType: ToastAnimationType.fade,
+      position: ToastPosition.top,
+      cornerRadius: 12,
+      borderWidth: 1,
+      borderColor: Color(0xFFD4AF37),
+      shadowBlur: 16,
+    ),
+    _PresetTemplate(
+      name: 'Frosted',
+      icon: Icons.ac_unit,
+      bgColor: Color(0xBBFFFFFF),
+      accentColor: Color(0xFF0288D1),
+      title: 'Frosted Glass',
+      message: 'Light frosted glass aesthetic.',
+      iconIdx: 11,
+      animType: ToastAnimationType.scale,
+      position: ToastPosition.center,
+      cornerRadius: 24,
+      shadowBlur: 20,
+    ),
+    _PresetTemplate(
+      name: 'Social',
+      icon: Icons.chat_bubble,
+      bgColor: Color(0xFF1DA1F2),
+      accentColor: Color(0xFFFFFFFF),
+      title: 'New Message',
+      message: 'You have a new notification!',
+      iconIdx: 8,
+      animType: ToastAnimationType.slideFromTop,
+      position: ToastPosition.top,
+      cornerRadius: 16,
+      showActions: true,
+    ),
   ];
 
   // ---------------------------------------------------------------------------
@@ -248,6 +375,7 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
     _tabController.dispose();
     _titleCtrl.dispose();
     _messageCtrl.dispose();
+    _subtitleCtrl.dispose();
     _actionLabelCtrl.dispose();
     _secondActionLabelCtrl.dispose();
     super.dispose();
@@ -260,6 +388,7 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
     setState(() {
       _titleCtrl.text = preset.title;
       _messageCtrl.text = preset.message;
+      _subtitleCtrl.text = preset.subtitle;
       _bgColor = preset.bgColor;
       _accentColor = preset.accentColor;
       _selectedIconIdx = preset.iconIdx;
@@ -277,6 +406,37 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
       _opacity = 1.0;
       _fontSize = 14.0;
       _iconSize = 24.0;
+      _titleFontWeight = preset.titleFontWeight;
+      _messageFontWeight = FontWeight.normal;
+      _messageMaxLines = 3;
+      _titleItalic = false;
+      _textColorOverride = null;
+      _shadowColor = const Color(0xFF000000);
+      _shadowOffsetX = 0.0;
+      _shadowOffsetY = 4.0;
+      _elevation = 0.0;
+      _gradientDirection = 'horizontal';
+      _letterSpacing = preset.letterSpacing;
+      _titleLetterSpacing = 0.2;
+      _iconBgEnabled = false;
+      _iconBgColor = const Color(0xFF6366F1);
+      _iconBgShape = 'circle';
+      _widthMode = 'auto';
+      _horizontalMargin = 16.0;
+      _verticalMargin = 0.0;
+      _backdropBlur = 0.0;
+      _innerShadow = false;
+      _clipContent = true;
+      _animationDuration = 300.0;
+      _animationCurve = 'easeInOut';
+      _hapticFeedback = true;
+      _tapToDismiss = false;
+      _showCloseButton = true;
+      _autoDismissOnAction = true;
+      _stackOrder = 'above';
+      _maxWidth = 400.0;
+      _soundEnabled = false;
+      _pauseOnHover = false;
     });
     HapticFeedback.lightImpact();
   }
@@ -326,6 +486,20 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
       }
       _borderWidth = rng.nextBool() ? (rng.nextInt(3) + 1).toDouble() : 0;
       if (_borderWidth > 0) _borderColor = _accentColor;
+      _titleItalic = rng.nextBool();
+      _letterSpacing = (rng.nextInt(20) / 10.0) - 0.5;
+      _titleLetterSpacing = (rng.nextInt(30) / 10.0);
+      _iconBgEnabled = rng.nextBool();
+      if (_iconBgEnabled) _iconBgColor = _accentColor;
+      _iconBgShape = rng.nextBool() ? 'circle' : 'roundedSquare';
+      _animationDuration = (rng.nextInt(7) * 100 + 200).toDouble();
+      const curves = ['linear', 'easeIn', 'easeOut', 'easeInOut', 'bounceOut', 'elasticOut'];
+      _animationCurve = curves[rng.nextInt(curves.length)];
+      _hapticFeedback = rng.nextBool();
+      _showCloseButton = rng.nextBool();
+      _backdropBlur = rng.nextBool() ? (rng.nextInt(15)).toDouble() : 0;
+      const weights = [FontWeight.w400, FontWeight.w500, FontWeight.w600, FontWeight.w700, FontWeight.w800];
+      _titleFontWeight = weights[rng.nextInt(weights.length)];
     });
     HapticFeedback.mediumImpact();
   }
@@ -336,6 +510,7 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
   void _showPreview() {
     final title = _titleCtrl.text.trim();
     final message = _messageCtrl.text.trim();
+    final subtitle = _subtitleCtrl.text.trim();
     final icon = _iconOptions[_selectedIconIdx].$1;
     final bgColor = _bgColor;
     final accent = _accentColor;
@@ -367,6 +542,7 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
         return _CustomPreviewToast(
           title: title.isEmpty ? 'Custom Toast' : title,
           message: message.isEmpty ? 'Your message here' : message,
+          subtitle: subtitle,
           icon: icon,
           bgColor: bgColor,
           accentColor: accent,
@@ -387,6 +563,21 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
           actionLabel: actionLbl,
           showSecondAction: hasSecond,
           secondActionLabel: secondLbl,
+          titleFontWeight: _titleFontWeight,
+          messageFontWeight: _messageFontWeight,
+          titleItalic: _titleItalic,
+          messageMaxLines: _messageMaxLines,
+          textColorOverride: _textColorOverride,
+          shadowColor: _shadowColor,
+          shadowOffsetX: _shadowOffsetX,
+          shadowOffsetY: _shadowOffsetY,
+          iconBgEnabled: _iconBgEnabled,
+          iconBgColor: _iconBgColor,
+          iconBgShape: _iconBgShape,
+          letterSpacing: _letterSpacing,
+          titleLetterSpacing: _titleLetterSpacing,
+          showCloseButton: _showCloseButton,
+          horizontalMargin: _horizontalMargin,
         );
       },
     ));
@@ -399,6 +590,7 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
     setState(() {
       _titleCtrl.text = 'Custom Toast';
       _messageCtrl.text = 'This is a fully customizable toast.';
+      _subtitleCtrl.text = '';
       _bgColor = const Color(0xFF1E293B);
       _accentColor = const Color(0xFF6366F1);
       _cornerRadius = 16.0;
@@ -424,6 +616,37 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
       _actionLabelCtrl.text = 'Undo';
       _showSecondAction = false;
       _secondActionLabelCtrl.text = 'Details';
+      _titleFontWeight = FontWeight.w600;
+      _messageFontWeight = FontWeight.normal;
+      _messageMaxLines = 3;
+      _titleItalic = false;
+      _textColorOverride = null;
+      _shadowColor = const Color(0xFF000000);
+      _shadowOffsetX = 0.0;
+      _shadowOffsetY = 4.0;
+      _elevation = 0.0;
+      _gradientDirection = 'horizontal';
+      _letterSpacing = 0.0;
+      _titleLetterSpacing = 0.2;
+      _iconBgEnabled = false;
+      _iconBgColor = const Color(0xFF6366F1);
+      _iconBgShape = 'circle';
+      _widthMode = 'auto';
+      _horizontalMargin = 16.0;
+      _verticalMargin = 0.0;
+      _backdropBlur = 0.0;
+      _innerShadow = false;
+      _clipContent = true;
+      _animationDuration = 300.0;
+      _animationCurve = 'easeInOut';
+      _hapticFeedback = true;
+      _tapToDismiss = false;
+      _showCloseButton = true;
+      _autoDismissOnAction = true;
+      _stackOrder = 'above';
+      _maxWidth = 400.0;
+      _soundEnabled = false;
+      _pauseOnHover = false;
     });
   }
 
@@ -641,6 +864,57 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
           maxLines: 3,
           onChanged: (_) => setState(() {}),
         ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _subtitleCtrl,
+          decoration: const InputDecoration(
+            labelText: 'Subtitle (optional)',
+            prefixIcon: Icon(Icons.subtitles),
+            hintText: 'Enter subtitle text\u2026',
+          ),
+          onChanged: (_) => setState(() {}),
+        ),
+        const SizedBox(height: 20),
+        const _SectionHeader(
+            icon: Icons.format_bold,
+            title: 'Title Font Weight',
+            color: Colors.cyan),
+        const SizedBox(height: 8),
+        _buildFontWeightChips(
+          selected: _titleFontWeight,
+          onSelected: (w) => setState(() => _titleFontWeight = w),
+        ),
+        const SizedBox(height: 12),
+        _ModernCard(
+          child: SwitchListTile(
+            title: const Text('Title Italic'),
+            subtitle: const Text('Apply italic style to the title'),
+            value: _titleItalic,
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            onChanged: (v) => setState(() => _titleItalic = v),
+          ),
+        ),
+        const SizedBox(height: 20),
+        const _SectionHeader(
+            icon: Icons.format_bold,
+            title: 'Message Font Weight',
+            color: Colors.teal),
+        const SizedBox(height: 8),
+        _buildFontWeightChips(
+          selected: _messageFontWeight,
+          onSelected: (w) => setState(() => _messageFontWeight = w),
+        ),
+        const SizedBox(height: 12),
+        _ModernSliderRow(
+          label: 'Msg Max Lines',
+          value: _messageMaxLines.toDouble(),
+          min: 1,
+          max: 10,
+          divisions: 9,
+          accentColor: _accentColor,
+          onChanged: (v) => setState(() => _messageMaxLines = v.round()),
+        ),
         const SizedBox(height: 20),
         const _SectionHeader(
             icon: Icons.emoji_symbols, title: 'Icon', color: Colors.purple),
@@ -793,6 +1067,33 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
     );
   }
 
+  Widget _buildFontWeightChips({
+    required FontWeight selected,
+    required ValueChanged<FontWeight> onSelected,
+  }) {
+    const weights = <(FontWeight, String)>[
+      (FontWeight.w300, 'Light'),
+      (FontWeight.w400, 'Normal'),
+      (FontWeight.w500, 'Medium'),
+      (FontWeight.w600, 'SemiBold'),
+      (FontWeight.w700, 'Bold'),
+      (FontWeight.w800, 'ExtraBold'),
+    ];
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: weights.map((w) {
+        final (weight, label) = w;
+        final isSelected = selected == weight;
+        return ChoiceChip(
+          label: Text(label, style: TextStyle(fontWeight: weight)),
+          selected: isSelected,
+          onSelected: (_) => onSelected(weight),
+        );
+      }).toList(),
+    );
+  }
+
   // ===========================================================================
   // Tab 2: Style
   // ===========================================================================
@@ -806,12 +1107,73 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
         const SizedBox(height: 8),
         _buildColorPickers(theme),
         const SizedBox(height: 20),
+        // Text Color Override
+        const _SectionHeader(
+            icon: Icons.format_color_text,
+            title: 'Text Color',
+            color: Colors.lime),
+        const SizedBox(height: 8),
+        _ModernCard(
+          child: Column(
+            children: [
+              SwitchListTile(
+                title: const Text('Override text color'),
+                subtitle: const Text('Manually set text color instead of auto-detect'),
+                value: _textColorOverride != null,
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                onChanged: (v) => setState(() {
+                  _textColorOverride = v ? Colors.white : null;
+                }),
+              ),
+              if (_textColorOverride != null) ...[
+                const SizedBox(height: 8),
+                _ModernColorRow(
+                  label: 'Text Color',
+                  color: _textColorOverride!,
+                  onChanged: (c) => setState(() => _textColorOverride = c),
+                  presets: const [
+                    Color(0xFFFFFFFF),
+                    Color(0xFF000000),
+                    Color(0xFFE0E0E0),
+                    Color(0xFF212121),
+                    Color(0xFFFF5252),
+                    Color(0xFF69F0AE),
+                    Color(0xFF40C4FF),
+                    Color(0xFFFFD740),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
         const _SectionHeader(
             icon: Icons.gradient,
             title: 'Gradient Background',
             color: Colors.pink),
         const SizedBox(height: 8),
         _buildGradientConfig(theme),
+        if (_useGradientBg) ...[
+          const SizedBox(height: 12),
+          const _SectionHeader(
+              icon: Icons.swap_calls,
+              title: 'Gradient Direction',
+              color: Colors.pinkAccent),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: ['horizontal', 'vertical', 'diagonal', 'radial'].map((d) {
+              final selected = _gradientDirection == d;
+              return ChoiceChip(
+                label: Text(d[0].toUpperCase() + d.substring(1)),
+                selected: selected,
+                onSelected: (_) => setState(() => _gradientDirection = d),
+              );
+            }).toList(),
+          ),
+        ],
         const SizedBox(height: 20),
         const _SectionHeader(
             icon: Icons.rounded_corner,
@@ -820,12 +1182,230 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
         const SizedBox(height: 8),
         _buildLayoutSliders(),
         const SizedBox(height: 20),
+        // Shadow section
+        const _SectionHeader(
+            icon: Icons.blur_on,
+            title: 'Shadow',
+            color: Colors.grey),
+        const SizedBox(height: 8),
+        _ModernCard(
+          child: Column(
+            children: [
+              _ModernSliderRow(
+                label: 'Shadow Blur',
+                value: _shadowBlur,
+                min: 0,
+                max: 30,
+                divisions: 30,
+                suffix: 'px',
+                accentColor: _accentColor,
+                onChanged: (v) => setState(() => _shadowBlur = v),
+              ),
+              const SizedBox(height: 4),
+              _ModernSliderRow(
+                label: 'Offset X',
+                value: _shadowOffsetX,
+                min: -20,
+                max: 20,
+                divisions: 40,
+                suffix: 'px',
+                accentColor: _accentColor,
+                onChanged: (v) => setState(() => _shadowOffsetX = v),
+              ),
+              const SizedBox(height: 4),
+              _ModernSliderRow(
+                label: 'Offset Y',
+                value: _shadowOffsetY,
+                min: -20,
+                max: 20,
+                divisions: 40,
+                suffix: 'px',
+                accentColor: _accentColor,
+                onChanged: (v) => setState(() => _shadowOffsetY = v),
+              ),
+              const SizedBox(height: 8),
+              _ModernColorRow(
+                label: 'Shadow Color',
+                color: _shadowColor,
+                onChanged: (c) => setState(() => _shadowColor = c),
+                presets: const [
+                  Color(0xFF000000),
+                  Color(0xFF1E293B),
+                  Color(0xFF6366F1),
+                  Color(0xFFEF4444),
+                  Color(0xFF10B981),
+                  Color(0xFF3B82F6),
+                  Color(0xFFEC4899),
+                  Color(0xFFF59E0B),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
         const _SectionHeader(
             icon: Icons.border_style,
             title: 'Border',
             color: Colors.blueGrey),
         const SizedBox(height: 8),
         _buildBorderConfig(),
+        const SizedBox(height: 20),
+        // Letter Spacing
+        const _SectionHeader(
+            icon: Icons.space_bar,
+            title: 'Letter Spacing',
+            color: Colors.indigo),
+        const SizedBox(height: 8),
+        _ModernCard(
+          child: Column(
+            children: [
+              _ModernSliderRow(
+                label: 'Title Spacing',
+                value: _titleLetterSpacing,
+                min: 0,
+                max: 5,
+                divisions: 50,
+                suffix: 'px',
+                accentColor: _accentColor,
+                onChanged: (v) => setState(() => _titleLetterSpacing = v),
+              ),
+              const SizedBox(height: 4),
+              _ModernSliderRow(
+                label: 'Msg Spacing',
+                value: _letterSpacing,
+                min: -1,
+                max: 3,
+                divisions: 40,
+                suffix: 'px',
+                accentColor: _accentColor,
+                onChanged: (v) => setState(() => _letterSpacing = v),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+        // Icon Background
+        const _SectionHeader(
+            icon: Icons.circle,
+            title: 'Icon Background',
+            color: Colors.purple),
+        const SizedBox(height: 8),
+        _ModernCard(
+          child: Column(
+            children: [
+              SwitchListTile(
+                title: const Text('Enable icon background'),
+                subtitle: const Text('Colored shape behind icon'),
+                value: _iconBgEnabled,
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                onChanged: (v) => setState(() => _iconBgEnabled = v),
+              ),
+              if (_iconBgEnabled) ...[
+                const SizedBox(height: 8),
+                _ModernColorRow(
+                  label: 'Icon Bg Color',
+                  color: _iconBgColor,
+                  onChanged: (c) => setState(() => _iconBgColor = c),
+                  presets: [
+                    _accentColor,
+                    const Color(0xFF6366F1),
+                    const Color(0xFF10B981),
+                    const Color(0xFFEF4444),
+                    const Color(0xFF3B82F6),
+                    const Color(0xFFEC4899),
+                    const Color(0xFF8B5CF6),
+                    const Color(0xFFF59E0B),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    ('circle', 'Circle'),
+                    ('roundedSquare', 'Rounded Square'),
+                  ].map((s) {
+                    final selected = _iconBgShape == s.$1;
+                    return ChoiceChip(
+                      label: Text(s.$2),
+                      selected: selected,
+                      onSelected: (_) => setState(() => _iconBgShape = s.$1),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+        // Width & Margins
+        const _SectionHeader(
+            icon: Icons.width_normal,
+            title: 'Width & Margins',
+            color: Colors.brown),
+        const SizedBox(height: 8),
+        _ModernCard(
+          child: Column(
+            children: [
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  ('auto', 'Auto'),
+                  ('full', 'Full Width'),
+                  ('compact', 'Compact'),
+                ].map((m) {
+                  final selected = _widthMode == m.$1;
+                  return ChoiceChip(
+                    label: Text(m.$2),
+                    selected: selected,
+                    onSelected: (_) => setState(() => _widthMode = m.$1),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 8),
+              _ModernSliderRow(
+                label: 'H Margin',
+                value: _horizontalMargin,
+                min: 0,
+                max: 48,
+                divisions: 48,
+                suffix: 'px',
+                accentColor: _accentColor,
+                onChanged: (v) => setState(() => _horizontalMargin = v),
+              ),
+              const SizedBox(height: 4),
+              _ModernSliderRow(
+                label: 'V Margin',
+                value: _verticalMargin,
+                min: 0,
+                max: 24,
+                divisions: 24,
+                suffix: 'px',
+                accentColor: _accentColor,
+                onChanged: (v) => setState(() => _verticalMargin = v),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+        // Backdrop blur
+        const _SectionHeader(
+            icon: Icons.blur_circular,
+            title: 'Backdrop Blur',
+            color: Colors.cyan),
+        const SizedBox(height: 8),
+        _ModernSliderRow(
+          label: 'Blur Amount',
+          value: _backdropBlur,
+          min: 0,
+          max: 30,
+          divisions: 30,
+          suffix: 'px',
+          accentColor: _accentColor,
+          onChanged: (v) => setState(() => _backdropBlur = v),
+        ),
         const SizedBox(height: 20),
         const _SectionHeader(
             icon: Icons.text_format,
@@ -972,17 +1552,6 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
             accentColor: _accentColor,
             onChanged: (v) => setState(() => _padding = v),
           ),
-          const SizedBox(height: 4),
-          _ModernSliderRow(
-            label: 'Shadow Blur',
-            value: _shadowBlur,
-            min: 0,
-            max: 30,
-            divisions: 30,
-            suffix: 'px',
-            accentColor: _accentColor,
-            onChanged: (v) => setState(() => _shadowBlur = v),
-          ),
         ],
       ),
     );
@@ -1047,6 +1616,45 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
             color: Colors.indigo),
         const SizedBox(height: 8),
         _buildPositionPicker(theme),
+        const SizedBox(height: 20),
+        // Animation Duration
+        const _SectionHeader(
+            icon: Icons.speed,
+            title: 'Animation Duration',
+            color: Colors.orange),
+        const SizedBox(height: 8),
+        _ModernSliderRow(
+          label: 'Duration',
+          value: _animationDuration,
+          min: 100,
+          max: 1000,
+          divisions: 9,
+          suffix: 'ms',
+          accentColor: _accentColor,
+          onChanged: (v) => setState(() => _animationDuration = v),
+        ),
+        const SizedBox(height: 20),
+        // Animation Curve
+        const _SectionHeader(
+            icon: Icons.show_chart,
+            title: 'Animation Curve',
+            color: Colors.teal),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            'linear', 'easeIn', 'easeOut', 'easeInOut',
+            'bounceIn', 'bounceOut', 'elasticIn', 'elasticOut',
+          ].map((c) {
+            final selected = _animationCurve == c;
+            return ChoiceChip(
+              label: Text(c),
+              selected: selected,
+              onSelected: (_) => setState(() => _animationCurve = c),
+            );
+          }).toList(),
+        ),
         const SizedBox(height: 20),
         // Quick test
         _ModernCard(
@@ -1328,14 +1936,118 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
             color: Colors.red),
         const SizedBox(height: 8),
         _ModernCard(
-          child: SwitchListTile(
-            title: const Text('Swipe to dismiss'),
-            subtitle: const Text('Allow swiping the toast away'),
-            value: _dismissible,
-            dense: true,
-            contentPadding: EdgeInsets.zero,
-            onChanged: (v) => setState(() => _dismissible = v),
+          child: Column(
+            children: [
+              SwitchListTile(
+                title: const Text('Swipe to dismiss'),
+                subtitle: const Text('Allow swiping the toast away'),
+                value: _dismissible,
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                onChanged: (v) => setState(() => _dismissible = v),
+              ),
+              SwitchListTile(
+                title: const Text('Tap to dismiss'),
+                subtitle: const Text('Dismiss toast by tapping on it'),
+                value: _tapToDismiss,
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                onChanged: (v) => setState(() => _tapToDismiss = v),
+              ),
+              SwitchListTile(
+                title: const Text('Show close button'),
+                subtitle: const Text('Display X button on toast'),
+                value: _showCloseButton,
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                onChanged: (v) => setState(() => _showCloseButton = v),
+              ),
+              SwitchListTile(
+                title: const Text('Auto-dismiss on action tap'),
+                subtitle: const Text('Dismiss toast when action button tapped'),
+                value: _autoDismissOnAction,
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                onChanged: (v) => setState(() => _autoDismissOnAction = v),
+              ),
+            ],
           ),
+        ),
+        const SizedBox(height: 20),
+        const _SectionHeader(
+            icon: Icons.feedback,
+            title: 'Feedback',
+            color: Colors.purple),
+        const SizedBox(height: 8),
+        _ModernCard(
+          child: Column(
+            children: [
+              SwitchListTile(
+                title: const Text('Haptic feedback'),
+                subtitle: const Text('Vibrate when toast appears'),
+                value: _hapticFeedback,
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                onChanged: (v) => setState(() => _hapticFeedback = v),
+              ),
+              SwitchListTile(
+                title: const Text('Sound enabled'),
+                subtitle: const Text('Play sound on toast show'),
+                value: _soundEnabled,
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                onChanged: (v) => setState(() => _soundEnabled = v),
+              ),
+              SwitchListTile(
+                title: const Text('Pause on hover'),
+                subtitle: const Text('Pause auto-dismiss timer on hover'),
+                value: _pauseOnHover,
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                onChanged: (v) => setState(() => _pauseOnHover = v),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+        // Stack Order
+        const _SectionHeader(
+            icon: Icons.layers,
+            title: 'Stack Order',
+            color: Colors.brown),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            ('above', 'Above', Icons.arrow_upward),
+            ('below', 'Below', Icons.arrow_downward),
+          ].map((s) {
+            final selected = _stackOrder == s.$1;
+            return ChoiceChip(
+              avatar: Icon(s.$3, size: 16),
+              label: Text(s.$2),
+              selected: selected,
+              onSelected: (_) => setState(() => _stackOrder = s.$1),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 20),
+        // Max Width
+        const _SectionHeader(
+            icon: Icons.width_full,
+            title: 'Max Width',
+            color: Colors.blueGrey),
+        const SizedBox(height: 8),
+        _ModernSliderRow(
+          label: 'Max Width',
+          value: _maxWidth,
+          min: 200,
+          max: 600,
+          divisions: 40,
+          suffix: 'px',
+          accentColor: _accentColor,
+          onChanged: (v) => setState(() => _maxWidth = v),
         ),
         const SizedBox(height: 20),
         const _SectionHeader(
@@ -1386,9 +2098,10 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
     final cs = theme.colorScheme;
     final title = _titleCtrl.text.trim();
     final message = _messageCtrl.text.trim();
+    final subtitle = _subtitleCtrl.text.trim();
     final icon = _iconOptions[_selectedIconIdx].$1;
-    final textColor =
-        _bgColor.computeLuminance() > 0.5 ? Colors.black87 : Colors.white;
+    final textColor = _textColorOverride ??
+        (_bgColor.computeLuminance() > 0.5 ? Colors.black87 : Colors.white);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
@@ -1413,6 +2126,7 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
                 opacity: _opacity,
                 child: Container(
                   width: double.infinity,
+                  margin: EdgeInsets.symmetric(horizontal: _horizontalMargin),
                   padding: EdgeInsets.all(_padding),
                   decoration: BoxDecoration(
                     color: _useGradientBg ? null : _bgColor,
@@ -1430,9 +2144,9 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
                         : null,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withAlpha(30),
+                        color: _shadowColor.withAlpha(30),
                         blurRadius: _shadowBlur,
-                        offset: const Offset(0, 4),
+                        offset: Offset(_shadowOffsetX, _shadowOffsetY),
                       ),
                     ],
                   ),
@@ -1441,7 +2155,22 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
                     children: [
                       Row(
                         children: [
-                          Icon(icon, color: _accentColor, size: _iconSize),
+                          if (_iconBgEnabled)
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: _iconBgColor.withAlpha(40),
+                                shape: _iconBgShape == 'circle'
+                                    ? BoxShape.circle
+                                    : BoxShape.rectangle,
+                                borderRadius: _iconBgShape == 'roundedSquare'
+                                    ? BorderRadius.circular(8)
+                                    : null,
+                              ),
+                              child: Icon(icon, color: _accentColor, size: _iconSize),
+                            )
+                          else
+                            Icon(icon, color: _accentColor, size: _iconSize),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(
@@ -1452,25 +2181,43 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
                                   title.isEmpty ? 'Custom Toast' : title,
                                   style: TextStyle(
                                     color: textColor,
-                                    fontWeight: FontWeight.w600,
+                                    fontWeight: _titleFontWeight,
+                                    fontStyle: _titleItalic ? FontStyle.italic : FontStyle.normal,
                                     fontSize: _fontSize,
+                                    letterSpacing: _titleLetterSpacing,
                                   ),
                                 ),
+                                if (subtitle.isNotEmpty) ...[
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    subtitle,
+                                    style: TextStyle(
+                                      color: textColor.withAlpha(150),
+                                      fontSize: _fontSize - 2,
+                                      letterSpacing: _letterSpacing,
+                                    ),
+                                  ),
+                                ],
                                 if (message.isNotEmpty) ...[
                                   const SizedBox(height: 2),
                                   Text(
                                     message,
                                     style: TextStyle(
                                       color: textColor.withAlpha(180),
+                                      fontWeight: _messageFontWeight,
                                       fontSize: _fontSize - 1,
+                                      letterSpacing: _letterSpacing,
                                     ),
+                                    maxLines: _messageMaxLines,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ],
                               ],
                             ),
                           ),
-                          Icon(Icons.close,
-                              size: 18, color: textColor.withAlpha(120)),
+                          if (_showCloseButton)
+                            Icon(Icons.close,
+                                size: 18, color: textColor.withAlpha(120)),
                         ],
                       ),
                       if (_showActions) ...[
@@ -1599,6 +2346,25 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
         '${_priority.name[0].toUpperCase()}${_priority.name.substring(1)}',
         Icons.low_priority,
       ),
+      ('Title Weight', _titleFontWeight.toString().split('.').last, Icons.format_bold),
+      ('Title Italic', _titleItalic ? 'Yes' : 'No', Icons.format_italic),
+      ('Msg Max Lines', '$_messageMaxLines', Icons.format_line_spacing),
+      ('Anim Duration', '${_animationDuration.round()}ms', Icons.speed),
+      ('Anim Curve', _animationCurve, Icons.show_chart),
+      ('Shadow Offset', '${_shadowOffsetX.round()},${_shadowOffsetY.round()}', Icons.open_with),
+      ('Title Spacing', _titleLetterSpacing.toStringAsFixed(1), Icons.space_bar),
+      ('Msg Spacing', _letterSpacing.toStringAsFixed(1), Icons.space_bar),
+      ('Icon Bg', _iconBgEnabled ? 'Yes' : 'No', Icons.circle),
+      ('Width Mode', _widthMode, Icons.width_normal),
+      ('H Margin', '${_horizontalMargin.round()}px', Icons.margin),
+      ('Backdrop Blur', '${_backdropBlur.round()}px', Icons.blur_circular),
+      ('Close Button', _showCloseButton ? 'Yes' : 'No', Icons.close),
+      ('Tap Dismiss', _tapToDismiss ? 'Yes' : 'No', Icons.touch_app),
+      ('Haptic', _hapticFeedback ? 'Yes' : 'No', Icons.vibration),
+      ('Stack Order', _stackOrder, Icons.layers),
+      ('Max Width', '${_maxWidth.round()}px', Icons.width_full),
+      ('Sound', _soundEnabled ? 'Yes' : 'No', Icons.volume_up),
+      ('Pause Hover', _pauseOnHover ? 'Yes' : 'No', Icons.pause),
     ];
 
     return _ModernCard(
@@ -1711,6 +2477,8 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
         _bgColor.value.toRadixString(16).padLeft(8, '0').toUpperCase();
     final accentHex =
         _accentColor.value.toRadixString(16).padLeft(8, '0').toUpperCase();
+    final shadowHex =
+        _shadowColor.value.toRadixString(16).padLeft(8, '0').toUpperCase();
 
     final buf = StringBuffer();
     buf.writeln('ToastKit.show(ToastEvent.custom(');
@@ -1728,7 +2496,7 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
     buf.writeln('      opacity: ${_opacity.toStringAsFixed(2)},');
     buf.writeln('      child: Container(');
     buf.writeln(
-        '        margin: const EdgeInsets.symmetric(horizontal: 16),');
+        '        margin: EdgeInsets.symmetric(horizontal: ${_horizontalMargin.round()}),');
     buf.writeln('        padding: EdgeInsets.all(${_padding.round()}),');
     buf.writeln('        decoration: BoxDecoration(');
 
@@ -1762,8 +2530,10 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
 
     buf.writeln('          boxShadow: [');
     buf.writeln('            BoxShadow(');
-    buf.writeln('              color: Colors.black.withAlpha(30),');
+    buf.writeln('              color: Color(0x$shadowHex).withAlpha(30),');
     buf.writeln('              blurRadius: ${_shadowBlur.round()},');
+    buf.writeln(
+        '              offset: Offset(${_shadowOffsetX.toStringAsFixed(1)}, ${_shadowOffsetY.toStringAsFixed(1)}),');
     buf.writeln('            ),');
     buf.writeln('          ],');
     buf.writeln('        ),');
@@ -1778,12 +2548,39 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
     buf.writeln('              mainAxisSize: MainAxisSize.min,');
     buf.writeln('              children: [');
     buf.writeln(
-        "                Text('${_titleCtrl.text}', style: TextStyle(fontSize: ${_fontSize.round()})),");
+        "                Text('${_titleCtrl.text}', style: TextStyle(");
+    buf.writeln('                  fontSize: ${_fontSize.round()},');
     buf.writeln(
-        "                Text('${_messageCtrl.text}', style: TextStyle(fontSize: ${(_fontSize - 1).round()})),");
+        '                  fontWeight: FontWeight.${_titleFontWeight.toString().split('.').last},');
+    if (_titleItalic) {
+      buf.writeln('                  fontStyle: FontStyle.italic,');
+    }
+    if (_titleLetterSpacing != 0) {
+      buf.writeln(
+          '                  letterSpacing: ${_titleLetterSpacing.toStringAsFixed(1)},');
+    }
+    buf.writeln('                )),');
+    if (_subtitleCtrl.text.trim().isNotEmpty) {
+      buf.writeln(
+          "                Text('${_subtitleCtrl.text}', style: TextStyle(fontSize: ${(_fontSize - 2).round()})),");
+    }
+    buf.writeln(
+        "                Text('${_messageCtrl.text}', style: TextStyle(");
+    buf.writeln('                  fontSize: ${(_fontSize - 1).round()},');
+    buf.writeln(
+        '                  fontWeight: FontWeight.${_messageFontWeight.toString().split('.').last},');
+    if (_letterSpacing != 0) {
+      buf.writeln(
+          '                  letterSpacing: ${_letterSpacing.toStringAsFixed(1)},');
+    }
+    buf.writeln('                ), maxLines: $_messageMaxLines),');
     buf.writeln('              ],');
     buf.writeln('            ),');
     buf.writeln('          ),');
+    if (_showCloseButton) {
+      buf.writeln(
+          '          GestureDetector(onTap: controller.dismiss, child: Icon(Icons.close, size: 18)),');
+    }
     buf.writeln('        ]),');
     buf.writeln('      ),');
     buf.writeln('    );');
@@ -1817,6 +2614,9 @@ class _PresetTemplate {
     this.borderColor = const Color(0xFF6366F1),
     this.persistent = false,
     this.showActions = false,
+    this.subtitle = '',
+    this.titleFontWeight = FontWeight.w600,
+    this.letterSpacing = 0.0,
   });
 
   final String name;
@@ -1837,6 +2637,9 @@ class _PresetTemplate {
   final Color borderColor;
   final bool persistent;
   final bool showActions;
+  final String subtitle;
+  final FontWeight titleFontWeight;
+  final double letterSpacing;
 }
 
 // =============================================================================
@@ -2098,10 +2901,27 @@ class _CustomPreviewToast extends StatefulWidget {
     required this.actionLabel,
     required this.showSecondAction,
     required this.secondActionLabel,
+    this.subtitle = '',
+    this.titleFontWeight = FontWeight.w600,
+    this.messageFontWeight = FontWeight.normal,
+    this.titleItalic = false,
+    this.messageMaxLines = 3,
+    this.textColorOverride,
+    this.shadowColor = const Color(0xFF000000),
+    this.shadowOffsetX = 0.0,
+    this.shadowOffsetY = 4.0,
+    this.iconBgEnabled = false,
+    this.iconBgColor = const Color(0xFF6366F1),
+    this.iconBgShape = 'circle',
+    this.letterSpacing = 0.0,
+    this.titleLetterSpacing = 0.2,
+    this.showCloseButton = true,
+    this.horizontalMargin = 16.0,
   });
 
   final String title;
   final String message;
+  final String subtitle;
   final IconData icon;
   final Color bgColor;
   final Color accentColor;
@@ -2122,6 +2942,21 @@ class _CustomPreviewToast extends StatefulWidget {
   final String actionLabel;
   final bool showSecondAction;
   final String secondActionLabel;
+  final FontWeight titleFontWeight;
+  final FontWeight messageFontWeight;
+  final bool titleItalic;
+  final int messageMaxLines;
+  final Color? textColorOverride;
+  final Color shadowColor;
+  final double shadowOffsetX;
+  final double shadowOffsetY;
+  final bool iconBgEnabled;
+  final Color iconBgColor;
+  final String iconBgShape;
+  final double letterSpacing;
+  final double titleLetterSpacing;
+  final bool showCloseButton;
+  final double horizontalMargin;
 
   @override
   State<_CustomPreviewToast> createState() => _CustomPreviewToastState();
@@ -2150,14 +2985,34 @@ class _CustomPreviewToastState extends State<_CustomPreviewToast>
 
   @override
   Widget build(BuildContext context) {
-    final textColor = widget.bgColor.computeLuminance() > 0.5
-        ? Colors.black87
-        : Colors.white;
+    final textColor = widget.textColorOverride ??
+        (widget.bgColor.computeLuminance() > 0.5
+            ? Colors.black87
+            : Colors.white);
+
+    Widget iconWidget = Icon(widget.icon,
+        color: widget.accentColor, size: widget.iconSize);
+
+    if (widget.iconBgEnabled) {
+      iconWidget = Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: widget.iconBgColor.withAlpha(40),
+          shape: widget.iconBgShape == 'circle'
+              ? BoxShape.circle
+              : BoxShape.rectangle,
+          borderRadius: widget.iconBgShape == 'roundedSquare'
+              ? BorderRadius.circular(8)
+              : null,
+        ),
+        child: iconWidget,
+      );
+    }
 
     return Opacity(
       opacity: widget.opacity,
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16),
+        margin: EdgeInsets.symmetric(horizontal: widget.horizontalMargin),
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
           color: widget.useGradient ? null : widget.bgColor,
@@ -2175,9 +3030,9 @@ class _CustomPreviewToastState extends State<_CustomPreviewToast>
               : null,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withAlpha(30),
+              color: widget.shadowColor.withAlpha(30),
               blurRadius: widget.shadowBlur,
-              offset: const Offset(0, 4),
+              offset: Offset(widget.shadowOffsetX, widget.shadowOffsetY),
             ),
           ],
         ),
@@ -2191,8 +3046,7 @@ class _CustomPreviewToastState extends State<_CustomPreviewToast>
                 children: [
                   Row(
                     children: [
-                      Icon(widget.icon,
-                          color: widget.accentColor, size: widget.iconSize),
+                      iconWidget,
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
@@ -2203,26 +3057,46 @@ class _CustomPreviewToastState extends State<_CustomPreviewToast>
                               widget.title,
                               style: TextStyle(
                                 color: textColor,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: widget.titleFontWeight,
+                                fontStyle: widget.titleItalic
+                                    ? FontStyle.italic
+                                    : FontStyle.normal,
                                 fontSize: widget.fontSize,
+                                letterSpacing: widget.titleLetterSpacing,
                               ),
                             ),
+                            if (widget.subtitle.isNotEmpty) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                widget.subtitle,
+                                style: TextStyle(
+                                  color: textColor.withAlpha(150),
+                                  fontSize: widget.fontSize - 2,
+                                  letterSpacing: widget.letterSpacing,
+                                ),
+                              ),
+                            ],
                             const SizedBox(height: 2),
                             Text(
                               widget.message,
                               style: TextStyle(
                                 color: textColor.withAlpha(180),
+                                fontWeight: widget.messageFontWeight,
                                 fontSize: widget.fontSize - 1,
+                                letterSpacing: widget.letterSpacing,
                               ),
+                              maxLines: widget.messageMaxLines,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ],
                         ),
                       ),
-                      GestureDetector(
-                        onTap: widget.controller.dismiss,
-                        child: Icon(Icons.close,
-                            size: 18, color: textColor.withAlpha(120)),
-                      ),
+                      if (widget.showCloseButton)
+                        GestureDetector(
+                          onTap: widget.controller.dismiss,
+                          child: Icon(Icons.close,
+                              size: 18, color: textColor.withAlpha(120)),
+                        ),
                     ],
                   ),
                   if (widget.showActions) ...[
