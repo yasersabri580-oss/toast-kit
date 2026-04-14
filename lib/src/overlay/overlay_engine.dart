@@ -165,9 +165,14 @@ class OverlayEngine {
           bottom: !isTop ? safePadding.bottom + kbOffset + stackOffset : null,
           child: Align(
             alignment: alignment,
-            child: animation.buildEnterAnimation(
-              toastWidget,
-              animController,
+            child: DefaultTextStyle(
+              style: const TextStyle(
+                decoration: TextDecoration.none,
+              ),
+              child: animation.buildEnterAnimation(
+                toastWidget,
+                animController,
+              ),
             ),
           ),
         );
