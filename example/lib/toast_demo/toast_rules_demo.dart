@@ -43,7 +43,6 @@ class _ToastRulesDemoState extends State<ToastRulesDemo> {
 
   // ── Scenario 6: API error dedup window ──
   int _apiErrors = 0;
-  int _apiToastsShown = 0;
 
   // ── Scenario 7: Checkout context ──
   String _checkoutStep = 'cart';
@@ -347,7 +346,6 @@ class _ToastRulesDemoState extends State<ToastRulesDemo> {
       _paymentBlocked = false;
       _successCount = 0;
       _apiErrors = 0;
-      _apiToastsShown = 0;
       _checkoutStep = 'cart';
       _formSubmits = 0;
       _isOffline = false;
@@ -435,12 +433,11 @@ class _ToastRulesDemoState extends State<ToastRulesDemo> {
   // 6) API error dedup
   void _triggerApiError() {
     setState(() => _apiErrors++);
-    final shown = ToastKit.show(ToastEvent.error(
+    ToastKit.show(ToastEvent.error(
       message: 'Failed to load user data',
       deduplicationKey: 'api-user-error',
       channel: _chApiDedup,
     ));
-    if (shown) setState(() => _apiToastsShown++);
   }
 
   void _triggerBurstApiErrors() {
@@ -960,7 +957,7 @@ class _ToastRulesDemoState extends State<ToastRulesDemo> {
           'identical API errors into a single toast.',
       code: _apiDedupCode,
       trailing: _statusChip(
-        '$_apiToastsShown shown / $_apiErrors errors',
+        '$_apiErrors errors fired',
         Colors.blue,
       ),
       resultWidget: Column(
@@ -972,9 +969,9 @@ class _ToastRulesDemoState extends State<ToastRulesDemo> {
             color: Colors.red,
           ),
           _stateIndicator(
-            label: 'Toasts actually shown',
-            value: '$_apiToastsShown',
-            icon: Icons.visibility,
+            label: 'Dedup window',
+            value: '10 seconds',
+            icon: Icons.timer,
             color: Colors.blue,
           ),
         ],
