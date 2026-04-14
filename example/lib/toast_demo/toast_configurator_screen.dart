@@ -123,9 +123,9 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
   // Actions
   // ---------------------------------------------------------------------------
   bool _showActions = false;
-  String _actionLabel = 'Undo';
+  final _actionLabelCtrl = TextEditingController(text: 'Undo');
   bool _showSecondAction = false;
-  String _secondActionLabel = 'Details';
+  final _secondActionLabelCtrl = TextEditingController(text: 'Details');
 
   // ---------------------------------------------------------------------------
   // Preset templates
@@ -248,6 +248,8 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
     _tabController.dispose();
     _titleCtrl.dispose();
     _messageCtrl.dispose();
+    _actionLabelCtrl.dispose();
+    _secondActionLabelCtrl.dispose();
     super.dispose();
   }
 
@@ -350,9 +352,9 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
     final iSize = _iconSize;
     final opac = _opacity;
     final hasActions = _showActions;
-    final actionLbl = _actionLabel;
+    final actionLbl = _actionLabelCtrl.text;
     final hasSecond = _showSecondAction;
-    final secondLbl = _secondActionLabel;
+    final secondLbl = _secondActionLabelCtrl.text;
 
     ToastKit.show(ToastEvent.custom(
       duration: _persistent ? null : Duration(milliseconds: durationMs),
@@ -419,9 +421,9 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
       _priority = ToastPriority.normal;
       _toastType = ToastType.custom;
       _showActions = false;
-      _actionLabel = 'Undo';
+      _actionLabelCtrl.text = 'Undo';
       _showSecondAction = false;
-      _secondActionLabel = 'Details';
+      _secondActionLabelCtrl.text = 'Details';
     });
   }
 
@@ -762,8 +764,8 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
                 prefixIcon: Icon(Icons.label),
                 isDense: true,
               ),
-              controller: TextEditingController(text: _actionLabel),
-              onChanged: (v) => _actionLabel = v,
+              controller: _actionLabelCtrl,
+              onChanged: (_) => setState(() {}),
             ),
             const SizedBox(height: 8),
             SwitchListTile(
@@ -781,8 +783,8 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
                   prefixIcon: Icon(Icons.label_outline),
                   isDense: true,
                 ),
-                controller: TextEditingController(text: _secondActionLabel),
-                onChanged: (v) => _secondActionLabel = v,
+                controller: _secondActionLabelCtrl,
+                onChanged: (_) => setState(() {}),
               ),
             ],
           ],
@@ -1486,7 +1488,7 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
                                 tapTargetSize:
                                     MaterialTapTargetSize.shrinkWrap,
                               ),
-                              child: Text(_actionLabel,
+                              child: Text(_actionLabelCtrl.text,
                                   style: const TextStyle(
                                       fontWeight: FontWeight.w600)),
                             ),
@@ -1503,7 +1505,7 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
                                   tapTargetSize:
                                       MaterialTapTargetSize.shrinkWrap,
                                 ),
-                                child: Text(_secondActionLabel),
+                                child: Text(_secondActionLabelCtrl.text),
                               ),
                             ],
                           ],
@@ -1591,10 +1593,10 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
             : 'None',
         Icons.border_style,
       ),
-      ('Actions', _showActions ? _actionLabel : 'None', Icons.touch_app),
+      ('Actions', _showActions ? _actionLabelCtrl.text : 'None', Icons.touch_app),
       (
         'Priority',
-        _priority.name[0].toUpperCase() + _priority.name.substring(1),
+        '${_priority.name[0].toUpperCase()}${_priority.name.substring(1)}',
         Icons.low_priority,
       ),
     ];
