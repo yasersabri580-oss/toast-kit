@@ -168,7 +168,6 @@ class OverlayEngine {
             child: DefaultTextStyle(
               style: const TextStyle(
                 decoration: TextDecoration.none,
-                decorationColor: Color(0x00000000),
               ),
               child: animation.buildEnterAnimation(
                 toastWidget,
