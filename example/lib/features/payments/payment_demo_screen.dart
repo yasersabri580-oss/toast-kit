@@ -6,6 +6,7 @@ import 'package:toast_kit/toast_kit.dart';
 import '../../services/api_service.dart';
 import '../../widgets/buttons/demo_button.dart';
 import '../../widgets/cards/feature_card.dart';
+import '../../widgets/see_code_button.dart';
 
 /// Demonstrates payment processing toasts, progress updates, failure tracking,
 /// and escalating recovery suggestions via [ToastKit].
@@ -305,6 +306,11 @@ class _PaymentDemoScreenState extends State<PaymentDemoScreen> {
       subtitle: 'Configure amount and method',
       icon: Icons.payment,
       iconColor: Colors.indigo,
+      trailing: SeeCodeButton(
+        title: 'Payment Configuration',
+        description: 'Configure amount and method before processing.',
+        code: _paymentDetailsCode,
+      ),
       children: [
         TextField(
           controller: _amountController,
@@ -361,6 +367,11 @@ class _PaymentDemoScreenState extends State<PaymentDemoScreen> {
       subtitle: 'Execute or cancel the current payment',
       icon: Icons.send,
       iconColor: Colors.green,
+      trailing: SeeCodeButton(
+        title: 'Process Payment',
+        description: 'Loading toast with progress updates for payment processing.',
+        code: _processPaymentCode,
+      ),
       children: [
         DemoButton(
           label: 'Pay \$${(_parsedAmount ?? 0).toStringAsFixed(2)}',
@@ -387,6 +398,11 @@ class _PaymentDemoScreenState extends State<PaymentDemoScreen> {
       subtitle: 'Recent payment attempts',
       icon: Icons.history,
       iconColor: Colors.deepPurple,
+      trailing: SeeCodeButton(
+        title: 'Payment History',
+        description: 'Track payment attempts and outcomes.',
+        code: _paymentHistoryCode,
+      ),
       children: [
         if (_history.isEmpty)
           Text(
@@ -521,3 +537,57 @@ class _PaymentHistoryRow extends StatelessWidget {
     );
   }
 }
+
+// =============================================================================
+// Code Strings for "See Code" modals
+// =============================================================================
+
+const _paymentDetailsCode = '''// Payment method selection
+int _selectedMethod = 0;
+static const _methods = ['Credit Card', 'PayPal', 'Bank Transfer'];
+
+// Validate before processing
+if (amount <= 0) {
+  ToastKit.warning('Enter a valid amount', channel: 'payment');
+  return;
+}''';
+
+const _processPaymentCode = '''// Payment with progress and escalation
+final ctrl = ToastKit.showLoading('Processing payment…', channel: 'payment');
+
+try {
+  await ApiService.instance.processPayment(amount: amount, method: method);
+  ctrl.success('Payment of \$amount completed!');
+} on PaymentException catch (e) {
+  ctrl.error('Payment failed: \${e.message}');
+  _failureCount++;
+
+  // Escalation rules
+  if (_failureCount >= 5) {
+    ToastKit.show(ToastEvent.warning(
+      message: 'Try a different payment method.',
+      actions: [
+        ToastAction(label: 'Switch to PayPal', onPressed: () {}),
+      ],
+    ));
+  } else if (_failureCount >= 3) {
+    ToastKit.show(ToastEvent.warning(
+      message: 'Contact support for help.',
+      actions: [
+        ToastAction(label: 'Contact Support', onPressed: () {}),
+      ],
+    ));
+  }
+}''';
+
+const _paymentHistoryCode = '''// Track payment history
+final _history = <PaymentRecord>[];
+
+void _addRecord(PaymentStatus status, double amount) {
+  _history.insert(0, PaymentRecord(
+    status: status,
+    amount: amount,
+    method: _methodLabel,
+    timestamp: DateTime.now(),
+  ));
+}''';

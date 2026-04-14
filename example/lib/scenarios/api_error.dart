@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:toast_kit/toast_kit.dart';
 
+import '../widgets/see_code_button.dart';
+
 // ---------------------------------------------------------------------------
 // API Error Handling Scenario
 //
@@ -136,7 +138,16 @@ class _ApiErrorScenarioState extends State<ApiErrorScenario> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('API Error Handling')),
+      appBar: AppBar(
+        title: const Text('API Error Handling'),
+        actions: [
+          SeeCodeButton(
+            title: 'API Error Handling',
+            description: 'Demonstrates loading→error transitions, channel-based error tracking, and deduplication.',
+            code: _apiErrorCode,
+          ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -173,3 +184,39 @@ class _ApiErrorScenarioState extends State<ApiErrorScenario> {
     );
   }
 }
+
+const _apiErrorCode = '''// Channel + rule setup for API errors
+ToastKit.registerChannel(ToastChannel.network);
+
+ToastKit.configureRule('network', const RuleConfig(
+  errorThreshold: 5,
+  deduplicateWindow: Duration(seconds: 30),
+  maxTriggers: 2,
+));
+
+// Custom rule: suggest offline after 8 errors
+ToastKit.addRule(ToastRule(
+  id: 'suggest-offline-mode',
+  channel: 'network',
+  condition: (stats, event) => stats.errorCount >= 8,
+  action: (context) {
+    ToastKit.show(ToastEvent.warning(
+      message: 'Frequent errors. Try offline mode?',
+      variant: ToastVariant.action,
+      actions: [
+        ToastAction(label: 'Go Offline', onPressed: () {}),
+      ],
+    ));
+  },
+));
+
+// Fetch with loading state
+final ctrl = ToastKit.showLoading('Loading profile…');
+try {
+  final user = await api.getProfile();
+  ctrl.success('Welcome back, \${user["name"]}!');
+} on TimeoutException {
+  ctrl.error('Request timed out');
+} catch (e) {
+  ctrl.error('Failed to load profile');
+}''';
