@@ -7,6 +7,7 @@ import '../../services/api_service.dart';
 import '../../services/retry_service.dart';
 import '../../widgets/buttons/demo_button.dart';
 import '../../widgets/cards/feature_card.dart';
+import '../../widgets/see_code_button.dart';
 
 /// Demonstrates fetch-with-retry, exponential back-off, toast-per-failure, and
 /// overlap prevention using [ToastKit.showOrReplace].
@@ -315,6 +316,11 @@ class _NetworkDemoScreenState extends State<NetworkDemoScreen> {
       subtitle: 'Uses showOrReplace to prevent toast overlap',
       icon: Icons.cloud_download,
       iconColor: Colors.blue,
+      trailing: SeeCodeButton(
+        title: 'Fetch with Retry',
+        description: 'Uses showOrReplace to prevent toast overlap during retries.',
+        code: _fetchRetryCode,
+      ),
       children: [
         DemoButton(
           label: 'Fetch Profile (3 retries)',
@@ -357,6 +363,11 @@ class _NetworkDemoScreenState extends State<NetworkDemoScreen> {
       subtitle: 'Fires 5 requests; deduplicates error toasts',
       icon: Icons.alt_route,
       iconColor: Colors.teal,
+      trailing: SeeCodeButton(
+        title: 'Parallel Requests',
+        description: 'Fires 5 requests; deduplicates error toasts with shared key.',
+        code: _parallelCode,
+      ),
       children: [
         DemoButton(
           label: 'Fire 5 Parallel Requests',
@@ -377,6 +388,11 @@ class _NetworkDemoScreenState extends State<NetworkDemoScreen> {
       subtitle: 'After 6 errors an offline-mode suggestion appears',
       icon: Icons.rule,
       iconColor: Colors.deepOrange,
+      trailing: SeeCodeButton(
+        title: 'Network Channel Rules',
+        description: 'Suggests offline mode after 6 errors on the network channel.',
+        code: _channelRulesCode,
+      ),
       children: [
         Row(
           children: [
@@ -550,3 +566,60 @@ class _StatChip extends StatelessWidget {
     );
   }
 }
+
+// =============================================================================
+// Code Strings for "See Code" modals
+// =============================================================================
+
+const _fetchRetryCode = '''// Fetch with retry and replace-based toast updates
+final result = await RetryService.instance.withRetry(
+  action: () => ApiService.instance.fetchProfile(),
+  maxRetries: 3,
+  onAttempt: (attempt, max, error) {
+    ToastKit.showOrReplace(ToastEvent.info(
+      message: 'Retry \${attempt + 1}/\$max…',
+      channel: 'network',
+      deduplicationKey: 'network-retry',
+    ));
+  },
+);
+
+ToastKit.showOrReplace(ToastEvent.success(
+  message: 'Profile loaded!',
+  channel: 'network',
+  deduplicationKey: 'network-retry',
+));''';
+
+const _parallelCode = '''// Parallel requests with shared dedup key
+final futures = List.generate(5, (i) async {
+  try {
+    await ApiService.instance.fetchItems();
+  } on ApiException catch (e) {
+    // All errors share one key — only the latest is visible
+    ToastKit.showOrReplace(ToastEvent.error(
+      message: 'Request \${i + 1} failed: \${e.message}',
+      channel: 'network',
+      deduplicationKey: 'parallel-fetch',
+    ));
+  }
+});
+await Future.wait(futures);''';
+
+const _channelRulesCode = '''// Suggest offline mode after 6+ channel errors
+void _checkOfflineSuggestion() {
+  if (_channelErrors >= 6) {
+    ToastKit.showOrReplace(ToastEvent.warning(
+      message: 'Multiple failures — consider offline mode.',
+      channel: 'network',
+      deduplicationKey: 'offline-suggestion',
+      actions: [
+        ToastAction(
+          label: 'Go Offline',
+          onPressed: () {
+            ToastKit.info('Offline mode enabled (demo)');
+          },
+        ),
+      ],
+    ));
+  }
+}''';

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:toast_kit/toast_kit.dart';
 
+import '../widgets/see_code_button.dart';
+
 // ---------------------------------------------------------------------------
 // Form Validation Scenario
 //
@@ -130,7 +132,16 @@ class _FormValidationScenarioState extends State<FormValidationScenario> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Form Validation')),
+      appBar: AppBar(
+        title: const Text('Form Validation'),
+        actions: [
+          SeeCodeButton(
+            title: 'Form Validation',
+            description: 'Shows toast-based validation and channel-based error tracking with rules.',
+            code: _formValidationCode,
+          ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -180,3 +191,32 @@ class _FormValidationScenarioState extends State<FormValidationScenario> {
     );
   }
 }
+
+const _formValidationCode = '''// Form validation channel + rule
+ToastKit.registerChannel(ToastChannel(
+  id: 'form', label: 'Form Validation', maxVisible: 3,
+));
+
+ToastKit.configureRule('form', const RuleConfig(
+  errorThreshold: 5,
+  deduplicateWindow: Duration(seconds: 30),
+  maxTriggers: 1,
+));
+
+// Validate and show per-field errors as toasts
+final errors = _validate();
+if (errors.isNotEmpty) {
+  for (final error in errors) {
+    ToastKit.warning(error, channel: 'form');
+  }
+  return;
+}
+
+// Submit with loading state
+final ctrl = ToastKit.showLoading('Creating account…');
+try {
+  await registerUser();
+  ctrl.success('Account created! Welcome aboard 🎉');
+} catch (e) {
+  ctrl.error('Registration failed');
+}''';

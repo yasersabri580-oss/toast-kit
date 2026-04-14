@@ -6,6 +6,7 @@ import 'package:toast_kit/toast_kit.dart';
 import '../../services/api_service.dart';
 import '../../widgets/buttons/demo_button.dart';
 import '../../widgets/cards/feature_card.dart';
+import '../../widgets/see_code_button.dart';
 
 /// Demonstrates login success/failure toasts, retry logic, and rate limiting.
 class AuthDemoScreen extends StatefulWidget {
@@ -214,6 +215,11 @@ class _AuthDemoScreenState extends State<AuthDemoScreen> {
       subtitle: 'Login attempt tracking',
       icon: statusIcon,
       iconColor: statusColor,
+      trailing: SeeCodeButton(
+        title: 'Auth Status Tracking',
+        description: 'Tracks failed login attempts and triggers lockout after 5 failures.',
+        code: _authStatusCode,
+      ),
       children: [
         Row(
           children: [
@@ -285,6 +291,11 @@ class _AuthDemoScreenState extends State<AuthDemoScreen> {
       subtitle: 'Email & password login with toast feedback',
       icon: Icons.login,
       iconColor: Colors.blue,
+      trailing: SeeCodeButton(
+        title: 'Login with Toast Feedback',
+        description: 'Shows loading → success/error toasts during sign-in.',
+        code: _authLoginCode,
+      ),
       children: [
         TextField(
           controller: _emailController,
@@ -339,6 +350,11 @@ class _AuthDemoScreenState extends State<AuthDemoScreen> {
       subtitle: 'Account session management',
       icon: Icons.manage_accounts,
       iconColor: Colors.deepPurple,
+      trailing: SeeCodeButton(
+        title: 'Session Management',
+        description: 'Logout with loading toast and error handling.',
+        code: _authLogoutCode,
+      ),
       children: [
         DemoButton(
           label: 'Logout',
@@ -351,3 +367,43 @@ class _AuthDemoScreenState extends State<AuthDemoScreen> {
     );
   }
 }
+
+// =============================================================================
+// Code Strings for "See Code" modals
+// =============================================================================
+
+const _authStatusCode = '''// Track failed login attempts
+int _failedAttempts = 0;
+
+void _handleFailedAttempt() {
+  _failedAttempts++;
+  if (_failedAttempts >= 5) {
+    _startLockout(); // Lock for 30 seconds
+  } else if (_failedAttempts >= 3) {
+    ToastKit.warning(
+      'Too many attempts (\$_failedAttempts/5)',
+      channel: 'auth',
+    );
+  }
+}''';
+
+const _authLoginCode = '''// Login with loading toast
+final ctrl = ToastKit.showLoading('Signing in…', channel: 'auth');
+
+try {
+  await ApiService.instance.login(email, password);
+  ctrl.success('Welcome back!');
+} on ApiException catch (e) {
+  ctrl.error(e.message);
+  _handleFailedAttempt();
+}''';
+
+const _authLogoutCode = '''// Logout with loading toast
+final ctrl = ToastKit.showLoading('Signing out…', channel: 'auth');
+
+try {
+  await ApiService.instance.logout();
+  ctrl.success('Signed out successfully');
+} on ApiException catch (e) {
+  ctrl.error(e.message);
+}''';

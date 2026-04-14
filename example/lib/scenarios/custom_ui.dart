@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:toast_kit/toast_kit.dart';
 
+import '../widgets/see_code_button.dart';
+
 // ---------------------------------------------------------------------------
 // Custom UI Scenario
 //
@@ -269,7 +271,16 @@ class CustomUiScenario extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Custom UI')),
+      appBar: AppBar(
+        title: const Text('Custom UI'),
+        actions: [
+          SeeCodeButton(
+            title: 'Custom UI Toasts',
+            description: 'Custom builders with full widget control, progress tracking, and action buttons.',
+            code: _customUiCode,
+          ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -312,3 +323,41 @@ class CustomUiScenario extends StatelessWidget {
     );
   }
 }
+
+const _customUiCode = '''// Branded toast with gradient
+ToastKit.custom(builder: (context, controller) {
+  return Container(
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        colors: [Color(0xFF6C63FF), Color(0xFF3F3D99)],
+      ),
+      borderRadius: BorderRadius.circular(16),
+    ),
+    child: Row(children: [
+      Icon(Icons.auto_awesome, color: Colors.white),
+      Text('New Feature!', style: TextStyle(color: Colors.white)),
+      IconButton(
+        icon: Icon(Icons.close, color: Colors.white54),
+        onPressed: controller.dismiss,
+      ),
+    ]),
+  );
+});
+
+// Progress toast with ToastController
+ToastKit.show(ToastEvent.custom(
+  builder: (context, controller) {
+    _simulateProgress(controller);
+    return Container(/* progress UI */);
+  },
+  duration: Duration(seconds: 8),
+));
+
+Future<void> _simulateProgress(ToastController ctrl) async {
+  for (var i = 1; i <= 10; i++) {
+    await Future.delayed(Duration(milliseconds: 400));
+    if (ctrl.isDisposed) return;
+    ctrl.update(progressValue: i / 10, message: 'Uploading… \${i * 10}%');
+  }
+  ctrl.success('Upload complete!');
+}''';
