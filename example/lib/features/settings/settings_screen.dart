@@ -4,6 +4,7 @@ import 'package:toast_kit/toast_kit.dart';
 import '../../utils/demo_logger.dart';
 import '../../widgets/buttons/demo_button.dart';
 import '../../widgets/cards/feature_card.dart';
+import '../../widgets/see_code_button.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -45,14 +46,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return FeatureCard(
       title: 'Debug Mode',
       icon: Icons.bug_report_outlined,
-      trailing: Switch.adaptive(
-        value: _debugEnabled,
-        onChanged: (value) {
-          setState(() {
-            _debugEnabled = value;
-            DemoLogger.instance.enabled = value;
-          });
-        },
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SeeCodeButton(
+            title: 'Debug Mode Toggle',
+            description:
+                'Enables or disables the in-memory debug logger that records toast events.',
+            code: _debugModeCode,
+          ),
+          Switch.adaptive(
+            value: _debugEnabled,
+            onChanged: (value) {
+              setState(() {
+                _debugEnabled = value;
+                DemoLogger.instance.enabled = value;
+              });
+            },
+          ),
+        ],
       ),
       children: [
         Text(
@@ -231,6 +243,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return FeatureCard(
       title: 'Quick Actions',
       icon: Icons.flash_on_outlined,
+      trailing: SeeCodeButton(
+        title: 'Quick Actions',
+        description:
+            'Dismiss all visible toasts, clear the queue, or reset debug stats.',
+        code: _quickActionsCode,
+      ),
       children: [
         DemoButton(
           label: 'Dismiss All Toasts',
@@ -343,3 +361,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 }
+
+// =============================================================================
+// Code Strings for "See Code" modals
+// =============================================================================
+
+const _debugModeCode = '''// Toggle the in-memory debug logger
+DemoLogger.instance.enabled = true;
+
+// Log entries from your app
+DemoLogger.instance.info('Toast shown');
+DemoLogger.instance.warning('Queue full');
+DemoLogger.instance.error('Overlay render failed');
+
+// Access log entries reactively
+ValueListenableBuilder<List<LogEntry>>(
+  valueListenable: DemoLogger.instance.entriesNotifier,
+  builder: (context, entries, _) {
+    // build your log viewer
+  },
+);''';
+
+const _quickActionsCode = '''// Dismiss all visible toasts
+ToastKit.dismissAll();
+
+// Clear the waiting queue (visible toasts stay)
+ToastKit.clearQueue();
+
+// Full reset: clear queue + dismiss all
+ToastKit.dismissAll();
+ToastKit.clearQueue();''';

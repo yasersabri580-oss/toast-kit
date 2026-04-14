@@ -79,6 +79,12 @@ class _AuthDemoScreenState extends State<AuthDemoScreen> {
   // ---------------------------------------------------------------------------
 
   Future<void> _attemptLogin() async {
+    // Synchronous guard: prevents duplicate calls from rapid taps within
+    // the same frame (before setState triggers a widget rebuild that
+    // disables the button). Without this, N taps in one frame create N
+    // concurrent loading toasts and async operations.
+    if (_isSigningIn || _isLocked) return;
+
     final email = _emailController.text.trim();
     final password = _passwordController.text;
 

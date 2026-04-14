@@ -6,6 +6,7 @@ import 'package:toast_kit/toast_kit.dart';
 import '../../services/mock_backend.dart';
 import '../../widgets/buttons/demo_button.dart';
 import '../../widgets/cards/feature_card.dart';
+import '../../widgets/see_code_button.dart';
 
 /// Demonstrates queued notifications, spam prevention, and deduplication
 /// using [ToastKit] and [MockBackend].
@@ -316,9 +317,20 @@ class _NotificationDemoScreenState extends State<NotificationDemoScreen> {
       subtitle: 'Toggle a continuous stream of mock notifications',
       icon: Icons.stream,
       iconColor: cs.primary,
-      trailing: Switch.adaptive(
-        value: _streamActive,
-        onChanged: _toggleStream,
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SeeCodeButton(
+            title: 'Live Notification Stream',
+            description:
+                'Listens to a stream of mock notifications and shows each one as a toast.',
+            code: _liveStreamCode,
+          ),
+          Switch.adaptive(
+            value: _streamActive,
+            onChanged: _toggleStream,
+          ),
+        ],
       ),
       children: [
         AnimatedSwitcher(
@@ -358,6 +370,11 @@ class _NotificationDemoScreenState extends State<NotificationDemoScreen> {
       subtitle: 'Test toast queuing and overflow behaviour',
       icon: Icons.queue,
       iconColor: cs.secondary,
+      trailing: SeeCodeButton(
+        title: 'Queue Management',
+        description: 'Push single or batch notifications and clear the queue.',
+        code: _queueManagementCode,
+      ),
       children: [
         DemoButton(
           label: 'Send Single Notification',
@@ -389,6 +406,12 @@ class _NotificationDemoScreenState extends State<NotificationDemoScreen> {
       subtitle: 'Identical messages are deduplicated automatically',
       icon: Icons.block,
       iconColor: Colors.orange,
+      trailing: SeeCodeButton(
+        title: 'Spam Prevention',
+        description:
+            'Demonstrates deduplication by key — 10 identical toasts collapse into 1.',
+        code: _spamPreventionCode,
+      ),
       children: [
         DemoButton(
           label: 'Spam Same Message (10×)',
@@ -427,6 +450,12 @@ class _NotificationDemoScreenState extends State<NotificationDemoScreen> {
       subtitle: 'Repeated updates replace the previous toast in-place',
       icon: Icons.find_replace,
       iconColor: cs.tertiary,
+      trailing: SeeCodeButton(
+        title: 'Deduplication (showOrReplace)',
+        description:
+            'Uses showOrReplace with the same deduplicationKey so only the latest update is visible.',
+        code: _deduplicationCode,
+      ),
       children: [
         DemoButton(
           label: 'Send Deduplicated Update (v${_dedupCounter + 1})',
@@ -492,3 +521,57 @@ class _StatChip extends StatelessWidget {
     );
   }
 }
+
+// =============================================================================
+// Code Strings for "See Code" modals
+// =============================================================================
+
+const _liveStreamCode = '''// Start a live notification stream
+MockBackend.instance.startNotificationStream();
+final sub = MockBackend.instance.notificationStream.listen(
+  (notification) {
+    final toastType = _toastTypeFor(notification.type);
+    ToastKit.show(ToastEvent(
+      type: toastType,
+      title: notification.title,
+      message: notification.body,
+      channel: 'notifications',
+      icon: _iconFor(notification.type),
+    ));
+  },
+);
+
+// Stop when done
+MockBackend.instance.stopNotificationStream();
+sub.cancel();''';
+
+const _queueManagementCode = '''// Send a single notification
+MockBackend.instance.pushNotification();
+
+// Send a batch of 5
+MockBackend.instance.pushNotificationBatch(5);
+
+// Clear the toast queue without dismissing visible toasts
+ToastKit.clearQueue();''';
+
+const _spamPreventionCode = '''// Send 10 identical toasts — only the first shows.
+const dedupKey = 'spam-same';
+
+for (var i = 0; i < 10; i++) {
+  ToastKit.showOrReplace(ToastEvent.warning(
+    message: 'Duplicate alert — only shown once',
+    channel: 'notifications',
+    deduplicationKey: dedupKey,
+  ));
+}''';
+
+const _deduplicationCode = '''// Each call replaces the previous toast in-place.
+_dedupCounter++;
+
+ToastKit.showOrReplace(ToastEvent.info(
+  message: 'Live score update v\$_dedupCounter',
+  channel: 'notifications',
+  deduplicationKey: 'dedup-demo',
+));
+
+// Tap rapidly — only the latest version is visible.''';
