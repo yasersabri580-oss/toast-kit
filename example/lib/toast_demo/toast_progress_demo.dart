@@ -5,6 +5,7 @@ import 'package:toast_kit/toast_kit.dart';
 
 import '../widgets/cards/feature_card.dart';
 import '../widgets/buttons/demo_button.dart';
+import '../widgets/see_code_button.dart';
 
 /// Demonstrates progress and loading toast behaviors using [ToastKit].
 ///
@@ -213,6 +214,11 @@ class _ToastProgressDemoState extends State<ToastProgressDemo> {
       subtitle: 'Simulates a file upload with progress updates',
       icon: Icons.cloud_upload_rounded,
       iconColor: cs.primary,
+      trailing: SeeCodeButton(
+        title: 'File Upload Progress',
+        description: 'Uses showLoading() and updates progress via the controller.',
+        code: _uploadCode,
+      ),
       children: [
         DemoButton(
           label: 'Upload File',
@@ -250,6 +256,11 @@ class _ToastProgressDemoState extends State<ToastProgressDemo> {
       subtitle: 'Simulates a 4-step pipeline',
       icon: Icons.account_tree_rounded,
       iconColor: cs.tertiary,
+      trailing: SeeCodeButton(
+        title: 'Multi-Step Pipeline',
+        description: 'Progress toast updated at each pipeline step.',
+        code: _pipelineCode,
+      ),
       children: [
         DemoButton(
           label: 'Run Pipeline',
@@ -276,6 +287,11 @@ class _ToastProgressDemoState extends State<ToastProgressDemo> {
       subtitle: 'Three tasks running simultaneously',
       icon: Icons.call_split_rounded,
       iconColor: cs.secondary,
+      trailing: SeeCodeButton(
+        title: 'Concurrent Tasks',
+        description: 'Multiple loading toasts running in parallel.',
+        code: _concurrentCode,
+      ),
       children: [
         DemoButton(
           label: 'Start 3 Tasks',
@@ -304,6 +320,11 @@ class _ToastProgressDemoState extends State<ToastProgressDemo> {
       subtitle: 'Use the slider to control a progress toast',
       icon: Icons.tune_rounded,
       iconColor: Colors.orange,
+      trailing: SeeCodeButton(
+        title: 'Manual Progress',
+        description: 'Control progress via slider and resolve with success/error.',
+        code: _manualCode,
+      ),
       children: [
         DemoButton(
           label: 'Start',
@@ -498,3 +519,64 @@ class _StepperRow extends StatelessWidget {
     );
   }
 }
+
+// =============================================================================
+// Code Strings for "See Code" modals
+// =============================================================================
+
+const _uploadCode = '''// Start a loading toast and update progress
+final ctrl = ToastKit.showLoading('Uploading file…');
+
+// In your upload callback:
+ctrl.update(message: 'Uploading… 45%');
+ctrl.progress.value = 0.45;
+
+// On completion:
+ctrl.success('Upload complete!');
+
+// On failure:
+ctrl.error('Upload failed at 60%');''';
+
+const _pipelineCode = '''// Multi-step pipeline with progress
+final ctrl = ToastKit.showLoading('Starting pipeline…');
+
+const steps = ['Validating…', 'Processing…', 'Reporting…', 'Finalizing…'];
+for (var i = 0; i < steps.length; i++) {
+  ctrl.update(message: steps[i]);
+  ctrl.progress.value = (i + 1) / steps.length;
+  await Future.delayed(Duration(seconds: 2));
+}
+
+ctrl.success('Pipeline complete!');''';
+
+const _concurrentCode = '''// Run multiple loading toasts concurrently
+Future<void> runTask(String name, int durationMs) async {
+  final ctrl = ToastKit.showLoading('\$name: starting…');
+  final total = durationMs ~/ 150;
+  for (var i = 1; i <= total; i++) {
+    await Future.delayed(Duration(milliseconds: 150));
+    if (ctrl.isDisposed) return;
+    final pct = ((i / total) * 100).round();
+    ctrl.update(message: '\$name: \$pct%');
+    ctrl.progress.value = i / total;
+  }
+  ctrl.success('\$name done!');
+}
+
+await Future.wait([
+  runTask('Task A', 3000),
+  runTask('Task B', 5000),
+  runTask('Task C', 4000),
+]);''';
+
+const _manualCode = '''// Start a manual progress toast
+final ctrl = ToastKit.showLoading('Manual progress: 0%');
+
+// Update from a slider or other control:
+ctrl.update(message: 'Manual progress: 50%');
+ctrl.progress.value = 0.5;
+
+// Resolve the toast:
+ctrl.success('Manual task complete!');
+// or
+ctrl.error('Manual task failed!');''';

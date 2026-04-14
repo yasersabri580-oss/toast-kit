@@ -6,6 +6,7 @@ import 'package:toast_kit/toast_kit.dart';
 
 import '../widgets/cards/feature_card.dart';
 import '../widgets/buttons/demo_button.dart';
+import '../widgets/see_code_button.dart';
 
 /// A stress-test screen that pushes ToastKit to its limits under extreme load.
 ///
@@ -359,6 +360,11 @@ class _ToastStressTestState extends State<ToastStressTest> {
       subtitle: 'Burst-fire toasts at high speed',
       icon: Icons.flash_on_rounded,
       iconColor: Colors.red,
+      trailing: SeeCodeButton(
+        title: 'Rapid Fire',
+        description: 'Fire many toasts in quick succession to test queue stability.',
+        code: _rapidFireCode,
+      ),
       children: [
         DemoButton(
           label: 'Trigger 20 Toasts',
@@ -394,6 +400,11 @@ class _ToastStressTestState extends State<ToastStressTest> {
       subtitle: 'Push the internal queue to its limits',
       icon: Icons.queue_rounded,
       iconColor: Colors.teal,
+      trailing: SeeCodeButton(
+        title: 'Queue Stress',
+        description: 'Fill the queue, burst + clear, and rapid show/dismiss.',
+        code: _queueStressCode,
+      ),
       children: [
         DemoButton(
           label: 'Fill Queue to Max',
@@ -423,6 +434,11 @@ class _ToastStressTestState extends State<ToastStressTest> {
       subtitle: 'Concurrent loading and progress scenarios',
       icon: Icons.hourglass_bottom_rounded,
       iconColor: Colors.cyan,
+      trailing: SeeCodeButton(
+        title: 'Loading Stress',
+        description: 'Run 10 concurrent loading toasts and a progress marathon.',
+        code: _loadingStressCode,
+      ),
       children: [
         DemoButton(
           label: '10 Concurrent Loading Toasts',
@@ -446,6 +462,11 @@ class _ToastStressTestState extends State<ToastStressTest> {
       subtitle: 'Verify deduplication under load',
       icon: Icons.filter_alt_rounded,
       iconColor: Colors.pink,
+      trailing: SeeCodeButton(
+        title: 'Dedup Stress',
+        description: 'Fire 100 identical messages or mix unique + duplicates.',
+        code: _dedupStressCode,
+      ),
       children: [
         DemoButton(
           label: 'Same Message 100×',
@@ -521,3 +542,73 @@ class _StatTile extends StatelessWidget {
     );
   }
 }
+
+// =============================================================================
+// Code Strings for "See Code" modals
+// =============================================================================
+
+const _rapidFireCode = '''// Burst-fire toasts at high speed
+for (var i = 0; i < 20; i++) {
+  final type = [ToastType.success, ToastType.error,
+    ToastType.warning, ToastType.info][i % 4];
+  ToastKit.show(ToastEvent(
+    type: type,
+    message: 'Burst toast #\${i + 1}',
+  ));
+  // Yield to framework every 5 toasts
+  if (i % 5 == 4) await Future.delayed(Duration.zero);
+}''';
+
+const _queueStressCode = '''// Fill the queue to max capacity
+for (var i = 0; i < 50; i++) {
+  ToastKit.info('Queue fill #\${i + 1}');
+}
+
+// Burst + Clear: fire 20 then clear the queue
+for (var i = 0; i < 20; i++) {
+  ToastKit.info('Burst #\${i + 1}');
+}
+ToastKit.clearQueue();
+
+// Rapid Show/Dismiss
+for (var i = 0; i < 10; i++) {
+  final ctrl = ToastKit.showWithController(
+    ToastEvent(type: ToastType.info, message: 'Flash #\${i + 1}'),
+  );
+  ctrl.dismiss(); // immediately dismiss
+}''';
+
+const _loadingStressCode = '''// 10 concurrent loading toasts
+final ctrls = <ToastController>[];
+for (var i = 0; i < 10; i++) {
+  ctrls.add(ToastKit.showLoading('Loading #\${i + 1}…'));
+  await Future.delayed(Duration(milliseconds: 100));
+}
+// Resolve one by one
+for (var i = 0; i < ctrls.length; i++) {
+  await Future.delayed(Duration(milliseconds: 400));
+  if (!ctrls[i].isDisposed) {
+    ctrls[i].success('Loaded #\${i + 1} ✓');
+  }
+}''';
+
+const _dedupStressCode = '''// Same message 100x — should appear only once
+for (var i = 0; i < 100; i++) {
+  ToastKit.show(ToastEvent(
+    type: ToastType.info,
+    message: 'Duplicate toast – should appear once',
+    deduplicationKey: 'stress-same-msg',
+  ));
+}
+
+// Mixed: 10 unique + 10 duplicates
+for (var i = 0; i < 10; i++) {
+  ToastKit.info('Unique toast #\${i + 1}');
+}
+for (var i = 0; i < 10; i++) {
+  ToastKit.show(ToastEvent(
+    type: ToastType.warning,
+    message: 'Duplicate batch toast',
+    deduplicationKey: 'stress-mixed-dup',
+  ));
+}''';
