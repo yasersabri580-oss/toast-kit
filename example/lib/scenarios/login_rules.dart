@@ -23,6 +23,7 @@ class _LoginRulesScenarioState extends State<LoginRulesScenario> {
   final _passwordController = TextEditingController();
   int _attemptCount = 0;
   bool _isLocked = false;
+  bool _isSigningIn = false;
 
   @override
   void initState() {
@@ -48,7 +49,9 @@ class _LoginRulesScenarioState extends State<LoginRulesScenario> {
     ToastKit.addRule(ToastRule(
       id: 'login-lockout',
       channel: 'auth',
-      condition: (stats, event) => stats.errorCount >= 5,
+      maxTriggers: 1,
+      condition: (stats, event) =>
+          stats.errorCount >= 5 && !_isLocked,
       action: (context) {
         setState(() => _isLocked = true);
 
@@ -75,7 +78,9 @@ class _LoginRulesScenarioState extends State<LoginRulesScenario> {
     ToastKit.addRule(ToastRule(
       id: 'suggest-reset',
       channel: 'auth',
-      condition: (stats, event) => stats.errorCount == 3,
+      maxTriggers: 1,
+      condition: (stats, event) =>
+          stats.errorCount >= 3 && stats.errorCount < 5,
       action: (context) {
         ToastKit.show(ToastEvent.info(
           message: 'Forgot your password?',
@@ -104,8 +109,11 @@ class _LoginRulesScenarioState extends State<LoginRulesScenario> {
 
   /// Simulate a login attempt. All attempts fail for demonstration.
   Future<void> _attemptLogin() async {
-    if (_isLocked) {
-      ToastKit.warning('Account is temporarily locked');
+    // Guard against concurrent calls from rapid taps.
+    if (_isSigningIn || _isLocked) {
+      if (_isLocked) {
+        ToastKit.warning('Account is temporarily locked');
+      }
       return;
     }
 
@@ -117,9 +125,12 @@ class _LoginRulesScenarioState extends State<LoginRulesScenario> {
       return;
     }
 
-    _attemptCount++;
+    setState(() {
+      _isSigningIn = true;
+      _attemptCount++;
+    });
 
-    final ctrl = ToastKit.showLoading('Signing in…');
+    final ctrl = ToastKit.showLoading('Signing in…', channel: 'auth');
     try {
       // Simulate network delay.
       await Future.delayed(const Duration(seconds: 1));
@@ -138,6 +149,8 @@ class _LoginRulesScenarioState extends State<LoginRulesScenario> {
         'Login attempt $_attemptCount failed',
         channel: 'auth',
       );
+    } finally {
+      if (mounted) setState(() => _isSigningIn = false);
     }
   }
 
@@ -185,8 +198,12 @@ class _LoginRulesScenarioState extends State<LoginRulesScenario> {
           ),
           const SizedBox(height: 24),
           FilledButton(
-            onPressed: _isLocked ? null : _attemptLogin,
-            child: Text(_isLocked ? 'Account Locked' : 'Sign In'),
+            onPressed: (_isLocked || _isSigningIn) ? null : _attemptLogin,
+            child: Text(_isLocked
+                ? 'Account Locked'
+                : _isSigningIn
+                    ? 'Signing In…'
+                    : 'Sign In'),
           ),
         ],
       ),
