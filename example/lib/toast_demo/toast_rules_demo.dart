@@ -37,6 +37,7 @@ class _ToastRulesDemoState extends State<ToastRulesDemo> {
   // ── Scenario 4: Payment retries ──
   int _paymentRetries = 0;
   bool _paymentBlocked = false;
+  bool _paymentProcessing = false;
 
   // ── Scenario 5: Success noise reduction ──
   int _successCount = 0;
@@ -340,10 +341,12 @@ class _ToastRulesDemoState extends State<ToastRulesDemo> {
     setState(() {
       _signInAttempts = 0;
       _accountLocked = false;
+      _isSigningIn = false;
       _networkFailures = 0;
       _rapidClickCount = 0;
       _paymentRetries = 0;
       _paymentBlocked = false;
+      _paymentProcessing = false;
       _successCount = 0;
       _apiErrors = 0;
       _checkoutStep = 'cart';
@@ -364,19 +367,30 @@ class _ToastRulesDemoState extends State<ToastRulesDemo> {
   // ---------------------------------------------------------------------------
 
   // 1) Sign-in
+  bool _isSigningIn = false;
+
   Future<void> _attemptSignIn() async {
-    if (_accountLocked) {
-      ToastKit.warning('Account is locked. Please wait.');
+    // Prevent concurrent sign-in attempts — rapid taps are silently ignored
+    // so the app does not spawn overlapping loading toasts or freeze.
+    if (_isSigningIn || _accountLocked) {
+      if (_accountLocked) {
+        ToastKit.warning('Account is locked. Please wait.');
+      }
       return;
     }
+    _isSigningIn = true;
     setState(() => _signInAttempts++);
     final ctrl = ToastKit.showLoading('Signing in…');
-    await Future.delayed(const Duration(milliseconds: 800));
-    ctrl.error('Invalid email or password');
-    ToastKit.error(
-      'Sign-in attempt $_signInAttempts failed',
-      channel: _chSignIn,
-    );
+    try {
+      await Future.delayed(const Duration(milliseconds: 800));
+      ctrl.error('Invalid email or password');
+      ToastKit.error(
+        'Sign-in attempt $_signInAttempts failed',
+        channel: _chSignIn,
+      );
+    } finally {
+      _isSigningIn = false;
+    }
   }
 
   // 2) Network failures
@@ -406,18 +420,26 @@ class _ToastRulesDemoState extends State<ToastRulesDemo> {
 
   // 4) Payment retry
   Future<void> _retryPayment() async {
-    if (_paymentBlocked) {
-      ToastKit.warning('Payment is blocked. Use the recovery options above.');
+    // Prevent concurrent payment attempts to avoid duplicate charges.
+    if (_paymentProcessing || _paymentBlocked) {
+      if (_paymentBlocked) {
+        ToastKit.warning('Payment is blocked. Use the recovery options above.');
+      }
       return;
     }
+    _paymentProcessing = true;
     setState(() => _paymentRetries++);
     final ctrl = ToastKit.showLoading('Processing payment…');
-    await Future.delayed(const Duration(seconds: 1));
-    ctrl.error('Payment declined');
-    ToastKit.error(
-      'Payment attempt $_paymentRetries failed',
-      channel: _chPayment,
-    );
+    try {
+      await Future.delayed(const Duration(seconds: 1));
+      ctrl.error('Payment declined');
+      ToastKit.error(
+        'Payment attempt $_paymentRetries failed',
+        channel: _chPayment,
+      );
+    } finally {
+      _paymentProcessing = false;
+    }
   }
 
   // 5) Success noise

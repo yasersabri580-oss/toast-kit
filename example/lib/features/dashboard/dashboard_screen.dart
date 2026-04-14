@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:toast_kit/toast_kit.dart';
 
+import '../../widgets/see_code_button.dart';
+
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
 
@@ -61,6 +63,20 @@ class DashboardScreen extends StatelessWidget {
       route: '/toast/progress',
       color: Colors.amber,
     ),
+    _FeatureItem(
+      title: 'Auto-Dismiss',
+      subtitle: 'Progress countdown & toast auto-dismiss',
+      icon: Icons.timer_outlined,
+      route: '/toast/autodismiss',
+      color: Colors.cyan,
+    ),
+    _FeatureItem(
+      title: 'Toast Builder',
+      subtitle: 'Design your own toast interactively',
+      icon: Icons.design_services_outlined,
+      route: '/toast/configurator',
+      color: Colors.pink,
+    ),
   ];
 
   @override
@@ -103,7 +119,17 @@ class DashboardScreen extends StatelessWidget {
 
             // --- Quick Actions ---
             _SectionHeader(title: 'Quick Actions'),
-            const SizedBox(height: 12),
+            const SizedBox(height: 4),
+            Align(
+              alignment: Alignment.centerRight,
+              child: SeeCodeButton(
+                title: 'Quick Toast Actions',
+                description:
+                    'Show success, error, warning, and info toasts with a single line.',
+                code: _quickActionsCode,
+              ),
+            ),
+            const SizedBox(height: 8),
             _QuickActionsRow(),
             const SizedBox(height: 32),
 
@@ -328,3 +354,22 @@ class _FeatureItem {
   final String route;
   final Color color;
 }
+
+// =============================================================================
+// Code Strings
+// =============================================================================
+
+const _quickActionsCode = '''// One-liner convenience methods
+ToastKit.success('Operation completed!');
+ToastKit.error('Something went wrong');
+ToastKit.warning('Check your input');
+ToastKit.info('New version available');
+
+// With optional parameters
+ToastKit.success(
+  'Saved!',
+  title: 'Success',
+  duration: Duration(seconds: 3),
+  position: ToastPosition.bottom,
+  variant: ToastVariant.material,
+);''';
