@@ -5,6 +5,7 @@ import 'package:toast_kit/toast_kit.dart';
 
 import '../widgets/cards/feature_card.dart';
 import '../widgets/buttons/demo_button.dart';
+import '../widgets/see_code_button.dart';
 
 /// A comprehensive showcase screen that demonstrates every toast type, variant,
 /// position, and behavior offered by ToastKit.
@@ -319,6 +320,11 @@ class _ToastShowcaseState extends State<ToastShowcase> {
       subtitle: 'Standard semantic toast types',
       icon: Icons.category_outlined,
       iconColor: Colors.deepPurple,
+      trailing: SeeCodeButton(
+        title: 'Toast Types',
+        description: 'Show success, error, warning, and info toasts with one line of code.',
+        code: _toastTypesCode,
+      ),
       children: [
         DemoButton(
           label: 'Success',
@@ -354,6 +360,11 @@ class _ToastShowcaseState extends State<ToastShowcase> {
       subtitle: 'Visual style presets',
       icon: Icons.style_outlined,
       iconColor: Colors.teal,
+      trailing: SeeCodeButton(
+        title: 'Toast Variants',
+        description: 'Pass a ToastVariant to change the visual style of any toast.',
+        code: _toastVariantsCode,
+      ),
       children: [
         DemoButton(
           label: 'Minimal',
@@ -407,6 +418,11 @@ class _ToastShowcaseState extends State<ToastShowcase> {
       subtitle: 'Control where toasts appear',
       icon: Icons.open_with_rounded,
       iconColor: Colors.indigo,
+      trailing: SeeCodeButton(
+        title: 'Toast Positions',
+        description: 'Use the position parameter to control toast placement.',
+        code: _toastPositionsCode,
+      ),
       children: [
         DemoButton(
           label: 'Top',
@@ -457,6 +473,11 @@ class _ToastShowcaseState extends State<ToastShowcase> {
       subtitle: 'Fully custom toast UI',
       icon: Icons.brush_outlined,
       iconColor: Colors.orange,
+      trailing: SeeCodeButton(
+        title: 'Custom Builders',
+        description: 'Use ToastKit.custom() with a builder for full widget control.',
+        code: _customBuildersCode,
+      ),
       children: [
         DemoButton(
           label: 'Branded Toast',
@@ -480,6 +501,11 @@ class _ToastShowcaseState extends State<ToastShowcase> {
       subtitle: 'Toasts with interactive buttons',
       icon: Icons.touch_app_outlined,
       iconColor: Colors.pink,
+      trailing: SeeCodeButton(
+        title: 'Action Toasts',
+        description: 'Add ToastAction buttons for undo, confirm, or custom interactions.',
+        code: _actionToastsCode,
+      ),
       children: [
         DemoButton(
           label: 'Undo Action',
@@ -501,6 +527,11 @@ class _ToastShowcaseState extends State<ToastShowcase> {
       subtitle: 'Stateful toast transitions',
       icon: Icons.hourglass_bottom_rounded,
       iconColor: Colors.cyan,
+      trailing: SeeCodeButton(
+        title: 'Loading & Progress',
+        description: 'Use showLoading() and update progress with the controller.',
+        code: _loadingProgressCode,
+      ),
       children: [
         DemoButton(
           label: 'Loading → Success',
@@ -524,3 +555,148 @@ class _ToastShowcaseState extends State<ToastShowcase> {
     );
   }
 }
+
+// =============================================================================
+// Code Strings for "See Code" modals
+// =============================================================================
+
+const _toastTypesCode = '''// Success toast
+ToastKit.success(
+  'Operation completed successfully!',
+  title: 'Success',
+);
+
+// Error toast
+ToastKit.error(
+  'Something went wrong. Please try again.',
+  title: 'Error',
+);
+
+// Warning toast
+ToastKit.warning(
+  'Your session will expire in 5 minutes.',
+  title: 'Warning',
+);
+
+// Info toast
+ToastKit.info(
+  'A new version is available for download.',
+  title: 'Info',
+);''';
+
+const _toastVariantsCode = '''// Show a toast with a specific visual variant
+ToastKit.show(ToastEvent(
+  type: ToastType.info,
+  message: 'Glassmorphism variant toast',
+  title: 'Glassmorphism',
+  variant: ToastVariant.glassmorphism,
+));
+
+// Available variants:
+// ToastVariant.minimal
+// ToastVariant.material
+// ToastVariant.ios
+// ToastVariant.glassmorphism
+// ToastVariant.gradient
+// ToastVariant.floatingCard
+// ToastVariant.compact
+// ToastVariant.fullWidth''';
+
+const _toastPositionsCode = '''// Show a toast at a specific position
+ToastKit.show(ToastEvent(
+  type: ToastType.info,
+  message: 'Displayed at Top Right',
+  position: ToastPosition.topRight,
+));
+
+// Available positions:
+// ToastPosition.top
+// ToastPosition.bottom
+// ToastPosition.topLeft
+// ToastPosition.topRight
+// ToastPosition.bottomLeft
+// ToastPosition.bottomRight
+// ToastPosition.center''';
+
+const _customBuildersCode = '''// Fully custom toast with gradient background
+ToastKit.custom(
+  builder: (context, controller) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+        ),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.auto_awesome, color: Colors.white),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Text(
+              'Custom gradient toast!',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close, color: Colors.white54),
+            onPressed: controller.dismiss,
+          ),
+        ],
+      ),
+    );
+  },
+);''';
+
+const _actionToastsCode = '''// Undo action toast
+ToastKit.show(ToastEvent(
+  type: ToastType.info,
+  message: 'Item deleted',
+  duration: const Duration(seconds: 5),
+  actions: [
+    ToastAction(
+      label: 'Undo',
+      onPressed: () {
+        ToastKit.success('Item restored');
+      },
+    ),
+  ],
+));
+
+// Confirm / Cancel toast
+ToastKit.show(ToastEvent(
+  type: ToastType.warning,
+  message: 'Discard unsaved changes?',
+  title: 'Confirm',
+  persistent: true,
+  dismissible: false,
+  actions: [
+    ToastAction(label: 'Cancel', onPressed: () {}),
+    ToastAction(
+      label: 'Discard',
+      color: Colors.red,
+      onPressed: () {},
+    ),
+  ],
+));''';
+
+const _loadingProgressCode = '''// Loading → Success transition
+final ctrl = ToastKit.showLoading('Loading data…');
+await Future.delayed(const Duration(seconds: 2));
+ctrl.success('Data loaded successfully!');
+
+// Loading → Error transition
+final ctrl = ToastKit.showLoading('Connecting…');
+await Future.delayed(const Duration(seconds: 2));
+ctrl.error('Connection timed out');
+
+// Progress updates
+final ctrl = ToastKit.showLoading('Uploading… 0%');
+ctrl.update(
+  message: 'Uploading… 45%',
+  progressValue: 0.45,
+);
+// ... continue updating until done
+ctrl.success('Upload complete!');''';
