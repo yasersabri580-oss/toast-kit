@@ -35,15 +35,15 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen> {
 
   // Icon
   int _selectedIconIdx = 0;
-  static const _iconOptions = <(IconData, String)>[
-    (Icons.check_circle, 'Check'),
-    (Icons.error_outline, 'Error'),
-    (Icons.warning_amber_rounded, 'Warning'),
-    (Icons.info_outline, 'Info'),
-    (Icons.rocket_launch, 'Rocket'),
-    (Icons.auto_awesome, 'Sparkle'),
-    (Icons.favorite, 'Heart'),
-    (Icons.star, 'Star'),
+  static const _iconOptions = <(IconData, String, String)>[
+    (Icons.check_circle, 'Check', 'check_circle'),
+    (Icons.error_outline, 'Error', 'error_outline'),
+    (Icons.warning_amber_rounded, 'Warning', 'warning_amber_rounded'),
+    (Icons.info_outline, 'Info', 'info_outline'),
+    (Icons.rocket_launch, 'Rocket', 'rocket_launch'),
+    (Icons.auto_awesome, 'Sparkle', 'auto_awesome'),
+    (Icons.favorite, 'Heart', 'favorite'),
+    (Icons.star, 'Star', 'star'),
   ];
 
   // Position
@@ -226,7 +226,7 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen> {
           spacing: 8,
           runSpacing: 8,
           children: List.generate(_iconOptions.length, (i) {
-            final (icon, label) = _iconOptions[i];
+            final (icon, label, _) = _iconOptions[i];
             final selected = i == _selectedIconIdx;
             return ChoiceChip(
               label: Row(
@@ -497,10 +497,12 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen> {
   }
 
   String _generateCode() {
-    final icon = _iconOptions[_selectedIconIdx].$2;
+    final iconName = _iconOptions[_selectedIconIdx].$3;
     final pos = _positionOptions
         .firstWhere((o) => o.$1 == _position)
         .$2;
+    final bgHex = _bgColor.value.toRadixString(16).padLeft(8, '0').toUpperCase();
+    final accentHex = _accentColor.value.toRadixString(16).padLeft(8, '0').toUpperCase();
     return '''ToastKit.show(ToastEvent.custom(
   duration: Duration(seconds: ${_duration.toStringAsFixed(1)}),
   position: ToastPosition.${_position.name},
@@ -510,7 +512,7 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen> {
       margin: EdgeInsets.symmetric(horizontal: 16),
       padding: EdgeInsets.all(${_padding.round()}),
       decoration: BoxDecoration(
-        color: Color(0x${_bgColor.value.toRadixString(16).toUpperCase()}),
+        color: Color(0x$bgHex),
         borderRadius: BorderRadius.circular(${_cornerRadius.round()}),
         boxShadow: [
           BoxShadow(
@@ -520,12 +522,18 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen> {
         ],
       ),
       child: Row(children: [
-        Icon(Icons.$icon, color: Color(0x${_accentColor.value.toRadixString(16).toUpperCase()})),
+        Icon(Icons.$iconName, color: Color(0x$accentHex)),
         SizedBox(width: 12),
-        Column(children: [
-          Text('${_titleCtrl.text}'),
-          Text('${_messageCtrl.text}'),
-        ]),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('${_titleCtrl.text}'),
+              Text('${_messageCtrl.text}'),
+            ],
+          ),
+        ),
       ]),
     );
   },
