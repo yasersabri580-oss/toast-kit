@@ -7,10 +7,20 @@ import '../widgets/buttons/demo_button.dart';
 import '../widgets/cards/rule_scenario_card.dart';
 
 // =============================================================================
-// Redesigned Rules Demo
+// Toast Rules Demo — Comprehensive Rule Engine Showcase
 //
-// 10 real-world scenarios that showcase the ToastKit rule engine with
-// interactive controls, visible state, code samples, and "why it matters" notes.
+// 10 real-world scenarios demonstrating every ToastKit rule feature:
+//
+//  1. Auth Guard          — Config rule + custom rules, errorThreshold, maxTriggers
+//  2. Error Burst Detector — errorsInWindow(), deduplicateWindow on custom rule
+//  3. Toast Flood Shield   — Config dedup, deduplicationKey
+//  4. Payment Recovery     — Action toasts from rules, persistent, multiple actions
+//  5. Auto-Save Cooldown   — maxTriggers + dedup window for success noise
+//  6. Combined Stats       — warningCount + errorCount + totalCount conditions
+//  7. Checkout Wizard      — Channel-scoped contextual toasts per step
+//  8. Form Help Escalation — errorCount threshold, proactive action toast
+//  9. Connectivity Banner  — Persistent dismissible banner, reconnect action
+// 10. Token Refresh Guard  — Non-dismissible blocking, dynamic rule removal
 // =============================================================================
 
 class ToastRulesDemo extends StatefulWidget {
@@ -24,55 +34,62 @@ class _ToastRulesDemoState extends State<ToastRulesDemo> {
   // ── Shared state ──
   bool _rulesRegistered = false;
 
-  // ── Scenario 1: Failed sign-in ──
+  // ── Scenario 1: Auth guard ──
   int _signInAttempts = 0;
   bool _accountLocked = false;
 
-  // ── Scenario 2: Network escalation ──
-  int _networkFailures = 0;
+  // ── Scenario 2: Error burst ──
+  int _burstErrors = 0;
+  String _burstStatus = 'Stable';
 
-  // ── Scenario 3: Rapid clicks / dedup ──
+  // ── Scenario 3: Toast flood shield ──
   int _rapidClickCount = 0;
 
-  // ── Scenario 4: Payment retries ──
+  // ── Scenario 4: Payment recovery ──
   int _paymentRetries = 0;
   bool _paymentBlocked = false;
   bool _paymentProcessing = false;
 
-  // ── Scenario 5: Success noise reduction ──
+  // ── Scenario 5: Auto-save cooldown ──
   int _successCount = 0;
 
-  // ── Scenario 6: API error dedup window ──
-  int _apiErrors = 0;
+  // ── Scenario 6: Combined stats ──
+  int _syncErrors = 0;
+  int _syncWarnings = 0;
+  int _syncTotal = 0;
+  bool _syncHelpShown = false;
 
-  // ── Scenario 7: Checkout context ──
+  // ── Scenario 7: Checkout wizard ──
   String _checkoutStep = 'cart';
 
-  // ── Scenario 8: Form validation ──
+  // ── Scenario 8: Form help ──
   int _formSubmits = 0;
 
-  // ── Scenario 9: Offline mode ──
+  // ── Scenario 9: Connectivity banner ──
   bool _isOffline = false;
   int _offlineAttempts = 0;
 
-  // ── Scenario 10: Session expired ──
-  int _sessionFailures = 0;
-  bool _sessionForceLogout = false;
+  // ── Scenario 10: Token refresh guard ──
+  int _tokenFailures = 0;
+  bool _tokenExpired = false;
 
   // ── Timers ──
   Timer? _lockTimer;
 
-  // ── Channel IDs ──
-  static const _chSignIn = 'rules-signin';
-  static const _chNetwork = 'rules-network-escalation';
-  static const _chRapid = 'rules-rapid-clicks';
-  static const _chPayment = 'rules-payment-retry';
-  static const _chSuccess = 'rules-success-noise';
-  static const _chApiDedup = 'rules-api-dedup';
+  // ── Guards ──
+  bool _isSigningIn = false;
+
+  // ── Channel IDs — each scenario uses a unique channel to avoid interference ──
+  static const _chAuth = 'rules-auth';
+  static const _chBurst = 'rules-burst';
+  static const _chFlood = 'rules-flood';
+  static const _chPayment = 'rules-payment';
+  static const _chAutoSave = 'rules-autosave';
+  static const _chSync = 'rules-sync';
   static const _chCheckout = 'rules-checkout';
-  static const _chForm = 'rules-form-validation';
-  static const _chOffline = 'rules-offline';
-  static const _chSession = 'rules-session';
+  static const _chForm = 'rules-form';
+  static const _chConnectivity = 'rules-connectivity';
+  static const _chToken = 'rules-token';
 
   @override
   void initState() {
@@ -87,36 +104,49 @@ class _ToastRulesDemoState extends State<ToastRulesDemo> {
   }
 
   // ---------------------------------------------------------------------------
-  // Registration
+  // Rule Registration — all 10 scenarios
   // ---------------------------------------------------------------------------
 
   void _registerAll() {
-    final channels = [
-      _chSignIn,
-      _chNetwork,
-      _chRapid,
+    // Register all channels.
+    for (final ch in [
+      _chAuth,
+      _chBurst,
+      _chFlood,
       _chPayment,
-      _chSuccess,
-      _chApiDedup,
+      _chAutoSave,
+      _chSync,
       _chCheckout,
       _chForm,
-      _chOffline,
-      _chSession,
-    ];
-    for (final ch in channels) {
+      _chConnectivity,
+      _chToken,
+    ]) {
       ToastKit.registerChannel(ToastChannel(id: ch, label: ch));
     }
 
-    // ── Scenario 1: Sign-in lockout ──
+    // ── 1. Auth Guard ──
+    // Config-based rule: triggers onRuleTriggered callback after 3 errors.
+    ToastKit.configureRule(
+      _chAuth,
+      const RuleConfig(
+        errorThreshold: 3,
+        deduplicateWindow: Duration(seconds: 60),
+        maxTriggers: 1,
+      ),
+    );
+
+    // Custom rule: suggest password reset after 3 failures.
     ToastKit.addRule(ToastRule(
-      id: 'signin-suggest-reset',
-      channel: _chSignIn,
-      condition: (stats, event) => stats.errorCount == 3,
+      id: 'auth-suggest-reset',
+      channel: _chAuth,
+      maxTriggers: 1,
+      condition: (stats, event) =>
+          stats.errorCount >= 3 && stats.errorCount < 5,
       action: (_) {
         ToastKit.show(ToastEvent.info(
-          message: 'Having trouble? Try resetting your password.',
+          message: 'Having trouble signing in? Try resetting your password.',
           variant: ToastVariant.action,
-          deduplicationKey: 'signin-suggest-reset',
+          deduplicationKey: 'auth-suggest-reset',
           actions: [
             ToastAction(
               label: 'Reset Password',
@@ -124,24 +154,27 @@ class _ToastRulesDemoState extends State<ToastRulesDemo> {
                   ToastKit.success('Password reset email sent!'),
             ),
           ],
-          channel: _chSignIn,
+          channel: _chAuth,
         ));
       },
     ));
 
+    // Custom rule: lock account after 5 failures.
     ToastKit.addRule(ToastRule(
-      id: 'signin-lockout',
-      channel: _chSignIn,
+      id: 'auth-lockout',
+      channel: _chAuth,
+      maxTriggers: 1,
       condition: (stats, event) => stats.errorCount >= 5,
       action: (_) {
         if (!mounted) return;
         setState(() => _accountLocked = true);
         ToastKit.show(ToastEvent.error(
-          message: 'Account locked for 15 seconds due to too many attempts.',
+          message:
+              'Account locked for 15 seconds due to too many failed attempts.',
           persistent: true,
           dismissible: false,
-          deduplicationKey: 'signin-lockout-toast',
-          channel: _chSignIn,
+          deduplicationKey: 'auth-lockout-toast',
+          channel: _chAuth,
         ));
         _lockTimer?.cancel();
         _lockTimer = Timer(const Duration(seconds: 15), () {
@@ -154,48 +187,41 @@ class _ToastRulesDemoState extends State<ToastRulesDemo> {
       },
     ));
 
-    // ── Scenario 2: Network escalation ──
+    // ── 2. Error Burst Detector ── uses errorsInWindow() for time-based analysis
     ToastKit.addRule(ToastRule(
-      id: 'net-escalate-warning',
-      channel: _chNetwork,
-      condition: (stats, event) =>
-          stats.errorCount >= 3 && stats.errorCount < 5,
-      action: (_) {
-        ToastKit.warning(
-          'Multiple connection failures detected. Retrying…',
-          channel: _chNetwork,
-        );
+      id: 'burst-spike-detector',
+      channel: _chBurst,
+      deduplicateWindow: const Duration(seconds: 15),
+      condition: (stats, event) {
+        // Detect 4+ errors within a 10-second sliding window.
+        return stats.errorsInWindow(const Duration(seconds: 10)) >= 4;
       },
-    ));
-
-    ToastKit.addRule(ToastRule(
-      id: 'net-escalate-error',
-      channel: _chNetwork,
-      condition: (stats, event) => stats.errorCount >= 5,
-      action: (_) {
-        ToastKit.show(ToastEvent.error(
+      action: (context) {
+        if (!mounted) return;
+        setState(() => _burstStatus = 'Spike detected!');
+        ToastKit.show(ToastEvent.warning(
           message:
-              'Persistent connectivity issues. Check your network connection.',
+              '⚡ Error spike detected: ${context.stats.errorsInWindow(const Duration(seconds: 10))} '
+              'errors in the last 10 seconds.',
           variant: ToastVariant.action,
-          persistent: true,
-          deduplicationKey: 'net-escalate-error-toast',
+          deduplicationKey: 'burst-spike-toast',
           actions: [
             ToastAction(
-              label: 'Retry Now',
-              onPressed: () {
-                ToastKit.dismissAll();
-                ToastKit.info('Retrying…');
-              },
+              label: 'View Details',
+              onPressed: () => ToastKit.info(
+                'Total: ${context.stats.totalCount} events, '
+                'Errors: ${context.stats.errorCount}',
+              ),
             ),
           ],
-          channel: _chNetwork,
+          channel: _chBurst,
         ));
       },
     ));
 
-    // ── Scenario 3: Rapid click dedup ──
+    // ── 3. Toast Flood Shield ── config-based dedup window
     ToastKit.configureRule(
-      _chRapid,
+      _chFlood,
       const RuleConfig(
         errorThreshold: 1,
         deduplicateWindow: Duration(seconds: 3),
@@ -203,27 +229,50 @@ class _ToastRulesDemoState extends State<ToastRulesDemo> {
       ),
     );
 
-    // ── Scenario 4: Payment failure ──
+    // ── 4. Payment Recovery ── action toasts with multiple recovery options
+    ToastKit.addRule(ToastRule(
+      id: 'payment-warn',
+      channel: _chPayment,
+      maxTriggers: 1,
+      condition: (stats, event) =>
+          stats.errorCount >= 2 && stats.errorCount < 4,
+      action: (_) {
+        ToastKit.show(ToastEvent.warning(
+          message: 'Multiple payment failures. Check your card details.',
+          deduplicationKey: 'payment-warn-toast',
+          channel: _chPayment,
+        ));
+      },
+    ));
+
     ToastKit.addRule(ToastRule(
       id: 'payment-block',
       channel: _chPayment,
-      condition: (stats, event) => stats.errorCount >= 3,
+      maxTriggers: 1,
+      condition: (stats, event) => stats.errorCount >= 4,
       action: (_) {
         if (!mounted) return;
         setState(() => _paymentBlocked = true);
         ToastKit.show(ToastEvent.error(
-          message: 'Payment failed after multiple attempts. '
-              'Please verify your card details or try another method.',
+          message: 'Payment processing suspended after repeated failures.',
           persistent: true,
           dismissible: true,
           variant: ToastVariant.action,
           deduplicationKey: 'payment-block-toast',
           actions: [
             ToastAction(
-              label: 'Try Another Card',
+              label: 'Switch Card',
               onPressed: () {
                 ToastKit.dismissAll();
                 ToastKit.info('Opening payment methods…');
+                if (mounted) setState(() => _paymentBlocked = false);
+              },
+            ),
+            ToastAction(
+              label: 'Use PayPal',
+              onPressed: () {
+                ToastKit.dismissAll();
+                ToastKit.info('Redirecting to PayPal…');
                 if (mounted) setState(() => _paymentBlocked = false);
               },
             ),
@@ -240,40 +289,71 @@ class _ToastRulesDemoState extends State<ToastRulesDemo> {
       },
     ));
 
-    // ── Scenario 5: Success cooldown ──
+    // ── 5. Auto-Save Cooldown ── maxTriggers + dedup for success events
     ToastKit.configureRule(
-      _chSuccess,
+      _chAutoSave,
       const RuleConfig(
         errorThreshold: 1,
         deduplicateWindow: Duration(seconds: 5),
-        maxTriggers: 2,
+        maxTriggers: 3,
       ),
     );
 
-    // ── Scenario 6: API dedup ──
-    ToastKit.configureRule(
-      _chApiDedup,
-      const RuleConfig(
-        errorThreshold: 1,
-        deduplicateWindow: Duration(seconds: 10),
-        maxTriggers: 0,
-      ),
-    );
-
-    // ── Scenario 8: Form validation ──
+    // ── 6. Combined Stats Monitor ── uses errorCount + warningCount + totalCount
     ToastKit.addRule(ToastRule(
-      id: 'form-help',
+      id: 'sync-combined-alert',
+      channel: _chSync,
+      maxTriggers: 1,
+      condition: (stats, event) {
+        // Fire when BOTH errors AND warnings are high relative to total.
+        return stats.errorCount >= 2 &&
+            stats.warningCount >= 2 &&
+            stats.totalCount >= 6;
+      },
+      action: (context) {
+        if (!mounted) return;
+        setState(() => _syncHelpShown = true);
+        ToastKit.show(ToastEvent.info(
+          message: 'Sync is struggling: '
+              '${context.stats.errorCount} errors, '
+              '${context.stats.warningCount} warnings out of '
+              '${context.stats.totalCount} total events. Check connection.',
+          variant: ToastVariant.action,
+          persistent: true,
+          deduplicationKey: 'sync-combined-toast',
+          actions: [
+            ToastAction(
+              label: 'Force Sync',
+              onPressed: () {
+                ToastKit.dismissAll();
+                ToastKit.success('Full sync initiated…');
+              },
+            ),
+          ],
+          channel: _chSync,
+        ));
+      },
+    ));
+
+    // ── 8. Form Help Escalation ── proactive help after repeated failures
+    ToastKit.addRule(ToastRule(
+      id: 'form-help-guide',
       channel: _chForm,
+      maxTriggers: 1,
       condition: (stats, event) => stats.errorCount >= 3,
       action: (_) {
         ToastKit.show(ToastEvent.info(
-          message: 'Struggling with the form? Check our help guide.',
+          message: 'Having trouble with the form? Check our help guide.',
           variant: ToastVariant.action,
           deduplicationKey: 'form-help-toast',
           actions: [
             ToastAction(
-              label: 'View Help',
+              label: 'View Guide',
               onPressed: () => ToastKit.success('Opening help guide…'),
+            ),
+            ToastAction(
+              label: 'Contact Us',
+              onPressed: () => ToastKit.info('Opening contact form…'),
             ),
           ],
           channel: _chForm,
@@ -281,10 +361,11 @@ class _ToastRulesDemoState extends State<ToastRulesDemo> {
       },
     ));
 
-    // ── Scenario 9: Offline reconnect ──
+    // ── 9. Connectivity Banner ── persistent reconnect banner
     ToastKit.addRule(ToastRule(
-      id: 'offline-reconnect',
-      channel: _chOffline,
+      id: 'connectivity-banner',
+      channel: _chConnectivity,
+      deduplicateWindow: const Duration(seconds: 30),
       condition: (stats, event) => stats.errorCount >= 2,
       action: (_) {
         ToastKit.show(ToastEvent.warning(
@@ -293,35 +374,37 @@ class _ToastRulesDemoState extends State<ToastRulesDemo> {
           persistent: true,
           dismissible: true,
           variant: ToastVariant.action,
-          deduplicationKey: 'offline-reconnect-toast',
+          deduplicationKey: 'connectivity-banner-toast',
           actions: [
             ToastAction(
-              label: 'Try Now',
+              label: 'Retry Now',
               onPressed: () {
                 ToastKit.dismissAll();
                 ToastKit.info('Checking connection…');
               },
             ),
           ],
-          channel: _chOffline,
+          channel: _chConnectivity,
         ));
       },
     ));
 
-    // ── Scenario 10: Session expired ──
+    // ── 10. Token Refresh Guard ── non-dismissible blocking + dynamic rule removal
     ToastKit.addRule(ToastRule(
-      id: 'session-force-logout',
-      channel: _chSession,
+      id: 'token-expired-guard',
+      channel: _chToken,
+      maxTriggers: 1,
       condition: (stats, event) => stats.errorCount >= 3,
       action: (_) {
         if (!mounted) return;
-        setState(() => _sessionForceLogout = true);
+        setState(() => _tokenExpired = true);
         ToastKit.show(ToastEvent.error(
-          message: 'Your session has expired. Please sign in again.',
+          message: 'Your authentication token has expired. '
+              'Please sign in again to continue.',
           persistent: true,
           dismissible: false,
-          deduplicationKey: 'session-expired-toast',
-          channel: _chSession,
+          deduplicationKey: 'token-expired-toast',
+          channel: _chToken,
         ));
       },
     ));
@@ -342,19 +425,23 @@ class _ToastRulesDemoState extends State<ToastRulesDemo> {
       _signInAttempts = 0;
       _accountLocked = false;
       _isSigningIn = false;
-      _networkFailures = 0;
+      _burstErrors = 0;
+      _burstStatus = 'Stable';
       _rapidClickCount = 0;
       _paymentRetries = 0;
       _paymentBlocked = false;
       _paymentProcessing = false;
       _successCount = 0;
-      _apiErrors = 0;
+      _syncErrors = 0;
+      _syncWarnings = 0;
+      _syncTotal = 0;
+      _syncHelpShown = false;
       _checkoutStep = 'cart';
       _formSubmits = 0;
       _isOffline = false;
       _offlineAttempts = 0;
-      _sessionFailures = 0;
-      _sessionForceLogout = false;
+      _tokenFailures = 0;
+      _tokenExpired = false;
       _rulesRegistered = false;
     });
 
@@ -366,12 +453,8 @@ class _ToastRulesDemoState extends State<ToastRulesDemo> {
   // Scenario action handlers
   // ---------------------------------------------------------------------------
 
-  // 1) Sign-in
-  bool _isSigningIn = false;
-
+  // 1) Auth guard
   Future<void> _attemptSignIn() async {
-    // Prevent concurrent sign-in attempts — rapid taps are silently ignored
-    // so the app does not spawn overlapping loading toasts or freeze.
     if (_isSigningIn || _accountLocked) {
       if (_accountLocked) {
         ToastKit.warning('Account is locked. Please wait.');
@@ -386,41 +469,40 @@ class _ToastRulesDemoState extends State<ToastRulesDemo> {
       ctrl.error('Invalid email or password');
       ToastKit.error(
         'Sign-in attempt $_signInAttempts failed',
-        channel: _chSignIn,
+        channel: _chAuth,
       );
     } finally {
       _isSigningIn = false;
     }
   }
 
-  // 2) Network failures
-  void _simulateNetworkFailure() {
-    setState(() => _networkFailures++);
-    if (_networkFailures <= 2) {
-      ToastKit.info(
-        'Connection attempt failed ($_networkFailures)',
-        channel: _chNetwork,
-      );
-    }
+  // 2) Error burst — fire errors rapidly to trigger windowed detection
+  void _fireBurstError() {
+    setState(() => _burstErrors++);
     ToastKit.error(
-      'Network failure #$_networkFailures',
-      channel: _chNetwork,
+      'Service error #$_burstErrors',
+      channel: _chBurst,
     );
   }
 
-  // 3) Rapid clicks
+  void _fireRapidBurst() {
+    for (var i = 0; i < 5; i++) {
+      _fireBurstError();
+    }
+  }
+
+  // 3) Toast flood shield
   void _handleRapidClick() {
     setState(() => _rapidClickCount++);
     ToastKit.show(ToastEvent.info(
       message: 'Item added to cart',
-      deduplicationKey: 'rapid-add-to-cart',
-      channel: _chRapid,
+      deduplicationKey: 'flood-add-to-cart',
+      channel: _chFlood,
     ));
   }
 
-  // 4) Payment retry
+  // 4) Payment recovery
   Future<void> _retryPayment() async {
-    // Prevent concurrent payment attempts to avoid duplicate charges.
     if (_paymentProcessing || _paymentBlocked) {
       if (_paymentBlocked) {
         ToastKit.warning('Payment is blocked. Use the recovery options above.');
@@ -442,44 +524,54 @@ class _ToastRulesDemoState extends State<ToastRulesDemo> {
     }
   }
 
-  // 5) Success noise
-  void _triggerSuccess() {
+  // 5) Auto-save cooldown
+  void _triggerAutoSave() {
     setState(() => _successCount++);
     ToastKit.show(ToastEvent.success(
-      message: 'File saved successfully',
-      deduplicationKey: 'success-save',
-      channel: _chSuccess,
+      message: 'Document auto-saved',
+      deduplicationKey: 'autosave-success',
+      channel: _chAutoSave,
     ));
   }
 
-  // 6) API error dedup
-  void _triggerApiError() {
-    setState(() => _apiErrors++);
-    ToastKit.show(ToastEvent.error(
-      message: 'Failed to load user data',
-      deduplicationKey: 'api-user-error',
-      channel: _chApiDedup,
-    ));
+  // 6) Combined stats — send mix of errors, warnings, and info
+  void _triggerSyncError() {
+    setState(() {
+      _syncErrors++;
+      _syncTotal++;
+    });
+    ToastKit.error('Sync conflict on file #$_syncErrors', channel: _chSync);
   }
 
-  void _triggerBurstApiErrors() {
-    for (var i = 0; i < 10; i++) {
-      _triggerApiError();
-    }
+  void _triggerSyncWarning() {
+    setState(() {
+      _syncWarnings++;
+      _syncTotal++;
+    });
+    ToastKit.warning(
+      'Slow sync: upstream latency detected',
+      channel: _chSync,
+    );
   }
 
-  // 7) Checkout context
+  void _triggerSyncInfo() {
+    setState(() => _syncTotal++);
+    ToastKit.info('Sync checkpoint completed', channel: _chSync);
+  }
+
+  // 7) Checkout wizard
   void _advanceCheckout() {
-    final steps = ['cart', 'shipping', 'payment', 'confirmation'];
+    const steps = ['cart', 'shipping', 'payment', 'confirmation'];
     final currentIndex = steps.indexOf(_checkoutStep);
     if (currentIndex < steps.length - 1) {
       final next = steps[currentIndex + 1];
       setState(() => _checkoutStep = next);
 
-      final messages = {
-        'shipping': 'Please verify your shipping address.',
+      const messages = {
+        'shipping': 'Please verify your shipping address before proceeding.',
         'payment': 'Enter your payment details to complete the order.',
-        'confirmation': 'Order placed! Your confirmation number is #38291.',
+        'confirmation':
+            'Order placed successfully! Confirmation #TK-38291.',
       };
 
       final types = {
@@ -501,13 +593,13 @@ class _ToastRulesDemoState extends State<ToastRulesDemo> {
     ToastKit.info('Checkout reset to cart.', channel: _chCheckout);
   }
 
-  // 8) Form validation
+  // 8) Form help escalation
   void _submitBadForm() {
     setState(() => _formSubmits++);
-    final errors = [
-      'Email is required',
+    const errors = [
+      'Email address is required',
       'Password must be at least 8 characters',
-      'Name cannot be empty',
+      'Full name cannot be empty',
     ];
     for (final err in errors) {
       ToastKit.warning(err, channel: _chForm);
@@ -515,14 +607,14 @@ class _ToastRulesDemoState extends State<ToastRulesDemo> {
     ToastKit.error('Form validation failed', channel: _chForm);
   }
 
-  // 9) Offline mode
+  // 9) Connectivity banner
   void _toggleOffline() {
     setState(() {
       _isOffline = !_isOffline;
       _offlineAttempts = 0;
     });
     if (_isOffline) {
-      ToastKit.warning('You are now offline.', channel: _chOffline);
+      ToastKit.warning('You are now offline.', channel: _chConnectivity);
     } else {
       ToastKit.dismissAll();
       ToastKit.success('Back online!');
@@ -537,34 +629,59 @@ class _ToastRulesDemoState extends State<ToastRulesDemo> {
     setState(() => _offlineAttempts++);
     ToastKit.error(
       'No internet connection (attempt $_offlineAttempts)',
-      channel: _chOffline,
+      channel: _chConnectivity,
     );
   }
 
-  // 10) Session expired
-  void _triggerSessionError() {
-    if (_sessionForceLogout) {
-      ToastKit.warning('Session expired. Please sign in again.');
+  // 10) Token refresh guard — with dynamic rule removal on re-login
+  void _triggerTokenError() {
+    if (_tokenExpired) {
+      ToastKit.warning('Token expired. Please sign in again.');
       return;
     }
-    setState(() => _sessionFailures++);
+    setState(() => _tokenFailures++);
     ToastKit.error(
-      '401 Unauthorized — session failure #$_sessionFailures',
-      channel: _chSession,
+      '401 Unauthorized — token failure #$_tokenFailures',
+      channel: _chToken,
     );
   }
 
-  void _resetSession() {
-    setState(() {
-      _sessionFailures = 0;
-      _sessionForceLogout = false;
-    });
+  void _refreshToken() {
+    // Remove the rule so it can be re-added with a fresh trigger count.
+    ToastKit.removeRule('token-expired-guard');
+    ToastKit.ruleEngine.resetStats();
     ToastKit.dismissAll();
-    ToastKit.success('Session restored.');
+
+    setState(() {
+      _tokenFailures = 0;
+      _tokenExpired = false;
+    });
+
+    // Re-register the rule after successful re-login.
+    ToastKit.addRule(ToastRule(
+      id: 'token-expired-guard',
+      channel: _chToken,
+      maxTriggers: 1,
+      condition: (stats, event) => stats.errorCount >= 3,
+      action: (_) {
+        if (!mounted) return;
+        setState(() => _tokenExpired = true);
+        ToastKit.show(ToastEvent.error(
+          message: 'Your authentication token has expired. '
+              'Please sign in again to continue.',
+          persistent: true,
+          dismissible: false,
+          deduplicationKey: 'token-expired-toast',
+          channel: _chToken,
+        ));
+      },
+    ));
+
+    ToastKit.success('Token refreshed. Session restored.');
   }
 
   // ---------------------------------------------------------------------------
-  // Helpers
+  // Reusable UI helpers
   // ---------------------------------------------------------------------------
 
   Widget _statusChip(String label, Color color) {
@@ -648,6 +765,20 @@ class _ToastRulesDemoState extends State<ToastRulesDemo> {
     );
   }
 
+  Widget _buildStepLabel(String label, bool active) {
+    return Expanded(
+      child: Text(
+        label,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: active ? FontWeight.w700 : FontWeight.w400,
+          color: active ? Colors.teal : Colors.grey,
+        ),
+      ),
+    );
+  }
+
   // ---------------------------------------------------------------------------
   // Build
   // ---------------------------------------------------------------------------
@@ -672,60 +803,39 @@ class _ToastRulesDemoState extends State<ToastRulesDemo> {
               padding: const EdgeInsets.all(16),
               children: [
                 Text(
-                  'Real-World Rule Scenarios',
+                  'Rule Engine Showcase',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Each scenario demonstrates how ToastKit rules solve '
-                  'real problems. Tap buttons to simulate the behavior.',
+                  'Every ToastKit rule feature demonstrated with real-world '
+                  'scenarios. Tap the buttons to see rules in action.',
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: 20),
-
-                // Scenario 1
-                _buildSignInScenario(),
+                _buildAuthGuardScenario(),
                 const SizedBox(height: 12),
-
-                // Scenario 2
-                _buildNetworkEscalationScenario(),
+                _buildBurstDetectorScenario(),
                 const SizedBox(height: 12),
-
-                // Scenario 3
-                _buildRapidClickScenario(),
+                _buildFloodShieldScenario(),
                 const SizedBox(height: 12),
-
-                // Scenario 4
-                _buildPaymentRetryScenario(),
+                _buildPaymentRecoveryScenario(),
                 const SizedBox(height: 12),
-
-                // Scenario 5
-                _buildSuccessNoiseScenario(),
+                _buildAutoSaveCooldownScenario(),
                 const SizedBox(height: 12),
-
-                // Scenario 6
-                _buildApiDedupScenario(),
+                _buildCombinedStatsScenario(),
                 const SizedBox(height: 12),
-
-                // Scenario 7
-                _buildCheckoutScenario(),
+                _buildCheckoutWizardScenario(),
                 const SizedBox(height: 12),
-
-                // Scenario 8
-                _buildFormValidationScenario(),
+                _buildFormHelpScenario(),
                 const SizedBox(height: 12),
-
-                // Scenario 9
-                _buildOfflineScenario(),
+                _buildConnectivityBannerScenario(),
                 const SizedBox(height: 12),
-
-                // Scenario 10
-                _buildSessionExpiredScenario(),
-
+                _buildTokenRefreshScenario(),
                 const SizedBox(height: 32),
               ],
             ),
@@ -736,23 +846,25 @@ class _ToastRulesDemoState extends State<ToastRulesDemo> {
   // Scenario Builders
   // ===========================================================================
 
-  // ── 1. Failed Sign-In ──
-  Widget _buildSignInScenario() {
+  // ── 1. Auth Guard ──
+  Widget _buildAuthGuardScenario() {
     return RuleScenarioCard(
-      title: '5 Wrong Sign-In Attempts → Forgot Password',
-      icon: Icons.lock_outline,
+      title: 'Auth Guard — Escalating Login Protection',
+      icon: Icons.shield_outlined,
       iconColor: Colors.red,
       explanation:
-          'Simulates a login form where every attempt fails. After 3 failures, '
-          'a "Forgot Password?" suggestion appears. After 5, the account locks.',
+          'Combines a config-based rule (errorThreshold: 3) with two custom '
+          'rules: a password reset suggestion at 3 failures and an account '
+          'lockout at 5. Each rule uses maxTriggers: 1 to fire only once.',
       whyItMatters:
-          'Prevents brute-force attacks while guiding legitimate users to '
-          'password recovery — a pattern used by every major auth system.',
-      codeTitle: 'Sign-In Lockout Rules',
+          'Demonstrates the most common rule pattern: config rule for analytics '
+          '+ custom rules for user-facing actions. maxTriggers prevents '
+          'repeated firing once a threshold is crossed.',
+      codeTitle: 'Auth Guard Rules',
       codeDescription:
-          'Two custom rules: one suggests password reset at 3 failures, '
-          'another locks the account at 5.',
-      code: _signInCode,
+          'Config rule for threshold tracking + two custom rules with '
+          'maxTriggers: 1 for escalating protection.',
+      code: _authGuardCode,
       trailing: _statusChip(
         _accountLocked ? '🔒 Locked' : '$_signInAttempts / 5',
         _accountLocked ? Colors.red : Colors.orange,
@@ -766,6 +878,12 @@ class _ToastRulesDemoState extends State<ToastRulesDemo> {
             value: '$_signInAttempts',
             icon: Icons.login,
             color: _signInAttempts >= 5 ? Colors.red : Colors.orange,
+          ),
+          _stateIndicator(
+            label: 'Config rule (threshold: 3)',
+            value: _signInAttempts >= 3 ? 'Triggered' : 'Waiting',
+            icon: Icons.settings,
+            color: _signInAttempts >= 3 ? Colors.green : Colors.grey,
           ),
           if (_accountLocked)
             _stateIndicator(
@@ -787,88 +905,104 @@ class _ToastRulesDemoState extends State<ToastRulesDemo> {
     );
   }
 
-  // ── 2. Network Escalation ──
-  Widget _buildNetworkEscalationScenario() {
+  // ── 2. Error Burst Detector ──
+  Widget _buildBurstDetectorScenario() {
     return RuleScenarioCard(
-      title: 'Network Failures → Escalating Severity',
-      icon: Icons.wifi_off,
-      iconColor: Colors.orange,
+      title: 'Error Burst Detector — errorsInWindow()',
+      icon: Icons.flash_on,
+      iconColor: Colors.amber,
       explanation:
-          'Repeated network failures escalate from info toasts (1-2) to '
-          'warning (3-4) to a persistent error with retry action (5+).',
+          'Uses stats.errorsInWindow(Duration(seconds: 10)) to detect error '
+          'spikes in a sliding time window. Unlike cumulative errorCount, this '
+          'catches sudden bursts even if total errors are still low. The rule '
+          'has a 15-second deduplicateWindow to avoid re-firing immediately.',
       whyItMatters:
-          'Users see proportionate feedback. A single blip is informational; '
-          'sustained outages demand attention and offer recovery actions.',
-      codeTitle: 'Network Escalation Rules',
+          'errorsInWindow() is the most advanced stat method — it enables '
+          'rate-based detection that cumulative counts cannot. Essential for '
+          'monitoring API health, detecting DDoS patterns, or unstable connections.',
+      codeTitle: 'Windowed Error Detection',
       codeDescription:
-          'Two rules on the network channel escalate severity as errors accumulate.',
-      code: _networkEscalationCode,
-      trailing: _statusChip(
-        '$_networkFailures failures',
-        _networkFailures >= 5
-            ? Colors.red
-            : _networkFailures >= 3
-                ? Colors.orange
-                : Colors.blue,
-      ),
+          'Custom rule using errorsInWindow() for burst detection '
+          'with deduplicateWindow to prevent rapid re-firing.',
+      code: _burstDetectorCode,
+      trailing: _statusChip(_burstStatus, Colors.amber),
       resultWidget: Column(
         children: [
-          _progressBar(_networkFailures / 5, Colors.orange),
-          const SizedBox(height: 6),
           _stateIndicator(
-            label: 'Severity',
-            value: _networkFailures >= 5
-                ? 'Error (persistent)'
-                : _networkFailures >= 3
-                    ? 'Warning'
-                    : 'Info',
-            icon: _networkFailures >= 5
-                ? Icons.error
-                : _networkFailures >= 3
-                    ? Icons.warning
-                    : Icons.info,
-            color: _networkFailures >= 5
-                ? Colors.red
-                : _networkFailures >= 3
-                    ? Colors.orange
-                    : Colors.blue,
+            label: 'Total errors fired',
+            value: '$_burstErrors',
+            icon: Icons.error_outline,
+            color: Colors.red,
+          ),
+          _stateIndicator(
+            label: 'Detection method',
+            value: 'errorsInWindow(10s)',
+            icon: Icons.timer,
+            color: Colors.amber,
+          ),
+          _stateIndicator(
+            label: 'Status',
+            value: _burstStatus,
+            icon: _burstStatus == 'Stable'
+                ? Icons.check_circle
+                : Icons.warning,
+            color:
+                _burstStatus == 'Stable' ? Colors.green : Colors.orange,
           ),
         ],
       ),
       children: [
         DemoButton(
-          label: 'Simulate Network Failure',
-          icon: Icons.cloud_off,
-          color: Colors.orange,
-          onPressed: _simulateNetworkFailure,
+          label: 'Fire 1 Error',
+          icon: Icons.error,
+          color: Colors.amber,
+          onPressed: _fireBurstError,
+        ),
+        DemoButton(
+          label: 'Fire 5 Rapid Errors (triggers burst!)',
+          icon: Icons.bolt,
+          color: Colors.amber.shade800,
+          onPressed: _fireRapidBurst,
         ),
       ],
     );
   }
 
-  // ── 3. Rapid Clicks / Dedup ──
-  Widget _buildRapidClickScenario() {
+  // ── 3. Toast Flood Shield ──
+  Widget _buildFloodShieldScenario() {
     return RuleScenarioCard(
-      title: 'Rapid Clicks → Deduplicate Toasts',
+      title: 'Toast Flood Shield — Deduplication Window',
       icon: Icons.touch_app,
       iconColor: Colors.indigo,
       explanation:
-          'Clicking "Add to Cart" rapidly sends 1 toast per deduplication '
-          'window (3s) instead of flooding the screen with duplicates.',
+          'A config-based rule with a 3-second deduplicateWindow suppresses '
+          'identical toasts fired in rapid succession. Combined with a '
+          'deduplicationKey on the toast event, only 1 toast appears per window.',
       whyItMatters:
-          'Users mashing buttons shouldn\'t see 20 identical toasts. '
-          'Deduplication keeps the UI clean and responsive.',
-      codeTitle: 'Deduplication Rule Config',
+          'Config rules are the simplest way to add dedup — no condition or '
+          'action code needed. Perfect for "fire-and-forget" scenarios like '
+          'add-to-cart, bookmark, or like buttons.',
+      codeTitle: 'Config-Based Deduplication',
       codeDescription:
-          'A config-based rule with a 3-second dedup window suppresses '
-          'repeated identical toasts.',
-      code: _rapidClickCode,
+          'RuleConfig with deduplicateWindow: 3s + deduplicationKey '
+          'on the toast event.',
+      code: _floodShieldCode,
       trailing: _statusChip('$_rapidClickCount taps', Colors.indigo),
-      resultWidget: _stateIndicator(
-        label: 'Button taps (all)',
-        value: '$_rapidClickCount',
-        icon: Icons.ads_click,
-        color: Colors.indigo,
+      resultWidget: Column(
+        children: [
+          _stateIndicator(
+            label: 'Button taps (all)',
+            value: '$_rapidClickCount',
+            icon: Icons.ads_click,
+            color: Colors.indigo,
+          ),
+          _stateIndicator(
+            label: 'Dedup window',
+            value: '3 seconds',
+            icon: Icons.timer,
+            color: Colors.indigo,
+          ),
+        ],
       ),
       children: [
         DemoButton(
@@ -881,43 +1015,57 @@ class _ToastRulesDemoState extends State<ToastRulesDemo> {
     );
   }
 
-  // ── 4. Payment Failure ──
-  Widget _buildPaymentRetryScenario() {
+  // ── 4. Payment Recovery ──
+  Widget _buildPaymentRecoveryScenario() {
     return RuleScenarioCard(
-      title: 'Payment Failure After Retries → Blocking Dialog',
+      title: 'Payment Recovery — Multi-Step Escalation',
       icon: Icons.payment,
       iconColor: Colors.deepOrange,
       explanation:
-          'Simulates payment processing that fails. After 3 consecutive '
-          'failures, a persistent action toast blocks further attempts and '
-          'offers recovery options.',
+          'Two custom rules escalate payment failure handling: a warning toast '
+          'at 2 errors and a persistent action toast with 3 recovery options at '
+          '4 errors. The blocking toast prevents further payment attempts.',
       whyItMatters:
-          'Repeated payment failures frustrate users. Smart escalation '
-          'prevents charging a broken card and offers concrete next steps.',
-      codeTitle: 'Payment Failure Escalation',
+          'Shows how multiple rules on the same channel create escalating '
+          'responses. Action toasts with multiple ToastAction buttons let users '
+          'recover without navigating away.',
+      codeTitle: 'Payment Escalation Rules',
       codeDescription:
-          'A custom rule triggers after 3 payment errors and presents '
-          'recovery actions.',
-      code: _paymentRetryCode,
+          'Two custom rules with escalating conditions and action toasts '
+          'offering recovery options.',
+      code: _paymentRecoveryCode,
       trailing: _statusChip(
-        _paymentBlocked ? '⛔ Blocked' : '$_paymentRetries / 3',
+        _paymentBlocked ? '⛔ Blocked' : '$_paymentRetries / 4',
         _paymentBlocked ? Colors.red : Colors.deepOrange,
       ),
       resultWidget: Column(
         children: [
-          _progressBar(_paymentRetries / 3, Colors.deepOrange),
+          _progressBar(_paymentRetries / 4, Colors.deepOrange),
           const SizedBox(height: 6),
           _stateIndicator(
             label: 'Payment attempts',
             value: '$_paymentRetries',
             icon: Icons.credit_card,
-            color: _paymentRetries >= 3 ? Colors.red : Colors.deepOrange,
+            color: _paymentRetries >= 4 ? Colors.red : Colors.deepOrange,
+          ),
+          _stateIndicator(
+            label: 'Warning rule (>= 2)',
+            value: _paymentRetries >= 2 ? 'Fired' : 'Pending',
+            icon: Icons.warning_amber,
+            color: _paymentRetries >= 2 ? Colors.orange : Colors.grey,
+          ),
+          _stateIndicator(
+            label: 'Block rule (>= 4)',
+            value: _paymentBlocked ? 'Active' : 'Pending',
+            icon: Icons.block,
+            color: _paymentBlocked ? Colors.red : Colors.grey,
           ),
         ],
       ),
       children: [
         DemoButton(
-          label: _paymentBlocked ? 'Payments Blocked' : 'Process Payment',
+          label:
+              _paymentBlocked ? 'Payments Suspended' : 'Process Payment',
           icon: Icons.payment,
           color: Colors.deepOrange,
           onPressed: _paymentBlocked ? null : _retryPayment,
@@ -926,111 +1074,154 @@ class _ToastRulesDemoState extends State<ToastRulesDemo> {
     );
   }
 
-  // ── 5. Success Noise Reduction ──
-  Widget _buildSuccessNoiseScenario() {
+  // ── 5. Auto-Save Cooldown ──
+  Widget _buildAutoSaveCooldownScenario() {
     return RuleScenarioCard(
-      title: 'Repeated Success → Reduce Noise with Cooldown',
-      icon: Icons.check_circle_outline,
+      title: 'Auto-Save Cooldown — maxTriggers + Dedup',
+      icon: Icons.save_outlined,
       iconColor: Colors.green,
       explanation:
-          'Auto-saving a file triggers a success toast, but repeated saves '
-          'within a 5-second window are suppressed to avoid visual noise.',
+          'A config rule with maxTriggers: 3 and a 5-second dedup window '
+          'limits auto-save success toasts. After 3 total triggers, the rule '
+          'stops permanently. Within each window, duplicates are suppressed.',
       whyItMatters:
-          'Success messages that fire constantly (e.g., auto-save) become '
-          'annoying distractions. Cooldown keeps them helpful, not noisy.',
-      codeTitle: 'Success Cooldown Config',
+          'maxTriggers caps the total number of rule firings across the entire '
+          'session. Combined with deduplicateWindow, it creates a "show a few '
+          'then go silent" pattern — perfect for auto-save, sync, or heartbeat.',
+      codeTitle: 'Success Noise Reduction',
       codeDescription:
-          'A config rule with 5-second dedup window and maxTriggers: 2 '
+          'RuleConfig with maxTriggers: 3 and deduplicateWindow: 5s '
           'limits how often success toasts appear.',
-      code: _successNoiseCode,
+      code: _autoSaveCooldownCode,
       trailing: _statusChip('$_successCount saves', Colors.green),
-      resultWidget: _stateIndicator(
-        label: 'Save triggers',
-        value: '$_successCount',
-        icon: Icons.save,
-        color: Colors.green,
-      ),
-      children: [
-        DemoButton(
-          label: 'Save File (tap repeatedly)',
-          icon: Icons.save,
-          color: Colors.green,
-          onPressed: _triggerSuccess,
-        ),
-      ],
-    );
-  }
-
-  // ── 6. API Error Dedup Window ──
-  Widget _buildApiDedupScenario() {
-    return RuleScenarioCard(
-      title: 'Repeated API Errors → Show Once in Dedup Window',
-      icon: Icons.api,
-      iconColor: Colors.blue,
-      explanation:
-          'When multiple API calls fail with the same error, only the first '
-          'toast is shown within a 10-second dedup window. Try the burst!',
-      whyItMatters:
-          'A page loading 10 resources that all fail shouldn\'t show 10 '
-          'identical error toasts. Dedup shows 1 and silences the rest.',
-      codeTitle: 'API Error Deduplication',
-      codeDescription:
-          'Uses a deduplication key + 10-second window to collapse '
-          'identical API errors into a single toast.',
-      code: _apiDedupCode,
-      trailing: _statusChip(
-        '$_apiErrors errors fired',
-        Colors.blue,
-      ),
       resultWidget: Column(
         children: [
           _stateIndicator(
-            label: 'Errors triggered',
-            value: '$_apiErrors',
-            icon: Icons.error_outline,
-            color: Colors.red,
+            label: 'Save triggers',
+            value: '$_successCount',
+            icon: Icons.save,
+            color: Colors.green,
+          ),
+          _stateIndicator(
+            label: 'maxTriggers',
+            value: '3 total',
+            icon: Icons.repeat_one,
+            color: Colors.green,
           ),
           _stateIndicator(
             label: 'Dedup window',
-            value: '10 seconds',
+            value: '5 seconds',
             icon: Icons.timer,
-            color: Colors.blue,
+            color: Colors.green,
           ),
         ],
       ),
       children: [
         DemoButton(
-          label: 'Trigger 1 API Error',
-          icon: Icons.cloud_off,
-          color: Colors.blue,
-          onPressed: _triggerApiError,
-        ),
-        DemoButton(
-          label: 'Burst: 10 Errors at Once',
-          icon: Icons.bolt,
-          color: Colors.blue.shade700,
-          onPressed: _triggerBurstApiErrors,
+          label: 'Auto-Save (tap repeatedly)',
+          icon: Icons.save,
+          color: Colors.green,
+          onPressed: _triggerAutoSave,
         ),
       ],
     );
   }
 
-  // ── 7. Checkout Flow ──
-  Widget _buildCheckoutScenario() {
+  // ── 6. Combined Stats ──
+  Widget _buildCombinedStatsScenario() {
     return RuleScenarioCard(
-      title: 'Checkout Flow → Context-Aware Messages',
-      icon: Icons.shopping_cart,
+      title: 'Combined Stats — Multi-Condition Rule',
+      icon: Icons.analytics_outlined,
+      iconColor: Colors.cyan,
+      explanation:
+          'This rule fires only when multiple stat thresholds are met '
+          'simultaneously: errorCount >= 2 AND warningCount >= 2 AND '
+          'totalCount >= 6. Send a mix of errors, warnings, and info events '
+          'to trigger it.',
+      whyItMatters:
+          'Demonstrates that rule conditions can use ANY combination of '
+          'ToastStats fields: errorCount, warningCount, successCount, '
+          'infoCount, totalCount, dismissedCount, and droppedCount.',
+      codeTitle: 'Combined Stats Condition',
+      codeDescription:
+          'A custom rule using errorCount + warningCount + totalCount '
+          'to detect combined degradation patterns.',
+      code: _combinedStatsCode,
+      trailing: _statusChip(
+        _syncHelpShown ? '⚠️ Alert' : '$_syncTotal events',
+        _syncHelpShown ? Colors.orange : Colors.cyan,
+      ),
+      resultWidget: Column(
+        children: [
+          _stateIndicator(
+            label: 'Errors (need ≥ 2)',
+            value: '$_syncErrors',
+            icon: Icons.error,
+            color: _syncErrors >= 2 ? Colors.green : Colors.red,
+          ),
+          _stateIndicator(
+            label: 'Warnings (need ≥ 2)',
+            value: '$_syncWarnings',
+            icon: Icons.warning,
+            color: _syncWarnings >= 2 ? Colors.green : Colors.orange,
+          ),
+          _stateIndicator(
+            label: 'Total events (need ≥ 6)',
+            value: '$_syncTotal',
+            icon: Icons.summarize,
+            color: _syncTotal >= 6 ? Colors.green : Colors.blue,
+          ),
+          if (_syncHelpShown)
+            _stateIndicator(
+              label: 'Rule status',
+              value: 'Triggered ✓',
+              icon: Icons.check_circle,
+              color: Colors.green,
+            ),
+        ],
+      ),
+      children: [
+        DemoButton(
+          label: 'Send Error',
+          icon: Icons.error,
+          color: Colors.red,
+          onPressed: _triggerSyncError,
+        ),
+        DemoButton(
+          label: 'Send Warning',
+          icon: Icons.warning,
+          color: Colors.orange,
+          onPressed: _triggerSyncWarning,
+        ),
+        DemoButton(
+          label: 'Send Info',
+          icon: Icons.info,
+          color: Colors.blue,
+          onPressed: _triggerSyncInfo,
+        ),
+      ],
+    );
+  }
+
+  // ── 7. Checkout Wizard ──
+  Widget _buildCheckoutWizardScenario() {
+    return RuleScenarioCard(
+      title: 'Checkout Wizard — Context-Aware Messages',
+      icon: Icons.shopping_cart_outlined,
       iconColor: Colors.teal,
       explanation:
-          'Different checkout steps show different toast types: info for '
-          'shipping, warning for payment, and success for confirmation.',
+          'Each checkout step shows a different toast type: info for shipping, '
+          'warning for payment, and success for confirmation. All toasts are '
+          'scoped to the checkout channel for independent tracking.',
       whyItMatters:
-          'Users need contextual feedback at each step. A generic "Something '
-          'went wrong" is useless compared to step-specific guidance.',
-      codeTitle: 'Context-Based Toast Logic',
+          'Shows channel-scoped toast management. Each channel maintains '
+          'independent stats, so checkout rules don\'t interfere with auth '
+          'or payment rules — even when using the same app.',
+      codeTitle: 'Channel-Scoped Checkout Flow',
       codeDescription:
-          'Switch on checkout step to select the appropriate toast type and message.',
-      code: _checkoutCode,
+          'Dynamic toast type and message selection per checkout step, '
+          'all scoped to a dedicated channel.',
+      code: _checkoutWizardCode,
       trailing: _statusChip(
         _checkoutStep.toUpperCase(),
         _checkoutStep == 'confirmation' ? Colors.green : Colors.teal,
@@ -1071,43 +1262,44 @@ class _ToastRulesDemoState extends State<ToastRulesDemo> {
     );
   }
 
-  Widget _buildStepLabel(String label, bool active) {
-    return Expanded(
-      child: Text(
-        label,
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: active ? FontWeight.w700 : FontWeight.w400,
-          color: active ? Colors.teal : Colors.grey,
-        ),
-      ),
-    );
-  }
-
-  // ── 8. Form Validation ──
-  Widget _buildFormValidationScenario() {
+  // ── 8. Form Help Escalation ──
+  Widget _buildFormHelpScenario() {
     return RuleScenarioCard(
-      title: 'Form Validation Failures → Inline Guidance',
-      icon: Icons.assignment,
+      title: 'Form Help — Proactive Guidance After Failures',
+      icon: Icons.help_outline,
       iconColor: Colors.amber.shade800,
       explanation:
-          'Submitting an invalid form shows per-field warning toasts. '
-          'After 3 failed submissions, a help guide suggestion appears.',
+          'Each invalid form submission shows per-field warning toasts and '
+          'records an error on the form channel. After 3 failed submissions, '
+          'a custom rule proactively offers a help guide with action buttons.',
       whyItMatters:
-          'Repeated form errors mean the user is stuck. A smart rule '
-          'offers help proactively instead of showing the same errors.',
+          'Instead of showing the same validation errors endlessly, the rule '
+          'engine detects frustration (3+ failures) and offers contextual help. '
+          'The action toast provides direct links to assistance.',
       codeTitle: 'Form Validation + Help Rule',
       codeDescription:
-          'A custom rule on the form channel triggers a help toast '
-          'after 3 validation error submissions.',
-      code: _formValidationCode,
-      trailing: _statusChip('$_formSubmits submits', Colors.amber.shade800),
-      resultWidget: _stateIndicator(
-        label: 'Failed submissions',
-        value: '$_formSubmits',
-        icon: Icons.error_outline,
-        color: _formSubmits >= 3 ? Colors.red : Colors.amber.shade800,
+          'Custom rule on the form channel triggers an action toast '
+          'with help links after 3 validation failures.',
+      code: _formHelpCode,
+      trailing:
+          _statusChip('$_formSubmits submits', Colors.amber.shade800),
+      resultWidget: Column(
+        children: [
+          _progressBar(_formSubmits / 3, Colors.amber.shade800),
+          const SizedBox(height: 6),
+          _stateIndicator(
+            label: 'Failed submissions',
+            value: '$_formSubmits',
+            icon: Icons.error_outline,
+            color: _formSubmits >= 3 ? Colors.red : Colors.amber.shade800,
+          ),
+          _stateIndicator(
+            label: 'Help rule (>= 3)',
+            value: _formSubmits >= 3 ? 'Triggered' : 'Waiting',
+            icon: Icons.help,
+            color: _formSubmits >= 3 ? Colors.green : Colors.grey,
+          ),
+        ],
       ),
       children: [
         DemoButton(
@@ -1120,23 +1312,26 @@ class _ToastRulesDemoState extends State<ToastRulesDemo> {
     );
   }
 
-  // ── 9. Offline Mode ──
-  Widget _buildOfflineScenario() {
+  // ── 9. Connectivity Banner ──
+  Widget _buildConnectivityBannerScenario() {
     return RuleScenarioCard(
-      title: 'Offline Mode → Smart Reconnect Message',
+      title: 'Connectivity Banner — Persistent Reconnect',
       icon: Icons.signal_wifi_off,
       iconColor: Colors.blueGrey,
       explanation:
-          'Toggle offline mode, then try to make requests. After 2 failures, '
-          'a persistent reconnect banner appears with a "Try Now" action.',
+          'Toggle offline mode and make requests. After 2 failures, a '
+          'persistent dismissible banner appears with a "Retry Now" action. '
+          'The rule uses a 30-second deduplicateWindow to avoid re-firing '
+          'immediately if the user dismisses and more errors occur.',
       whyItMatters:
-          'Offline users need a clear, non-intrusive indication with an '
-          'easy retry mechanism — not a pile of error toasts.',
-      codeTitle: 'Offline Detection Rule',
+          'Persistent + dismissible toasts create non-intrusive banners that '
+          'stay visible until the user acts. deduplicateWindow on custom rules '
+          'prevents re-showing the banner too quickly after dismissal.',
+      codeTitle: 'Offline Detection + Reconnect',
       codeDescription:
-          'A custom rule detects 2+ errors on the offline channel and '
-          'shows a persistent reconnect banner.',
-      code: _offlineCode,
+          'Custom rule with deduplicateWindow: 30s showing a persistent '
+          'action toast with reconnect option.',
+      code: _connectivityBannerCode,
       trailing: _statusChip(
         _isOffline ? '📴 Offline' : '🟢 Online',
         _isOffline ? Colors.red : Colors.green,
@@ -1156,6 +1351,12 @@ class _ToastRulesDemoState extends State<ToastRulesDemo> {
               icon: Icons.error_outline,
               color: Colors.red,
             ),
+          _stateIndicator(
+            label: 'Dedup window',
+            value: '30 seconds',
+            icon: Icons.timer,
+            color: Colors.blueGrey,
+          ),
         ],
       ),
       children: [
@@ -1175,43 +1376,44 @@ class _ToastRulesDemoState extends State<ToastRulesDemo> {
     );
   }
 
-  // ── 10. Session Expired ──
-  Widget _buildSessionExpiredScenario() {
+  // ── 10. Token Refresh Guard ──
+  Widget _buildTokenRefreshScenario() {
     return RuleScenarioCard(
-      title: 'Session Expired → Force Re-Login',
-      icon: Icons.timer_off,
+      title: 'Token Guard — Non-Dismissible Block + Rule Removal',
+      icon: Icons.vpn_key_outlined,
       iconColor: Colors.purple,
       explanation:
-          'Simulates 401 Unauthorized responses. After 3 session errors, '
-          'a persistent toast forces re-authentication.',
+          'After 3 unauthorized (401) errors, a non-dismissible persistent '
+          'toast blocks all actions. Signing in again calls removeRule() to '
+          'clear the guard, then re-adds it with fresh trigger counts. This '
+          'demonstrates dynamic rule lifecycle management.',
       whyItMatters:
-          'Instead of silently failing, the app proactively tells users their '
-          'session is expired and blocks further actions until they re-login.',
-      codeTitle: 'Session Expiry Rule',
+          'Non-dismissible toasts (dismissible: false) create hard blocks. '
+          'removeRule() + addRule() shows that rules can be dynamically '
+          'managed at runtime — added, removed, and re-registered as needed.',
+      codeTitle: 'Token Guard + Dynamic Rule Removal',
       codeDescription:
-          'A custom rule detects 3 session errors and shows a persistent '
-          'non-dismissible re-login toast.',
-      code: _sessionCode,
+          'Custom rule with maxTriggers: 1 and non-dismissible toast. '
+          'removeRule() clears the guard on successful re-authentication.',
+      code: _tokenGuardCode,
       trailing: _statusChip(
-        _sessionForceLogout
-            ? '🔐 Re-login'
-            : '$_sessionFailures / 3',
-        _sessionForceLogout ? Colors.red : Colors.purple,
+        _tokenExpired ? '🔐 Expired' : '$_tokenFailures / 3',
+        _tokenExpired ? Colors.red : Colors.purple,
       ),
       resultWidget: Column(
         children: [
-          _progressBar(_sessionFailures / 3, Colors.purple),
+          _progressBar(_tokenFailures / 3, Colors.purple),
           const SizedBox(height: 6),
           _stateIndicator(
-            label: 'Session errors',
-            value: '$_sessionFailures',
+            label: 'Token errors',
+            value: '$_tokenFailures',
             icon: Icons.vpn_key,
-            color: _sessionFailures >= 3 ? Colors.red : Colors.purple,
+            color: _tokenFailures >= 3 ? Colors.red : Colors.purple,
           ),
-          if (_sessionForceLogout)
+          if (_tokenExpired)
             _stateIndicator(
               label: 'Status',
-              value: 'Must re-login',
+              value: 'Blocked — must re-authenticate',
               icon: Icons.lock,
               color: Colors.red,
             ),
@@ -1219,19 +1421,19 @@ class _ToastRulesDemoState extends State<ToastRulesDemo> {
       ),
       children: [
         DemoButton(
-          label: _sessionForceLogout
-              ? 'Session Expired'
+          label: _tokenExpired
+              ? 'Actions Blocked'
               : 'Simulate 401 Error',
           icon: Icons.error_outline,
           color: Colors.purple,
-          onPressed: _sessionForceLogout ? null : _triggerSessionError,
+          onPressed: _tokenExpired ? null : _triggerTokenError,
         ),
-        if (_sessionForceLogout)
+        if (_tokenExpired)
           DemoButton(
-            label: 'Sign In Again',
+            label: 'Sign In Again (removes + re-adds rule)',
             icon: Icons.login,
             color: Colors.green,
-            onPressed: _resetSession,
+            onPressed: _refreshToken,
           ),
       ],
     );
@@ -1239,24 +1441,39 @@ class _ToastRulesDemoState extends State<ToastRulesDemo> {
 }
 
 // =============================================================================
-// Code Strings — displayed in the "See Code" modal for each scenario
+// Code Strings — displayed in the "See Code" modal for each scenario.
+// Each code sample is self-contained and highlights specific rule features.
 // =============================================================================
 
-const _signInCode = '''// Register the sign-in channel
-ToastKit.registerChannel(
-  ToastChannel(id: 'auth', label: 'Authentication'),
+const _authGuardCode = '''// ─── Auth Guard: Config Rule + Custom Rules ───
+//
+// Features demonstrated:
+//   • RuleConfig.errorThreshold — triggers after N errors
+//   • ToastRule.maxTriggers — fire-once control
+//   • Escalating rules on the same channel
+
+// 1. Config-based rule for analytics/plugin notification.
+ToastKit.configureRule(
+  'auth',
+  const RuleConfig(
+    errorThreshold: 3,           // Fire when errorCount >= 3
+    deduplicateWindow: Duration(seconds: 60),
+    maxTriggers: 1,              // Fire only once
+  ),
 );
 
-// Rule 1: Suggest password reset after 3 failures
+// 2. Custom rule: suggest password reset at 3 failures.
 ToastKit.addRule(ToastRule(
-  id: 'signin-suggest-reset',
+  id: 'auth-suggest-reset',
   channel: 'auth',
-  condition: (stats, event) => stats.errorCount == 3,
-  action: (_) {
+  maxTriggers: 1,                // Fire at most once
+  condition: (stats, event) =>
+      stats.errorCount >= 3 && stats.errorCount < 5,
+  action: (context) {
     ToastKit.show(ToastEvent.info(
       message: 'Having trouble? Try resetting your password.',
       variant: ToastVariant.action,
-      deduplicationKey: 'signin-suggest-reset',
+      deduplicationKey: 'auth-suggest-reset',
       actions: [
         ToastAction(
           label: 'Reset Password',
@@ -1269,98 +1486,147 @@ ToastKit.addRule(ToastRule(
   },
 ));
 
-// Rule 2: Lock account after 5 failures
+// 3. Custom rule: lock account at 5 failures.
 ToastKit.addRule(ToastRule(
-  id: 'signin-lockout',
+  id: 'auth-lockout',
   channel: 'auth',
+  maxTriggers: 1,
   condition: (stats, event) => stats.errorCount >= 5,
-  action: (_) {
-    setState(() => _accountLocked = true);
+  action: (context) {
     ToastKit.show(ToastEvent.error(
       message: 'Account locked for 15 seconds.',
-      persistent: true,
-      dismissible: false,
-      deduplicationKey: 'signin-lockout-toast',
+      persistent: true,          // Stays until dismissed
+      dismissible: false,        // Cannot be swiped away
+      deduplicationKey: 'auth-lockout-toast',
       channel: 'auth',
     ));
   },
-));''';
+));
 
-const _networkEscalationCode = '''// Escalate from warning to persistent error
+// Usage: each login failure records an error on the auth channel.
+// Rules evaluate automatically after each error.
+ToastKit.error('Login failed', channel: 'auth');''';
+
+const _burstDetectorCode = '''// ─── Error Burst Detector: errorsInWindow() ───
+//
+// Features demonstrated:
+//   • stats.errorsInWindow(Duration) — sliding time window analysis
+//   • ToastRule.deduplicateWindow — prevents rapid re-firing
+//   • context.stats access in action callback
+
 ToastKit.addRule(ToastRule(
-  id: 'net-escalate-warning',
-  channel: 'network',
-  condition: (stats, event) =>
-      stats.errorCount >= 3 && stats.errorCount < 5,
-  action: (_) {
-    ToastKit.warning(
-      'Multiple connection failures detected. Retrying…',
+  id: 'burst-spike-detector',
+  channel: 'api-health',
+  deduplicateWindow: const Duration(seconds: 15),  // Don't re-fire for 15s
+  condition: (stats, event) {
+    // Detect 4+ errors within the last 10 seconds.
+    // Unlike cumulative errorCount, this catches sudden spikes
+    // even if total errors are still low.
+    return stats.errorsInWindow(const Duration(seconds: 10)) >= 4;
+  },
+  action: (context) {
+    final recentCount = context.stats.errorsInWindow(
+      const Duration(seconds: 10),
     );
+    ToastKit.show(ToastEvent.warning(
+      message: 'Error spike detected: \$recentCount errors in 10 seconds.',
+      variant: ToastVariant.action,
+      deduplicationKey: 'burst-spike-toast',
+      actions: [
+        ToastAction(
+          label: 'View Details',
+          onPressed: () => ToastKit.info(
+            'Total: \${context.stats.totalCount}, '
+            'Errors: \${context.stats.errorCount}',
+          ),
+        ),
+      ],
+      channel: 'api-health',
+    ));
   },
 ));
 
-ToastKit.addRule(ToastRule(
-  id: 'net-escalate-error',
-  channel: 'network',
-  condition: (stats, event) => stats.errorCount >= 5,
-  action: (_) {
-    ToastKit.show(ToastEvent.error(
-      message: 'Persistent connectivity issues.',
-      variant: ToastVariant.action,
-      persistent: true,
-      deduplicationKey: 'net-escalate-error-toast',
-      actions: [
-        ToastAction(
-          label: 'Retry Now',
-          onPressed: () {
-            ToastKit.dismissAll();
-            ToastKit.info('Retrying…');
-          },
-        ),
-      ],
-    ));
-  },
-));''';
+// Fire errors rapidly to trigger the burst detector:
+for (var i = 0; i < 5; i++) {
+  ToastKit.error('Service error', channel: 'api-health');
+}''';
 
-const _rapidClickCode = '''// Config-based deduplication rule:
-// Identical toasts within a 3-second window are suppressed.
+const _floodShieldCode = '''// ─── Toast Flood Shield: Config-Based Deduplication ───
+//
+// Features demonstrated:
+//   • RuleConfig.deduplicateWindow — suppress duplicates within time window
+//   • RuleConfig.maxTriggers: 0 — unlimited (fires every time window resets)
+//   • ToastEvent.deduplicationKey — identifies duplicate toasts
+
 ToastKit.configureRule(
   'cart',
   const RuleConfig(
-    errorThreshold: 1,
-    deduplicateWindow: Duration(seconds: 3),
-    maxTriggers: 0, // unlimited
+    errorThreshold: 1,           // Fire on every event
+    deduplicateWindow: Duration(seconds: 3),  // 3-second cooldown
+    maxTriggers: 0,              // Unlimited total triggers
   ),
 );
 
-// When the button is tapped, use a deduplication key:
-ToastKit.show(ToastEvent.info(
-  message: 'Item added to cart',
-  deduplicationKey: 'rapid-add-to-cart',
-  channel: 'cart',
-));''';
+// Every tap uses the same deduplication key.
+// Only 1 toast appears per 3-second window, no matter how fast you tap.
+void onAddToCart() {
+  ToastKit.show(ToastEvent.info(
+    message: 'Item added to cart',
+    deduplicationKey: 'rapid-add-to-cart',  // Same key = same toast
+    channel: 'cart',
+  ));
+}''';
 
-const _paymentRetryCode = '''// Block further payments after 3 consecutive failures
+const _paymentRecoveryCode = '''// ─── Payment Recovery: Multi-Step Escalation ───
+//
+// Features demonstrated:
+//   • Multiple rules on the same channel with different thresholds
+//   • ToastVariant.action with multiple ToastAction buttons
+//   • persistent: true — toast stays until user acts
+//   • Rule actions that modify app state (setState)
+
+// Step 1: Warning after 2 failures.
+ToastKit.addRule(ToastRule(
+  id: 'payment-warn',
+  channel: 'payment',
+  maxTriggers: 1,
+  condition: (stats, event) =>
+      stats.errorCount >= 2 && stats.errorCount < 4,
+  action: (_) {
+    ToastKit.show(ToastEvent.warning(
+      message: 'Multiple payment failures. Check your card details.',
+      deduplicationKey: 'payment-warn-toast',
+      channel: 'payment',
+    ));
+  },
+));
+
+// Step 2: Block and offer recovery after 4 failures.
 ToastKit.addRule(ToastRule(
   id: 'payment-block',
   channel: 'payment',
-  condition: (stats, event) => stats.errorCount >= 3,
+  maxTriggers: 1,
+  condition: (stats, event) => stats.errorCount >= 4,
   action: (_) {
     setState(() => _paymentBlocked = true);
     ToastKit.show(ToastEvent.error(
-      message: 'Payment failed after multiple attempts. '
-          'Please verify your card or try another method.',
+      message: 'Payment processing suspended.',
       persistent: true,
+      dismissible: true,
       variant: ToastVariant.action,
       deduplicationKey: 'payment-block-toast',
       actions: [
         ToastAction(
-          label: 'Try Another Card',
+          label: 'Switch Card',
           onPressed: () { /* switch payment method */ },
         ),
         ToastAction(
+          label: 'Use PayPal',
+          onPressed: () { /* redirect to PayPal */ },
+        ),
+        ToastAction(
           label: 'Contact Support',
-          onPressed: () { /* open support */ },
+          onPressed: () { /* open support chat */ },
         ),
       ],
       channel: 'payment',
@@ -1368,80 +1634,140 @@ ToastKit.addRule(ToastRule(
   },
 ));''';
 
-const _successNoiseCode = '''// Limit success toasts to reduce noise.
-// maxTriggers: 2 — only fire the rule twice total.
-// deduplicateWindow: 5 seconds — suppress duplicates.
+const _autoSaveCooldownCode = '''// ─── Auto-Save Cooldown: maxTriggers + Dedup ───
+//
+// Features demonstrated:
+//   • RuleConfig.maxTriggers — caps total fires across the session
+//   • RuleConfig.deduplicateWindow — suppresses within time window
+//   • Combined effect: "show a few, then go silent"
+
 ToastKit.configureRule(
-  'file-ops',
+  'auto-save',
   const RuleConfig(
-    errorThreshold: 1,
-    deduplicateWindow: Duration(seconds: 5),
-    maxTriggers: 2,
+    errorThreshold: 1,           // Trigger on every event
+    deduplicateWindow: Duration(seconds: 5),   // 5s between toasts
+    maxTriggers: 3,              // Only 3 toasts total, ever
   ),
 );
 
-// When auto-saving, use a deduplication key:
-ToastKit.show(ToastEvent.success(
-  message: 'File saved successfully',
-  deduplicationKey: 'success-save',
-  channel: 'file-ops',
-));''';
+// Auto-save fires frequently, but the rule ensures:
+// - Max 1 toast per 5-second window (dedup)
+// - Max 3 toasts total in the entire session (maxTriggers)
+// - After 3 total triggers, no more toasts regardless of saves
+void onAutoSave() {
+  ToastKit.show(ToastEvent.success(
+    message: 'Document auto-saved',
+    deduplicationKey: 'autosave-success',
+    channel: 'auto-save',
+  ));
+}''';
 
-const _apiDedupCode = '''// Dedup window: same error shown once per 10 seconds
-ToastKit.configureRule(
-  'api',
-  const RuleConfig(
-    errorThreshold: 1,
-    deduplicateWindow: Duration(seconds: 10),
-    maxTriggers: 0, // unlimited
-  ),
-);
+const _combinedStatsCode = '''// ─── Combined Stats: Multi-Condition Rule ───
+//
+// Features demonstrated:
+//   • stats.errorCount — cumulative error count
+//   • stats.warningCount — cumulative warning count
+//   • stats.totalCount — all events regardless of type
+//   • Combined conditions using AND logic
+//   • context.stats in action for dynamic messages
 
-// Every API call uses the same deduplication key:
-ToastKit.show(ToastEvent.error(
-  message: 'Failed to load user data',
-  deduplicationKey: 'api-user-error',
-  channel: 'api',
+ToastKit.addRule(ToastRule(
+  id: 'sync-combined-alert',
+  channel: 'sync',
+  maxTriggers: 1,
+  condition: (stats, event) {
+    // Fire only when ALL three conditions are met:
+    return stats.errorCount >= 2 &&     // At least 2 errors
+        stats.warningCount >= 2 &&      // At least 2 warnings
+        stats.totalCount >= 6;          // At least 6 total events
+  },
+  action: (context) {
+    // Access stats in the action for dynamic messages.
+    ToastKit.show(ToastEvent.info(
+      message: 'Sync degraded: '
+          '\${context.stats.errorCount} errors, '
+          '\${context.stats.warningCount} warnings '
+          'out of \${context.stats.totalCount} events.',
+      variant: ToastVariant.action,
+      persistent: true,
+      deduplicationKey: 'sync-combined-toast',
+      actions: [
+        ToastAction(
+          label: 'Force Sync',
+          onPressed: () => ToastKit.success('Full sync initiated…'),
+        ),
+      ],
+      channel: 'sync',
+    ));
+  },
 ));
 
-// Even if 10 calls fail simultaneously,
-// only 1 toast is shown within the 10s window.''';
+// Available ToastStats fields:
+// stats.totalCount     — all events
+// stats.errorCount     — errors only
+// stats.warningCount   — warnings only
+// stats.successCount   — successes only
+// stats.infoCount      — info only
+// stats.dismissedCount — dismissed by user
+// stats.droppedCount   — dropped (channel full, dedup, etc.)
+// stats.errorsInWindow(Duration) — errors in time window''';
 
-const _checkoutCode = '''// Context-aware messages per checkout step:
-void _advanceCheckout(String step) {
+const _checkoutWizardCode = '''// ─── Checkout Wizard: Channel-Scoped Context ───
+//
+// Features demonstrated:
+//   • Channel-scoped toast management
+//   • Dynamic ToastType selection based on app state
+//   • Independent channel stats (checkout doesn't affect auth)
+
+ToastKit.registerChannel(
+  ToastChannel(id: 'checkout', label: 'Checkout Flow'),
+);
+
+void advanceCheckout(String step) {
   final messages = {
     'shipping': 'Please verify your shipping address.',
     'payment': 'Enter your payment details.',
-    'confirmation': 'Order placed! Confirmation #38291.',
+    'confirmation': 'Order placed! Confirmation #TK-38291.',
   };
 
   final types = {
-    'shipping': ToastType.info,
-    'payment': ToastType.warning,
-    'confirmation': ToastType.success,
+    'shipping': ToastType.info,      // Informational
+    'payment': ToastType.warning,    // Requires attention
+    'confirmation': ToastType.success, // Positive outcome
   };
 
   ToastKit.show(ToastEvent(
     type: types[step] ?? ToastType.info,
     message: messages[step] ?? '',
-    channel: 'checkout',
+    channel: 'checkout',  // Scoped to checkout channel
   ));
 }''';
 
-const _formValidationCode = '''// Show per-field warnings + proactive help
+const _formHelpCode = '''// ─── Form Help: Proactive Guidance ───
+//
+// Features demonstrated:
+//   • Custom rule with errorCount threshold
+//   • Action toast with multiple help options
+//   • Per-field warning toasts + aggregate error tracking
+
 ToastKit.addRule(ToastRule(
-  id: 'form-help',
+  id: 'form-help-guide',
   channel: 'form',
+  maxTriggers: 1,                // Show help only once
   condition: (stats, event) => stats.errorCount >= 3,
   action: (_) {
     ToastKit.show(ToastEvent.info(
-      message: 'Struggling with the form? Check our help guide.',
+      message: 'Having trouble? Check our help guide.',
       variant: ToastVariant.action,
       deduplicationKey: 'form-help-toast',
       actions: [
         ToastAction(
-          label: 'View Help',
+          label: 'View Guide',
           onPressed: () => ToastKit.success('Opening help…'),
+        ),
+        ToastAction(
+          label: 'Contact Us',
+          onPressed: () => ToastKit.info('Opening contact form…'),
         ),
       ],
       channel: 'form',
@@ -1449,27 +1775,39 @@ ToastKit.addRule(ToastRule(
   },
 ));
 
-// On submit, show each validation error:
-for (final error in errors) {
-  ToastKit.warning(error, channel: 'form');
+// On each submit, show per-field warnings:
+void onSubmit(List<String> errors) {
+  for (final error in errors) {
+    ToastKit.warning(error, channel: 'form');
+  }
+  // Record an error so the rule can track submissions:
+  ToastKit.error('Form validation failed', channel: 'form');
 }''';
 
-const _offlineCode = '''// Detect offline state after 2+ failed requests
+const _connectivityBannerCode = '''// ─── Connectivity Banner: Persistent Dismissible ───
+//
+// Features demonstrated:
+//   • persistent: true — toast stays visible indefinitely
+//   • dismissible: true — user CAN swipe it away
+//   • ToastRule.deduplicateWindow — prevents re-showing too quickly
+//   • Action toast with reconnect option
+
 ToastKit.addRule(ToastRule(
-  id: 'offline-reconnect',
+  id: 'connectivity-banner',
   channel: 'connectivity',
+  deduplicateWindow: const Duration(seconds: 30),  // 30s cooldown
   condition: (stats, event) => stats.errorCount >= 2,
   action: (_) {
     ToastKit.show(ToastEvent.warning(
       message: 'You appear to be offline. '
           'We\\'ll reconnect automatically.',
-      persistent: true,
-      dismissible: true,
+      persistent: true,          // Stays on screen
+      dismissible: true,         // User can dismiss
       variant: ToastVariant.action,
-      deduplicationKey: 'offline-reconnect-toast',
+      deduplicationKey: 'connectivity-banner-toast',
       actions: [
         ToastAction(
-          label: 'Try Now',
+          label: 'Retry Now',
           onPressed: () {
             ToastKit.dismissAll();
             ToastKit.info('Checking connection…');
@@ -1479,22 +1817,56 @@ ToastKit.addRule(ToastRule(
       channel: 'connectivity',
     ));
   },
-));''';
+));
 
-const _sessionCode = '''// Force re-login after 3 unauthorized errors
+// If the user dismisses the banner and 2+ more errors occur,
+// the 30-second deduplicateWindow prevents immediate re-showing.''';
+
+const _tokenGuardCode = '''// ─── Token Guard: Non-Dismissible + Rule Removal ───
+//
+// Features demonstrated:
+//   • persistent: true + dismissible: false — hard block
+//   • ToastKit.removeRule() — dynamic rule removal
+//   • ToastKit.addRule() — re-register after removal
+//   • ruleEngine.resetStats() — clear trigger counts
+
+// Register the guard rule.
 ToastKit.addRule(ToastRule(
-  id: 'session-force-logout',
+  id: 'token-expired-guard',
   channel: 'session',
+  maxTriggers: 1,
   condition: (stats, event) => stats.errorCount >= 3,
   action: (_) {
-    setState(() => _sessionForceLogout = true);
+    setState(() => _tokenExpired = true);
     ToastKit.show(ToastEvent.error(
-      message: 'Your session has expired. '
-          'Please sign in again.',
-      persistent: true,
-      dismissible: false,
-      deduplicationKey: 'session-expired-toast',
+      message: 'Token expired. Please sign in again.',
+      persistent: true,          // Stays on screen
+      dismissible: false,        // CANNOT be dismissed
+      deduplicationKey: 'token-expired-toast',
       channel: 'session',
     ));
   },
-));''';
+));
+
+// On successful re-authentication:
+void onReLogin() {
+  // 1. Remove the old rule (clears its maxTriggers count).
+  ToastKit.removeRule('token-expired-guard');
+
+  // 2. Reset stats so old error counts don't carry over.
+  ToastKit.ruleEngine.resetStats();
+
+  // 3. Dismiss the blocking toast.
+  ToastKit.dismissAll();
+
+  // 4. Re-register the rule with fresh state.
+  ToastKit.addRule(ToastRule(
+    id: 'token-expired-guard',
+    channel: 'session',
+    maxTriggers: 1,
+    condition: (stats, event) => stats.errorCount >= 3,
+    action: (_) { /* same blocking action */ },
+  ));
+
+  ToastKit.success('Session restored.');
+}''';
