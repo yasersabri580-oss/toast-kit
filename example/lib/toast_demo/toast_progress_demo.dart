@@ -5,6 +5,7 @@ import 'package:toast_kit/toast_kit.dart';
 
 import '../widgets/cards/feature_card.dart';
 import '../widgets/buttons/demo_button.dart';
+import '../widgets/responsive_body.dart';
 import '../widgets/see_code_button.dart';
 
 /// Demonstrates progress and loading toast behaviors using [ToastKit].
@@ -190,8 +191,7 @@ class _ToastProgressDemoState extends State<ToastProgressDemo> {
         leading: const BackButton(),
         title: const Text('Progress Demo'),
       ),
-      body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      body: ResponsiveBody(
         children: [
           _buildUploadSection(cs),
           const SizedBox(height: 16),

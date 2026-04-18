@@ -7,6 +7,7 @@ import '../../services/api_service.dart';
 import '../../services/retry_service.dart';
 import '../../widgets/buttons/demo_button.dart';
 import '../../widgets/cards/feature_card.dart';
+import '../../widgets/responsive_body.dart';
 import '../../widgets/see_code_button.dart';
 
 /// Demonstrates fetch-with-retry, exponential back-off, toast-per-failure, and
@@ -250,8 +251,7 @@ class _NetworkDemoScreenState extends State<NetworkDemoScreen> {
         leading: const BackButton(),
         title: const Text('Network & Retry'),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+      body: ResponsiveBody(
         children: [
           _buildStatsCard(theme),
           const SizedBox(height: 12),

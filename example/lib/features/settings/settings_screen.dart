@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:toast_kit/toast_kit.dart';
 
 import '../../utils/demo_logger.dart';
+import '../../utils/responsive/responsive_helper.dart';
 import '../../widgets/buttons/demo_button.dart';
 import '../../widgets/cards/feature_card.dart';
 import '../../widgets/see_code_button.dart';
@@ -335,28 +336,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final hPadding = ResponsiveHelper.horizontalPadding(context);
+    final vPadding = ResponsiveHelper.verticalPadding(context);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Settings & Debug'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        children: [
-          _buildDebugModeSection(),
-          const SizedBox(height: 12),
-          _buildDebugLogSection(),
-          const SizedBox(height: 12),
-          _buildToastConfigSection(),
-          const SizedBox(height: 12),
-          _buildQuickActionsSection(),
-          const SizedBox(height: 12),
-          _buildAboutSection(),
-          const SizedBox(height: 24),
-        ],
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxWidth: ResponsiveHelper.maxContentWidth,
+          ),
+          child: ListView(
+            padding: EdgeInsets.symmetric(
+              horizontal: hPadding,
+              vertical: vPadding,
+            ),
+            children: [
+              _buildDebugModeSection(),
+              const SizedBox(height: 12),
+              _buildDebugLogSection(),
+              const SizedBox(height: 12),
+              _buildToastConfigSection(),
+              const SizedBox(height: 12),
+              _buildQuickActionsSection(),
+              const SizedBox(height: 12),
+              _buildAboutSection(),
+              const SizedBox(height: 24),
+            ],
+          ),
+        ),
       ),
     );
   }

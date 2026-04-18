@@ -5,6 +5,7 @@ import 'package:toast_kit/toast_kit.dart';
 
 import '../widgets/buttons/demo_button.dart';
 import '../widgets/cards/feature_card.dart';
+import '../widgets/responsive_body.dart';
 import '../widgets/see_code_button.dart';
 
 /// Demonstrates toast auto-dismiss with a visible countdown progress bar.
@@ -107,8 +108,7 @@ class _ToastAutodismissDemoState extends State<ToastAutodismissDemo> {
         leading: const BackButton(),
         title: const Text('Auto-Dismiss Progress'),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+      body: ResponsiveBody(
         children: [
           Text(
             'Toast Progress Dismiss',

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:toast_kit/toast_kit.dart';
 
+import '../utils/responsive/responsive_helper.dart';
 import '../widgets/code_viewer_modal.dart';
 
 // =============================================================================
@@ -662,7 +663,12 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
     final cs = theme.colorScheme;
 
     return Scaffold(
-      body: NestedScrollView(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxWidth: ResponsiveHelper.maxContentWidth,
+          ),
+          child: NestedScrollView(
         headerSliverBuilder: (_, __) => [
           SliverAppBar(
             pinned: true,
@@ -761,6 +767,8 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
               ),
             ),
           ],
+        ),
+      ),
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(

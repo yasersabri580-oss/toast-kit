@@ -5,6 +5,7 @@ import 'package:toast_kit/toast_kit.dart';
 
 import '../widgets/cards/feature_card.dart';
 import '../widgets/buttons/demo_button.dart';
+import '../widgets/responsive_body.dart';
 import '../widgets/see_code_button.dart';
 
 /// A comprehensive showcase screen that demonstrates every toast type, variant,
@@ -290,8 +291,7 @@ class _ToastShowcaseState extends State<ToastShowcase> {
         leading: const BackButton(),
         title: const Text('Toast Showcase'),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+      body: ResponsiveBody(
         children: [
           _buildTypesSection(),
           const SizedBox(height: 12),
