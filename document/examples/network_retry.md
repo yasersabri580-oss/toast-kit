@@ -1,6 +1,6 @@
 # Example: Network Retry
 
-Retry failed network requests with exponential backoff and real-time toast feedback.
+Retry failed network requests with exponential backoff, real-time toast feedback, and burst detection using `errorsInWindow()`.
 
 ## What This Example Demonstrates
 
@@ -8,8 +8,61 @@ Retry failed network requests with exponential backoff and real-time toast feedb
 - Retry with exponential backoff
 - Generation counter for concurrency safety
 - Channel-based error tracking
+- **`errorsInWindow()`** for burst detection (sliding time window analysis)
+- **`deduplicateWindow`** on custom rules to prevent rapid re-firing
 
 ---
+
+## Setup: Network Channel and Burst Detection Rule
+
+```dart
+void setupNetworkRules() {
+  ToastKit.registerChannel(ToastChannel.network);
+
+  // Config-based rule for general error tracking
+  ToastKit.configureRule(
+    'network',
+    RuleConfig(
+      errorThreshold: 3,
+      deduplicateWindow: Duration(seconds: 10),
+      maxTriggers: 2,
+    ),
+  );
+
+  // Custom rule: detect error bursts using errorsInWindow()
+  // This catches sudden spikes that cumulative errorCount would miss.
+  ToastKit.addRule(ToastRule(
+    id: 'network-burst',
+    channel: 'network',
+    deduplicateWindow: const Duration(seconds: 30),  // 30s cooldown
+    condition: (stats, event) {
+      // 3+ errors within the last 15 seconds = spike
+      return stats.errorsInWindow(const Duration(seconds: 15)) >= 3;
+    },
+    action: (context) {
+      final recentErrors = context.stats.errorsInWindow(
+        const Duration(seconds: 15),
+      );
+      ToastKit.show(ToastEvent.error(
+        message: 'Connection unstable: $recentErrors errors in 15 seconds.',
+        persistent: true,
+        variant: ToastVariant.action,
+        deduplicationKey: 'network-unstable',
+        actions: [
+          ToastAction(
+            label: 'Retry',
+            onPressed: () {
+              ToastKit.dismissAll();
+              ToastKit.info('Retrying…');
+            },
+          ),
+        ],
+        channel: 'network',
+      ));
+    },
+  ));
+}
+```
 
 ## Retry Service
 
@@ -33,6 +86,14 @@ class RetryService {
         ctrl.success(successMessage);
         return result;
       } catch (e) {
+        // Record error on channel — rules (including burst detection) evaluate
+        if (channel != null) {
+          ToastKit.error(
+            'Retry $attempt/$maxRetries failed',
+            channel: channel,
+          );
+        }
+
         if (attempt == maxRetries) {
           ctrl.error(failureMessage);
           rethrow;
@@ -122,6 +183,8 @@ class _NetworkScreenState extends State<NetworkScreen> {
 [Loading… (attempt 3)]               ← Third attempt
 [Profile loaded ✓]                   ← Success on third try
 ```
+
+If multiple requests fail rapidly (within 15 seconds), the burst detection rule fires and shows a persistent "Connection unstable" toast with a Retry button.
 
 ---
 

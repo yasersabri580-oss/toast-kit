@@ -122,29 +122,100 @@ ToastKit.show(ToastEvent(
 
 ### Rules
 
-**Rules** let you define smart behavior based on toast activity — error thresholds, deduplication windows, and trigger limits per channel.
+**Rules** let you define smart behavior based on toast activity — error thresholds, deduplication windows, trigger limits, and windowed rate detection per channel.
+
+#### Config-Based Rules (Simple)
 
 ```dart
-// Config-based rule: trigger after 5 errors on the "payment" channel,
+// Trigger after 5 errors on the "payment" channel,
 // with a 30-second deduplication window and a maximum of 1 trigger.
 ToastKit.configureRule(
   'payment',
   RuleConfig(
-    errorThreshold: 5,
-    deduplicateWindow: Duration(seconds: 30),
-    maxTriggers: 1,
+    errorThreshold: 5,           // Fire when errorCount >= 5
+    deduplicateWindow: Duration(seconds: 30),  // Cooldown between triggers
+    maxTriggers: 1,              // Fire at most once
   ),
 );
+```
 
-// Custom rule with full logic control
+#### Custom Rules (Full Control)
+
+```dart
+// Suggest password reset after 3 login failures (fire once)
 ToastKit.addRule(ToastRule(
-  id: 'login-lockout',
+  id: 'suggest-reset',
   channel: 'auth',
+  maxTriggers: 1,
   condition: (stats, event) => stats.errorCount >= 3,
   action: (context) {
-    // Navigate to help screen, show dialog, etc.
+    ToastKit.show(ToastEvent.info(
+      message: 'Forgot your password?',
+      variant: ToastVariant.action,
+      actions: [
+        ToastAction(
+          label: 'Reset Password',
+          onPressed: () => ToastKit.success('Reset email sent!'),
+        ),
+      ],
+      channel: 'auth',
+    ));
   },
 ));
+```
+
+#### Windowed Rate Detection
+
+```dart
+// Detect error bursts: 5+ errors within 30 seconds
+ToastKit.addRule(ToastRule(
+  id: 'error-burst',
+  channel: 'network',
+  deduplicateWindow: Duration(seconds: 60),
+  condition: (stats, event) {
+    return stats.errorsInWindow(const Duration(seconds: 30)) >= 5;
+  },
+  action: (context) {
+    ToastKit.warning('Unstable connection detected');
+  },
+));
+```
+
+#### Combined Stat Conditions
+
+```dart
+// Fire only when BOTH errors AND warnings are high
+ToastKit.addRule(ToastRule(
+  id: 'sync-degraded',
+  channel: 'sync',
+  maxTriggers: 1,
+  condition: (stats, event) =>
+      stats.errorCount >= 2 &&
+      stats.warningCount >= 2 &&
+      stats.totalCount >= 6,
+  action: (context) {
+    ToastKit.info(
+      'Sync degraded: ${context.stats.errorCount} errors, '
+      '${context.stats.warningCount} warnings',
+    );
+  },
+));
+```
+
+#### Dynamic Rule Management
+
+```dart
+// Add, remove, and re-register rules at runtime
+ToastKit.addRule(ToastRule(id: 'guard', channel: 'session', ...));
+
+// Remove when no longer needed (e.g., after re-authentication)
+ToastKit.removeRule('guard');
+
+// Reset stats but keep rules
+ToastKit.ruleEngine.resetStats();
+
+// Clear everything (rules + stats + trigger counts)
+ToastKit.ruleEngine.clear();
 ```
 
 ### Plugins
@@ -248,26 +319,70 @@ ToastKit.show(ToastEvent.error(
 
 ### Rule Configuration
 
-Rules are configured per **channel**. A channel is a logical grouping for toasts (e.g., `"auth"`, `"network"`, `"payment"`).
+Rules are configured per **channel**. A channel is a logical grouping for toasts (e.g., `"auth"`, `"network"`, `"payment"`). Both config-based and custom rules work together on the same channel.
 
 ```dart
 // Register channels
 ToastKit.registerChannel(ToastChannel.auth);
 ToastKit.registerChannel(ToastChannel.payment);
 
-// Configure a rule: after 10 errors on "payment", trigger once
+// Config-based rule: after 10 errors on "payment", trigger once
 ToastKit.configureRule(
   'payment',
   RuleConfig(
-    errorThreshold: 10,
-    deduplicateWindow: Duration(seconds: 60),
-    maxTriggers: 1,
+    errorThreshold: 10,          // Fire when errorCount >= 10
+    deduplicateWindow: Duration(seconds: 60),  // 60s cooldown
+    maxTriggers: 1,              // Fire at most once total
   ),
 );
 
-// Send errors on that channel
+// Custom rule on the same channel for user-facing actions
+ToastKit.addRule(ToastRule(
+  id: 'payment-help',
+  channel: 'payment',
+  maxTriggers: 1,
+  condition: (stats, event) => stats.errorCount >= 5,
+  action: (context) {
+    ToastKit.show(ToastEvent.info(
+      message: 'Need help? Contact support.',
+      variant: ToastVariant.action,
+      actions: [
+        ToastAction(
+          label: 'Contact Support',
+          onPressed: () => openSupportChat(),
+        ),
+      ],
+      channel: 'payment',
+    ));
+  },
+));
+
+// Send errors on that channel — rules evaluate automatically
 ToastKit.error('Payment declined', channel: 'payment');
 ```
+
+#### Rule Properties Reference
+
+| Property | Default | Description |
+|----------|---------|-------------|
+| `RuleConfig.errorThreshold` | `5` | Fire when `errorCount >= threshold` |
+| `RuleConfig.deduplicateWindow` | `30s` | Cooldown between triggers |
+| `RuleConfig.maxTriggers` | `0` (unlimited) | Total trigger limit |
+| `ToastRule.maxTriggers` | `0` (unlimited) | Total trigger limit |
+| `ToastRule.deduplicateWindow` | `null` | Cooldown between triggers |
+
+#### Available ToastStats Fields
+
+| Field | Description |
+|-------|-------------|
+| `totalCount` | All events regardless of type |
+| `errorCount` | Error events only |
+| `warningCount` | Warning events only |
+| `successCount` | Success events only |
+| `infoCount` | Info events only |
+| `dismissedCount` | Toasts dismissed by user |
+| `droppedCount` | Toasts dropped (channel full, dedup) |
+| `errorsInWindow(Duration)` | Errors within a sliding time window |
 
 ### Using Keys with Rules
 
@@ -479,8 +594,10 @@ void onSubmitForm(String email, String password) {
 ### Login Attempt Limiting
 
 ```dart
-// Configure rule: after 3 failed logins, trigger (once per 60 seconds)
+// Register auth channel and configure escalating rules
 ToastKit.registerChannel(ToastChannel.auth);
+
+// Config-based rule: fire analytics callback after 3 errors
 ToastKit.configureRule(
   'auth',
   RuleConfig(
@@ -490,13 +607,44 @@ ToastKit.configureRule(
   ),
 );
 
-// Add custom rule for additional logic
+// Custom rule: suggest password reset after 3 failures
+ToastKit.addRule(ToastRule(
+  id: 'suggest-reset',
+  channel: 'auth',
+  maxTriggers: 1,
+  condition: (stats, event) =>
+      stats.errorCount >= 3 && stats.errorCount < 5,
+  action: (context) {
+    ToastKit.show(ToastEvent.info(
+      message: 'Forgot your password?',
+      variant: ToastVariant.action,
+      deduplicationKey: 'suggest-reset',
+      actions: [
+        ToastAction(
+          label: 'Reset Password',
+          onPressed: () => ToastKit.success('Reset email sent!'),
+        ),
+      ],
+      channel: 'auth',
+    ));
+  },
+));
+
+// Custom rule: lock account after 5 failures
 ToastKit.addRule(ToastRule(
   id: 'login-lockout',
   channel: 'auth',
+  maxTriggers: 1,
   condition: (stats, event) => stats.errorCount >= 5,
   action: (context) {
-    // Lock the login form, show a cooldown timer, etc.
+    setState(() => _isLocked = true);
+    ToastKit.show(ToastEvent.error(
+      message: 'Account locked for 30 seconds.',
+      persistent: true,
+      dismissible: false,
+      deduplicationKey: 'login-lockout',
+      channel: 'auth',
+    ));
   },
 ));
 
@@ -507,7 +655,7 @@ Future<void> attemptLogin(String email, String password) async {
     ctrl.success('Welcome back!');
   } catch (e) {
     ctrl.error('Invalid credentials');
-    // This error is counted on the "auth" channel — rules evaluate automatically
+    // Error recorded on auth channel — rules evaluate automatically
     ToastKit.error('Login failed', channel: 'auth');
   }
 }
@@ -518,16 +666,42 @@ Future<void> attemptLogin(String email, String password) async {
 ```dart
 ToastKit.registerChannel(ToastChannel.payment);
 
+// Step 1: Warning after 2 failures
 ToastKit.addRule(ToastRule(
-  id: 'payment-support',
+  id: 'payment-warn',
   channel: 'payment',
-  condition: (stats, event) => stats.errorCount >= 3,
+  maxTriggers: 1,
+  condition: (stats, event) =>
+      stats.errorCount >= 2 && stats.errorCount < 4,
   action: (context) {
-    // Offer help after repeated payment failures
-    ToastKit.show(ToastEvent.info(
-      message: 'Need help? Contact support.',
+    ToastKit.warning(
+      'Multiple payment failures. Check your card details.',
+      channel: 'payment',
+    );
+  },
+));
+
+// Step 2: Block and offer recovery after 4 failures
+ToastKit.addRule(ToastRule(
+  id: 'payment-block',
+  channel: 'payment',
+  maxTriggers: 1,
+  condition: (stats, event) => stats.errorCount >= 4,
+  action: (context) {
+    ToastKit.show(ToastEvent.error(
+      message: 'Payment processing suspended.',
+      persistent: true,
       variant: ToastVariant.action,
+      deduplicationKey: 'payment-block-toast',
       actions: [
+        ToastAction(
+          label: 'Switch Card',
+          onPressed: () => switchPaymentMethod(),
+        ),
+        ToastAction(
+          label: 'Use PayPal',
+          onPressed: () => redirectToPayPal(),
+        ),
         ToastAction(
           label: 'Contact Support',
           onPressed: () => openSupportChat(),
@@ -560,6 +734,8 @@ Future<void> processPayment(double amount) async {
 
 ```dart
 ToastKit.registerChannel(ToastChannel.network);
+
+// Config rule for general error tracking
 ToastKit.configureRule(
   'network',
   RuleConfig(
@@ -568,6 +744,34 @@ ToastKit.configureRule(
     maxTriggers: 2,
   ),
 );
+
+// Custom rule: detect error bursts using errorsInWindow()
+ToastKit.addRule(ToastRule(
+  id: 'network-burst',
+  channel: 'network',
+  deduplicateWindow: Duration(seconds: 30),
+  condition: (stats, event) {
+    return stats.errorsInWindow(const Duration(seconds: 15)) >= 3;
+  },
+  action: (context) {
+    ToastKit.show(ToastEvent.error(
+      message: 'Connection unstable. Check your network.',
+      persistent: true,
+      variant: ToastVariant.action,
+      deduplicationKey: 'network-unstable',
+      actions: [
+        ToastAction(
+          label: 'Retry',
+          onPressed: () {
+            ToastKit.dismissAll();
+            ToastKit.info('Retrying…');
+          },
+        ),
+      ],
+      channel: 'network',
+    ));
+  },
+));
 
 Future<T> fetchWithRetry<T>(
   Future<T> Function() request, {
@@ -780,7 +984,9 @@ ToastKit.unregisterPlugin('logger');
 | `ToastKit.custom(builder: ...)` | Show toast with custom builder |
 | `ToastKit.configureRule(ch, config)` | Set a config-based rule for a channel |
 | `ToastKit.addRule(rule)` | Add a custom `ToastRule` |
-| `ToastKit.removeRule(id)` | Remove a custom rule |
+| `ToastKit.removeRule(id)` | Remove a custom rule by ID |
+| `ToastKit.ruleEngine.resetStats()` | Reset all stats but keep rules |
+| `ToastKit.ruleEngine.clear()` | Remove all rules, stats, and trigger counts |
 | `ToastKit.registerChannel(ch)` | Register a `ToastChannel` |
 | `ToastKit.registerPlugin(plugin)` | Register a `ToastPlugin` |
 | `ToastKit.unregisterPlugin(name)` | Remove a plugin |

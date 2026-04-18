@@ -1,12 +1,14 @@
 # Example: Form Validation
 
-Show validation feedback using toast channels.
+Show validation feedback using toast channels with a proactive help rule.
 
 ## What This Example Demonstrates
 
 - Channel-based form validation toasts
 - Grouped field validation with toast feedback
 - Warning vs error severity for different validation issues
+- **Custom rule** that offers help after repeated validation failures
+- **Combined conditions** using `errorCount` to detect frustrated users
 
 ---
 
@@ -23,6 +25,33 @@ void setupFormChannel() {
   );
 
   ToastKit.registerChannel(formChannel);
+
+  // Proactive help rule: after 3 failed submissions, offer guidance.
+  // maxTriggers: 1 ensures it fires only once (not on every subsequent error).
+  ToastKit.addRule(ToastRule(
+    id: 'form-help-guide',
+    channel: 'form',
+    maxTriggers: 1,
+    condition: (stats, event) => stats.errorCount >= 3,
+    action: (context) {
+      ToastKit.show(ToastEvent.info(
+        message: 'Having trouble with the form? Check our help guide.',
+        variant: ToastVariant.action,
+        deduplicationKey: 'form-help-toast',
+        actions: [
+          ToastAction(
+            label: 'View Guide',
+            onPressed: () => ToastKit.success('Opening help guide…'),
+          ),
+          ToastAction(
+            label: 'Contact Us',
+            onPressed: () => ToastKit.info('Opening contact form…'),
+          ),
+        ],
+        channel: 'form',
+      ));
+    },
+  ));
 }
 ```
 
@@ -55,7 +84,12 @@ class FormValidator {
       warnings.add('Phone number recommended for account recovery');
     }
 
-    // Show errors first
+    // Show per-field warnings
+    for (final warning in warnings) {
+      ToastKit.warning(warning, channel: 'form');
+    }
+
+    // Show errors and record on channel for rule tracking
     if (errors.isNotEmpty) {
       ToastKit.error(
         errors.join('\n'),
@@ -63,14 +97,6 @@ class FormValidator {
         channel: 'form',
       );
       return false;
-    }
-
-    // Then show warnings
-    if (warnings.isNotEmpty) {
-      ToastKit.warning(
-        warnings.join('\n'),
-        channel: 'form',
-      );
     }
 
     return true;
@@ -129,6 +155,15 @@ class _ProfileFormState extends State<ProfileForm> {
   }
 }
 ```
+
+## What Happens
+
+| Submission | What Fires | User Sees |
+|------------|------------|-----------|
+| 1st (invalid) | — | Per-field error toast |
+| 2nd (invalid) | — | Per-field error toast |
+| 3rd (invalid) | `form-help-guide` | Error toast + "Check our help guide" with action buttons |
+| 4th+ (invalid) | — | Per-field error toast (help already shown once) |
 
 ---
 

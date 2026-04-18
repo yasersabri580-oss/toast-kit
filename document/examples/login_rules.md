@@ -1,13 +1,13 @@
 # Example: Login with Rules
 
-A realistic authentication flow that uses channels, rules, and stateful loading toasts.
+A realistic authentication flow that uses channels, rules, and stateful loading toasts. This example demonstrates every major rule feature.
 
 ## What This Example Demonstrates
 
 - Channel-based error tracking (`auth` channel)
-- Config-based rule for threshold warnings
-- Custom rule for password reset suggestion after 3 failures
-- Custom rule for account lockout after 5 failures
+- **Config-based rule** for threshold analytics (`RuleConfig.errorThreshold`)
+- **Custom rule** for password reset suggestion after 3 failures (`maxTriggers: 1`)
+- **Custom rule** for account lockout after 5 failures (`persistent: true`, `dismissible: false`)
 - Stateful loading toast (`showLoading` → `ctrl.error()`)
 - Concurrency guard to prevent rapid-tap issues
 
@@ -22,7 +22,8 @@ void setupAuthRules() {
   // Register the auth channel (maxVisible: 1, priority: high)
   ToastKit.registerChannel(ToastChannel.auth);
 
-  // Config-based rule: warn after 3 errors, once per 60 seconds
+  // Config-based rule: fire onRuleTriggered callback for analytics after 3 errors.
+  // This doesn't show a toast — it's for tracking via plugins.
   ToastKit.configureRule(
     'auth',
     const RuleConfig(
@@ -32,11 +33,13 @@ void setupAuthRules() {
     ),
   );
 
-  // Custom rule: suggest password reset after 3 failures
+  // Custom rule: suggest password reset after 3 failures.
+  // maxTriggers: 1 ensures it fires exactly once.
+  // Condition uses >= (not ==) to be resilient if a count is skipped.
   ToastKit.addRule(ToastRule(
     id: 'suggest-reset',
     channel: 'auth',
-    maxTriggers: 1,  // Only suggest once
+    maxTriggers: 1,
     condition: (stats, event) =>
         stats.errorCount >= 3 && stats.errorCount < 5,
     action: (context) {
@@ -57,11 +60,12 @@ void setupAuthRules() {
     },
   ));
 
-  // Custom rule: lockout after 5 failures
+  // Custom rule: lockout after 5 failures.
+  // persistent: true + dismissible: false creates a hard block.
   ToastKit.addRule(ToastRule(
     id: 'login-lockout',
     channel: 'auth',
-    maxTriggers: 1,  // Only lock once per session
+    maxTriggers: 1,
     condition: (stats, event) => stats.errorCount >= 5,
     action: (context) {
       ToastKit.show(ToastEvent.error(
@@ -128,7 +132,7 @@ class _LoginState extends State<LoginScreen> {
 |---------|------------|-----------|
 | 1 | Nothing | "Invalid email or password" error toast |
 | 2 | Nothing | "Invalid email or password" error toast |
-| 3 | `suggest-reset` rule | "Forgot your password?" with Reset button |
+| 3 | `suggest-reset` rule + config rule | "Forgot your password?" with Reset button |
 | 4 | Nothing | "Invalid email or password" error toast |
 | 5 | `login-lockout` rule | "Too many failed attempts. Account locked." |
 
@@ -139,6 +143,25 @@ class _LoginState extends State<LoginScreen> {
 3. **`_isSigningIn` guard** prevents concurrent login attempts from rapid taps
 4. **`setState` wraps `_attemptCount++`** so the UI updates immediately
 5. **`suggest-reset` condition uses `>= 3 && < 5`** instead of `== 3` to be resilient if a count is skipped
+6. **Config rule** fires `onRuleTriggered` for analytics plugins without showing any toast
+
+## Advanced: Dynamic Rule Removal on Success
+
+After successful authentication, you may want to remove and re-register rules:
+
+```dart
+void onLoginSuccess() {
+  // Remove old rules so maxTriggers resets
+  ToastKit.removeRule('suggest-reset');
+  ToastKit.removeRule('login-lockout');
+
+  // Reset stats (error counts go to 0)
+  ToastKit.ruleEngine.resetStats();
+
+  // Re-register rules for the next session
+  setupAuthRules();
+}
+```
 
 ---
 
