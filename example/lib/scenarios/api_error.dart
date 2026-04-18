@@ -140,7 +140,7 @@ class _ApiErrorScenarioState extends State<ApiErrorScenario> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('API Error Handling'),
-        actions: [
+        actions: const [
           SeeCodeButton(
             title: 'API Error Handling',
             description: 'Demonstrates loading→error transitions, channel-based error tracking, and deduplication.',

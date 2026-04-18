@@ -1,7 +1,6 @@
 // ignore_for_file: unused_element_parameter
 
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../core/toast_config.dart';

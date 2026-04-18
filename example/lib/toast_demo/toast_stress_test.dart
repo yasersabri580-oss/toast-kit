@@ -360,7 +360,7 @@ class _ToastStressTestState extends State<ToastStressTest> {
       subtitle: 'Burst-fire toasts at high speed',
       icon: Icons.flash_on_rounded,
       iconColor: Colors.red,
-      trailing: SeeCodeButton(
+      trailing: const SeeCodeButton(
         title: 'Rapid Fire',
         description: 'Fire many toasts in quick succession to test queue stability.',
         code: _rapidFireCode,
@@ -400,7 +400,7 @@ class _ToastStressTestState extends State<ToastStressTest> {
       subtitle: 'Push the internal queue to its limits',
       icon: Icons.queue_rounded,
       iconColor: Colors.teal,
-      trailing: SeeCodeButton(
+      trailing: const SeeCodeButton(
         title: 'Queue Stress',
         description: 'Fill the queue, burst + clear, and rapid show/dismiss.',
         code: _queueStressCode,
@@ -434,7 +434,7 @@ class _ToastStressTestState extends State<ToastStressTest> {
       subtitle: 'Concurrent loading and progress scenarios',
       icon: Icons.hourglass_bottom_rounded,
       iconColor: Colors.cyan,
-      trailing: SeeCodeButton(
+      trailing: const SeeCodeButton(
         title: 'Loading Stress',
         description: 'Run 10 concurrent loading toasts and a progress marathon.',
         code: _loadingStressCode,
@@ -462,7 +462,7 @@ class _ToastStressTestState extends State<ToastStressTest> {
       subtitle: 'Verify deduplication under load',
       icon: Icons.filter_alt_rounded,
       iconColor: Colors.pink,
-      trailing: SeeCodeButton(
+      trailing: const SeeCodeButton(
         title: 'Dedup Stress',
         description: 'Fire 100 identical messages or mix unique + duplicates.',
         code: _dedupStressCode,

@@ -320,7 +320,7 @@ class _NotificationDemoScreenState extends State<NotificationDemoScreen> {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SeeCodeButton(
+          const SeeCodeButton(
             title: 'Live Notification Stream',
             description:
                 'Listens to a stream of mock notifications and shows each one as a toast.',
@@ -370,7 +370,7 @@ class _NotificationDemoScreenState extends State<NotificationDemoScreen> {
       subtitle: 'Test toast queuing and overflow behaviour',
       icon: Icons.queue,
       iconColor: cs.secondary,
-      trailing: SeeCodeButton(
+      trailing: const SeeCodeButton(
         title: 'Queue Management',
         description: 'Push single or batch notifications and clear the queue.',
         code: _queueManagementCode,
@@ -406,7 +406,7 @@ class _NotificationDemoScreenState extends State<NotificationDemoScreen> {
       subtitle: 'Identical messages are deduplicated automatically',
       icon: Icons.block,
       iconColor: Colors.orange,
-      trailing: SeeCodeButton(
+      trailing: const SeeCodeButton(
         title: 'Spam Prevention',
         description:
             'Demonstrates deduplication by key — 10 identical toasts collapse into 1.',
@@ -450,7 +450,7 @@ class _NotificationDemoScreenState extends State<NotificationDemoScreen> {
       subtitle: 'Repeated updates replace the previous toast in-place',
       icon: Icons.find_replace,
       iconColor: cs.tertiary,
-      trailing: SeeCodeButton(
+      trailing: const SeeCodeButton(
         title: 'Deduplication (showOrReplace)',
         description:
             'Uses showOrReplace with the same deduplicationKey so only the latest update is visible.',

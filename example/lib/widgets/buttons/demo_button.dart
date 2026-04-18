@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 
 /// A full-width filled button styled for the demo app.
@@ -23,7 +25,8 @@ class DemoButton extends StatelessWidget {
         ? const SizedBox(
             width: 20,
             height: 20,
-            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+            child:
+                CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
           )
         : Row(
             mainAxisSize: MainAxisSize.min,
@@ -69,7 +72,7 @@ class CompactDemoButton extends StatelessWidget {
     return FilledButton.tonal(
       onPressed: onPressed,
       style: color != null
-          ? FilledButton.styleFrom(backgroundColor: color.withAlpha(30))
+          ? FilledButton.styleFrom(backgroundColor: color?.withOpacity(0.3))
           : null,
       child: Row(
         mainAxisSize: MainAxisSize.min,

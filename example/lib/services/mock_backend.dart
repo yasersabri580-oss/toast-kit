@@ -53,7 +53,7 @@ class MockBackend {
   }
 
   MockNotification _randomNotification() {
-    final types = MockNotificationType.values;
+    const types = MockNotificationType.values;
     final type = types[_rng.nextInt(types.length)];
     final titles = _titlesForType(type);
     return MockNotification(

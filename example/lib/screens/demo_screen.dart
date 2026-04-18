@@ -214,8 +214,8 @@ class _DemoScreenState extends State<DemoScreen> {
       body: CustomScrollView(
         slivers: [
           // ---- App bar ----
-          SliverAppBar.large(
-            title: const Text('ToastKit Demo'),
+          const SliverAppBar.large(
+            title: Text('ToastKit Demo'),
             centerTitle: true,
           ),
 

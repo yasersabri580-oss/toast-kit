@@ -82,7 +82,7 @@ class ToastHelpers {
       ToastEvent.loading(
         message: message,
         channel: channel,
-        icon: icon,
+        
         persistent: true,
       ),
     );

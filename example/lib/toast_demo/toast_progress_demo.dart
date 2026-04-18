@@ -214,7 +214,7 @@ class _ToastProgressDemoState extends State<ToastProgressDemo> {
       subtitle: 'Simulates a file upload with progress updates',
       icon: Icons.cloud_upload_rounded,
       iconColor: cs.primary,
-      trailing: SeeCodeButton(
+      trailing: const SeeCodeButton(
         title: 'File Upload Progress',
         description: 'Uses showLoading() and updates progress via the controller.',
         code: _uploadCode,
@@ -256,7 +256,7 @@ class _ToastProgressDemoState extends State<ToastProgressDemo> {
       subtitle: 'Simulates a 4-step pipeline',
       icon: Icons.account_tree_rounded,
       iconColor: cs.tertiary,
-      trailing: SeeCodeButton(
+      trailing: const SeeCodeButton(
         title: 'Multi-Step Pipeline',
         description: 'Progress toast updated at each pipeline step.',
         code: _pipelineCode,
@@ -287,7 +287,7 @@ class _ToastProgressDemoState extends State<ToastProgressDemo> {
       subtitle: 'Three tasks running simultaneously',
       icon: Icons.call_split_rounded,
       iconColor: cs.secondary,
-      trailing: SeeCodeButton(
+      trailing: const SeeCodeButton(
         title: 'Concurrent Tasks',
         description: 'Multiple loading toasts running in parallel.',
         code: _concurrentCode,
@@ -320,7 +320,7 @@ class _ToastProgressDemoState extends State<ToastProgressDemo> {
       subtitle: 'Use the slider to control a progress toast',
       icon: Icons.tune_rounded,
       iconColor: Colors.orange,
-      trailing: SeeCodeButton(
+      trailing: const SeeCodeButton(
         title: 'Manual Progress',
         description: 'Control progress via slider and resolve with success/error.',
         code: _manualCode,

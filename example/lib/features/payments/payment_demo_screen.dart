@@ -306,7 +306,7 @@ class _PaymentDemoScreenState extends State<PaymentDemoScreen> {
       subtitle: 'Configure amount and method',
       icon: Icons.payment,
       iconColor: Colors.indigo,
-      trailing: SeeCodeButton(
+      trailing: const SeeCodeButton(
         title: 'Payment Configuration',
         description: 'Configure amount and method before processing.',
         code: _paymentDetailsCode,
@@ -367,7 +367,7 @@ class _PaymentDemoScreenState extends State<PaymentDemoScreen> {
       subtitle: 'Execute or cancel the current payment',
       icon: Icons.send,
       iconColor: Colors.green,
-      trailing: SeeCodeButton(
+      trailing: const SeeCodeButton(
         title: 'Process Payment',
         description: 'Loading toast with progress updates for payment processing.',
         code: _processPaymentCode,
@@ -398,7 +398,7 @@ class _PaymentDemoScreenState extends State<PaymentDemoScreen> {
       subtitle: 'Recent payment attempts',
       icon: Icons.history,
       iconColor: Colors.deepPurple,
-      trailing: SeeCodeButton(
+      trailing: const SeeCodeButton(
         title: 'Payment History',
         description: 'Track payment attempts and outcomes.',
         code: _paymentHistoryCode,

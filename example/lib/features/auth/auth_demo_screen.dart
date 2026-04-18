@@ -221,7 +221,7 @@ class _AuthDemoScreenState extends State<AuthDemoScreen> {
       subtitle: 'Login attempt tracking',
       icon: statusIcon,
       iconColor: statusColor,
-      trailing: SeeCodeButton(
+      trailing: const SeeCodeButton(
         title: 'Auth Status Tracking',
         description: 'Tracks failed login attempts and triggers lockout after 5 failures.',
         code: _authStatusCode,
@@ -297,7 +297,7 @@ class _AuthDemoScreenState extends State<AuthDemoScreen> {
       subtitle: 'Email & password login with toast feedback',
       icon: Icons.login,
       iconColor: Colors.blue,
-      trailing: SeeCodeButton(
+      trailing: const SeeCodeButton(
         title: 'Login with Toast Feedback',
         description: 'Shows loading → success/error toasts during sign-in.',
         code: _authLoginCode,
@@ -356,7 +356,7 @@ class _AuthDemoScreenState extends State<AuthDemoScreen> {
       subtitle: 'Account session management',
       icon: Icons.manage_accounts,
       iconColor: Colors.deepPurple,
-      trailing: SeeCodeButton(
+      trailing: const SeeCodeButton(
         title: 'Session Management',
         description: 'Logout with loading toast and error handling.',
         code: _authLogoutCode,

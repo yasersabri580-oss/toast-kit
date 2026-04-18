@@ -49,7 +49,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SeeCodeButton(
+          const SeeCodeButton(
             title: 'Debug Mode Toggle',
             description:
                 'Enables or disables the in-memory debug logger that records toast events.',
@@ -243,7 +243,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return FeatureCard(
       title: 'Quick Actions',
       icon: Icons.flash_on_outlined,
-      trailing: SeeCodeButton(
+      trailing: const SeeCodeButton(
         title: 'Quick Actions',
         description:
             'Dismiss all visible toasts, clear the queue, or reset debug stats.',

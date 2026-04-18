@@ -316,7 +316,7 @@ class _NetworkDemoScreenState extends State<NetworkDemoScreen> {
       subtitle: 'Uses showOrReplace to prevent toast overlap',
       icon: Icons.cloud_download,
       iconColor: Colors.blue,
-      trailing: SeeCodeButton(
+      trailing: const SeeCodeButton(
         title: 'Fetch with Retry',
         description: 'Uses showOrReplace to prevent toast overlap during retries.',
         code: _fetchRetryCode,
@@ -363,7 +363,7 @@ class _NetworkDemoScreenState extends State<NetworkDemoScreen> {
       subtitle: 'Fires 5 requests; deduplicates error toasts',
       icon: Icons.alt_route,
       iconColor: Colors.teal,
-      trailing: SeeCodeButton(
+      trailing: const SeeCodeButton(
         title: 'Parallel Requests',
         description: 'Fires 5 requests; deduplicates error toasts with shared key.',
         code: _parallelCode,
@@ -388,7 +388,7 @@ class _NetworkDemoScreenState extends State<NetworkDemoScreen> {
       subtitle: 'After 6 errors an offline-mode suggestion appears',
       icon: Icons.rule,
       iconColor: Colors.deepOrange,
-      trailing: SeeCodeButton(
+      trailing: const SeeCodeButton(
         title: 'Network Channel Rules',
         description: 'Suggests offline mode after 6 errors on the network channel.',
         code: _channelRulesCode,

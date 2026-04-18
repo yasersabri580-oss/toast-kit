@@ -273,7 +273,7 @@ class CustomUiScenario extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Custom UI'),
-        actions: [
+        actions: const [
           SeeCodeButton(
             title: 'Custom UI Toasts',
             description: 'Custom builders with full widget control, progress tracking, and action buttons.',

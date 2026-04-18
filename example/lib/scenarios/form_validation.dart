@@ -134,7 +134,7 @@ class _FormValidationScenarioState extends State<FormValidationScenario> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Form Validation'),
-        actions: [
+        actions: const [
           SeeCodeButton(
             title: 'Form Validation',
             description: 'Shows toast-based validation and channel-based error tracking with rules.',

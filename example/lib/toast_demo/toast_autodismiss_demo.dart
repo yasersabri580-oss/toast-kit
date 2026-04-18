@@ -152,7 +152,7 @@ class _ToastAutodismissDemoState extends State<ToastAutodismissDemo> {
       subtitle: 'Adjust duration and watch the progress bar drain',
       icon: Icons.timer_outlined,
       iconColor: Colors.cyan,
-      trailing: SeeCodeButton(
+      trailing: const SeeCodeButton(
         title: 'Countdown Toast',
         description:
             'A custom toast builder that animates a progress bar from full to empty.',
@@ -192,7 +192,7 @@ class _ToastAutodismissDemoState extends State<ToastAutodismissDemo> {
       subtitle: 'Success, error, and info toasts with progress dismiss',
       icon: Icons.palette_outlined,
       iconColor: Colors.green,
-      trailing: SeeCodeButton(
+      trailing: const SeeCodeButton(
         title: 'Preset Countdown Toasts',
         description:
             'Predefined success/error countdown toasts with customized colors.',
@@ -221,7 +221,7 @@ class _ToastAutodismissDemoState extends State<ToastAutodismissDemo> {
       subtitle: 'A common pattern: undo action with visible time remaining',
       icon: Icons.undo,
       iconColor: Colors.amber,
-      trailing: SeeCodeButton(
+      trailing: const SeeCodeButton(
         title: 'Undo Countdown Toast',
         description:
             'An "Item deleted" toast with an Undo button and a progress bar '

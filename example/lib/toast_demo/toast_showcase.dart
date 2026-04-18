@@ -320,7 +320,7 @@ class _ToastShowcaseState extends State<ToastShowcase> {
       subtitle: 'Standard semantic toast types',
       icon: Icons.category_outlined,
       iconColor: Colors.deepPurple,
-      trailing: SeeCodeButton(
+      trailing: const SeeCodeButton(
         title: 'Toast Types',
         description: 'Show success, error, warning, and info toasts with one line of code.',
         code: _toastTypesCode,
@@ -360,7 +360,7 @@ class _ToastShowcaseState extends State<ToastShowcase> {
       subtitle: 'Visual style presets',
       icon: Icons.style_outlined,
       iconColor: Colors.teal,
-      trailing: SeeCodeButton(
+      trailing: const SeeCodeButton(
         title: 'Toast Variants',
         description: 'Pass a ToastVariant to change the visual style of any toast.',
         code: _toastVariantsCode,
@@ -418,7 +418,7 @@ class _ToastShowcaseState extends State<ToastShowcase> {
       subtitle: 'Control where toasts appear',
       icon: Icons.open_with_rounded,
       iconColor: Colors.indigo,
-      trailing: SeeCodeButton(
+      trailing: const SeeCodeButton(
         title: 'Toast Positions',
         description: 'Use the position parameter to control toast placement.',
         code: _toastPositionsCode,
@@ -473,7 +473,7 @@ class _ToastShowcaseState extends State<ToastShowcase> {
       subtitle: 'Fully custom toast UI',
       icon: Icons.brush_outlined,
       iconColor: Colors.orange,
-      trailing: SeeCodeButton(
+      trailing: const SeeCodeButton(
         title: 'Custom Builders',
         description: 'Use ToastKit.custom() with a builder for full widget control.',
         code: _customBuildersCode,
@@ -501,7 +501,7 @@ class _ToastShowcaseState extends State<ToastShowcase> {
       subtitle: 'Toasts with interactive buttons',
       icon: Icons.touch_app_outlined,
       iconColor: Colors.pink,
-      trailing: SeeCodeButton(
+      trailing: const SeeCodeButton(
         title: 'Action Toasts',
         description: 'Add ToastAction buttons for undo, confirm, or custom interactions.',
         code: _actionToastsCode,
@@ -527,7 +527,7 @@ class _ToastShowcaseState extends State<ToastShowcase> {
       subtitle: 'Stateful toast transitions',
       icon: Icons.hourglass_bottom_rounded,
       iconColor: Colors.cyan,
-      trailing: SeeCodeButton(
+      trailing: const SeeCodeButton(
         title: 'Loading & Progress',
         description: 'Use showLoading() and update progress with the controller.',
         code: _loadingProgressCode,

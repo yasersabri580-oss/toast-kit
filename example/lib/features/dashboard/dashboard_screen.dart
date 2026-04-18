@@ -118,9 +118,9 @@ class DashboardScreen extends StatelessWidget {
             const SizedBox(height: 24),
 
             // --- Quick Actions ---
-            _SectionHeader(title: 'Quick Actions'),
+            const _SectionHeader(title: 'Quick Actions'),
             const SizedBox(height: 4),
-            Align(
+            const Align(
               alignment: Alignment.centerRight,
               child: SeeCodeButton(
                 title: 'Quick Toast Actions',
@@ -130,13 +130,13 @@ class DashboardScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            _QuickActionsRow(),
+            const _QuickActionsRow(),
             const SizedBox(height: 32),
 
             // --- Feature Grid ---
-            _SectionHeader(title: 'Features'),
+            const _SectionHeader(title: 'Features'),
             const SizedBox(height: 12),
-            _FeatureGrid(features: _features),
+            const _FeatureGrid(features: _features),
           ],
         ),
       ),

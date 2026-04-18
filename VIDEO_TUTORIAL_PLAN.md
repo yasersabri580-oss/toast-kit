@@ -134,6 +134,7 @@ A structured plan for an 8–12 minute developer tutorial covering the full Toas
      void onToastShown(ToastEvent event) {
        print('[TOAST] ${event.type.name}: ${event.message}');
      }
+     
    }
    ```
 
