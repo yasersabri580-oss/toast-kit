@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../utils/responsive/responsive_helper.dart';
+import '../utils/responsive/responsive_helper.dart';
 
 /// A responsive grid that adapts columns based on screen size.
 ///
