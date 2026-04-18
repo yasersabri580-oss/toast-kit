@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:toast_kit/toast_kit.dart';
 
 import '../../app/routes/app_router.dart';
+import '../../app/theme/theme_selector.dart';
 import '../../utils/responsive/responsive_helper.dart';
 import '../../widgets/see_code_button.dart';
 
@@ -94,6 +95,8 @@ class DashboardScreen extends StatelessWidget {
         title: const Text('ToastKit Showcase'),
         centerTitle: false,
         actions: [
+          const ThemeSelector(),
+          const SizedBox(width: 8),
           IconButton(
             icon: const Icon(Icons.settings),
             tooltip: 'Settings',
@@ -309,7 +312,7 @@ class _FeatureCardState extends State<_FeatureCard> {
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeOut,
         transform: _isHovered
-            ? (Matrix4.identity()..translate(0, -2, 0))
+            ? Matrix4.translationValues(0, -2.0, 0)
             : Matrix4.identity(),
         child: Card(
           elevation: _isHovered ? 4 : 0,

@@ -5,6 +5,7 @@ import 'package:toast_kit/toast_kit.dart';
 import '../utils/demo_logger.dart';
 import 'routes/app_router.dart';
 import 'theme/app_theme.dart';
+import 'theme/theme_controller.dart';
 
 // ---------------------------------------------------------------------------
 // Plugins (kept from the original main.dart)
@@ -128,6 +129,7 @@ class ToastKitShowcaseApp extends StatefulWidget {
 class _ToastKitShowcaseAppState extends State<ToastKitShowcaseApp> {
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
   late final GoRouter _router;
+  final ThemeController _themeController = ThemeController();
 
   @override
   void initState() {
@@ -170,18 +172,29 @@ class _ToastKitShowcaseAppState extends State<ToastKitShowcaseApp> {
   @override
   void dispose() {
     _router.dispose();
+    _themeController.dispose();
     ToastKit.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      routerConfig: _router,
-      title: 'ToastKit Showcase',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.light(),
-      darkTheme: AppTheme.dark(),
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: _themeController,
+      builder: (context, themeMode, _) {
+        return MaterialApp.router(
+          routerConfig: _router,
+          title: 'ToastKit Showcase',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.light(),
+          darkTheme: AppTheme.dark(),
+          themeMode: themeMode,
+          builder: (context, child) => ThemeScope(
+            controller: _themeController,
+            child: child!,
+          ),
+        );
+      },
     );
   }
 }
