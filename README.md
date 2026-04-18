@@ -8,16 +8,7 @@
 
 ToastKit goes beyond simple toasts — it provides a **headless + UI hybrid notification engine** with rule-based triggering, a plugin architecture, queue management, and 12+ ready-made toast variants. No `BuildContext` required.
 
----
 
-## 📸 Preview
-
-<!-- Replace with actual screenshot or GIF -->
-<p align="center">
-  <img src="https://via.placeholder.com/800x400?text=ToastKit+Preview" alt="ToastKit Preview" width="100%" />
-</p>
-
----
 
 ## ✨ Features
 

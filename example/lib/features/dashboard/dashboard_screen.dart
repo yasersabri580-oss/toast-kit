@@ -149,7 +149,7 @@ class DashboardScreen extends StatelessWidget {
                 // --- Feature Grid ---
                 const _SectionHeader(title: 'Features'),
                 const SizedBox(height: 12),
-                _FeatureGrid(features: _features),
+                const _FeatureGrid(features: _features),
               ],
             ),
           ),

@@ -1,8 +1,6 @@
 name: toast_kit
 description: >-
-  A production-grade Flutter SDK for in-app notifications. Headless + UI hybrid
-  notification engine with event-driven architecture, overlay rendering,
-  plugin-based animations, gesture support, and 12+ toast variants.
+  A production-grade Flutter SDK for in-app toast notifications.
 version: 1.0.0
 homepage: https://github.com/yasersabri580-oss/toast-kit
 repository: https://github.com/yasersabri580-oss/toast-kit
