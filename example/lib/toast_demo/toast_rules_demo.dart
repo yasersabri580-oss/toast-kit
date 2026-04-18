@@ -5,6 +5,7 @@ import 'package:toast_kit/toast_kit.dart';
 
 import '../widgets/buttons/demo_button.dart';
 import '../widgets/cards/rule_scenario_card.dart';
+import '../utils/responsive/responsive_helper.dart';
 
 // =============================================================================
 // Toast Rules Demo — Comprehensive Rule Engine Showcase
@@ -799,45 +800,55 @@ class _ToastRulesDemoState extends State<ToastRulesDemo> {
       ),
       body: !_rulesRegistered
           ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                Text(
-                  'Rule Engine Showcase',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+          : Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: ResponsiveHelper.maxContentWidth,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'Every ToastKit rule feature demonstrated with real-world '
-                  'scenarios. Tap the buttons to see rules in action.',
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                child: ListView(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: ResponsiveHelper.horizontalPadding(context),
+                    vertical: ResponsiveHelper.verticalPadding(context),
                   ),
+                  children: [
+                    Text(
+                      'Rule Engine Showcase',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Every ToastKit rule feature demonstrated with real-world '
+                      'scenarios. Tap the buttons to see rules in action.',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    _buildAuthGuardScenario(),
+                    const SizedBox(height: 12),
+                    _buildBurstDetectorScenario(),
+                    const SizedBox(height: 12),
+                    _buildFloodShieldScenario(),
+                    const SizedBox(height: 12),
+                    _buildPaymentRecoveryScenario(),
+                    const SizedBox(height: 12),
+                    _buildAutoSaveCooldownScenario(),
+                    const SizedBox(height: 12),
+                    _buildCombinedStatsScenario(),
+                    const SizedBox(height: 12),
+                    _buildCheckoutWizardScenario(),
+                    const SizedBox(height: 12),
+                    _buildFormHelpScenario(),
+                    const SizedBox(height: 12),
+                    _buildConnectivityBannerScenario(),
+                    const SizedBox(height: 12),
+                    _buildTokenRefreshScenario(),
+                    const SizedBox(height: 32),
+                  ],
                 ),
-                const SizedBox(height: 20),
-                _buildAuthGuardScenario(),
-                const SizedBox(height: 12),
-                _buildBurstDetectorScenario(),
-                const SizedBox(height: 12),
-                _buildFloodShieldScenario(),
-                const SizedBox(height: 12),
-                _buildPaymentRecoveryScenario(),
-                const SizedBox(height: 12),
-                _buildAutoSaveCooldownScenario(),
-                const SizedBox(height: 12),
-                _buildCombinedStatsScenario(),
-                const SizedBox(height: 12),
-                _buildCheckoutWizardScenario(),
-                const SizedBox(height: 12),
-                _buildFormHelpScenario(),
-                const SizedBox(height: 12),
-                _buildConnectivityBannerScenario(),
-                const SizedBox(height: 12),
-                _buildTokenRefreshScenario(),
-                const SizedBox(height: 32),
-              ],
+              ),
             ),
     );
   }

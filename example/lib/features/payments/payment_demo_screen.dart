@@ -6,6 +6,7 @@ import 'package:toast_kit/toast_kit.dart';
 import '../../services/api_service.dart';
 import '../../widgets/buttons/demo_button.dart';
 import '../../widgets/cards/feature_card.dart';
+import '../../widgets/responsive_body.dart';
 import '../../widgets/see_code_button.dart';
 
 /// Demonstrates payment processing toasts, progress updates, failure tracking,
@@ -188,8 +189,7 @@ class _PaymentDemoScreenState extends State<PaymentDemoScreen> {
         leading: const BackButton(),
         title: const Text('Payment Flow'),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+      body: ResponsiveBody(
         children: [
           _buildFailureStatusCard(theme),
           const SizedBox(height: 12),

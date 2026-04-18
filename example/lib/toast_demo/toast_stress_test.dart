@@ -6,6 +6,7 @@ import 'package:toast_kit/toast_kit.dart';
 
 import '../widgets/cards/feature_card.dart';
 import '../widgets/buttons/demo_button.dart';
+import '../widgets/responsive_body.dart';
 import '../widgets/see_code_button.dart';
 
 /// A stress-test screen that pushes ToastKit to its limits under extreme load.
@@ -295,8 +296,7 @@ class _ToastStressTestState extends State<ToastStressTest> {
         leading: const BackButton(),
         title: const Text('Stress Test'),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+      body: ResponsiveBody(
         children: [
           _buildStatistics(),
           const SizedBox(height: 12),

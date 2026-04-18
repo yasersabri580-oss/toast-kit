@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart' hide RouterConfig;
+import 'package:go_router/go_router.dart';
 import 'package:toast_kit/toast_kit.dart';
 
 import '../utils/demo_logger.dart';
@@ -126,10 +127,12 @@ class ToastKitShowcaseApp extends StatefulWidget {
 
 class _ToastKitShowcaseAppState extends State<ToastKitShowcaseApp> {
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+  late final GoRouter _router;
 
   @override
   void initState() {
     super.initState();
+    _router = createRouter(_navigatorKey);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initToastKit();
     });
@@ -166,20 +169,19 @@ class _ToastKitShowcaseAppState extends State<ToastKitShowcaseApp> {
 
   @override
   void dispose() {
+    _router.dispose();
     ToastKit.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      navigatorKey: _navigatorKey,
+    return MaterialApp.router(
+      routerConfig: _router,
       title: 'ToastKit Showcase',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
-      routes: AppRouter.routes,
-      initialRoute: AppRouter.dashboard,
     );
   }
 }

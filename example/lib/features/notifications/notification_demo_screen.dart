@@ -6,6 +6,7 @@ import 'package:toast_kit/toast_kit.dart';
 import '../../services/mock_backend.dart';
 import '../../widgets/buttons/demo_button.dart';
 import '../../widgets/cards/feature_card.dart';
+import '../../widgets/responsive_body.dart';
 import '../../widgets/see_code_button.dart';
 
 /// Demonstrates queued notifications, spam prevention, and deduplication
@@ -250,8 +251,7 @@ class _NotificationDemoScreenState extends State<NotificationDemoScreen> {
         leading: const BackButton(),
         title: const Text('Notifications'),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+      body: ResponsiveBody(
         children: [
           _buildStatsBar(cs),
           const SizedBox(height: 12),

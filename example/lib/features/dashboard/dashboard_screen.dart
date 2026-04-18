@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:toast_kit/toast_kit.dart';
 
+import '../../app/routes/app_router.dart';
+import '../../utils/responsive/responsive_helper.dart';
 import '../../widgets/see_code_button.dart';
 
 class DashboardScreen extends StatelessWidget {
@@ -83,6 +86,8 @@ class DashboardScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final hPadding = ResponsiveHelper.horizontalPadding(context);
+    final vPadding = ResponsiveHelper.verticalPadding(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -92,52 +97,62 @@ class DashboardScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.settings),
             tooltip: 'Settings',
-            onPressed: () => Navigator.pushNamed(context, '/settings'),
+            onPressed: () => context.go(AppRoutes.settings),
           ),
         ],
       ),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          children: [
-            // --- Header ---
-            Text(
-              'Welcome to ToastKit',
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface,
-              ),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxWidth: ResponsiveHelper.maxContentWidth,
             ),
-            const SizedBox(height: 4),
-            Text(
-              'Explore features and see toasts in action.',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
+            child: ListView(
+              padding: EdgeInsets.symmetric(
+                horizontal: hPadding,
+                vertical: vPadding,
               ),
-            ),
-            const SizedBox(height: 24),
+              children: [
+                // --- Header ---
+                Text(
+                  'Welcome to ToastKit',
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Explore features and see toasts in action.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                SizedBox(height: ResponsiveHelper.sectionSpacing(context)),
 
-            // --- Quick Actions ---
-            const _SectionHeader(title: 'Quick Actions'),
-            const SizedBox(height: 4),
-            const Align(
-              alignment: Alignment.centerRight,
-              child: SeeCodeButton(
-                title: 'Quick Toast Actions',
-                description:
-                    'Show success, error, warning, and info toasts with a single line.',
-                code: _quickActionsCode,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const _QuickActionsRow(),
-            const SizedBox(height: 32),
+                // --- Quick Actions ---
+                const _SectionHeader(title: 'Quick Actions'),
+                const SizedBox(height: 4),
+                const Align(
+                  alignment: Alignment.centerRight,
+                  child: SeeCodeButton(
+                    title: 'Quick Toast Actions',
+                    description:
+                        'Show success, error, warning, and info toasts with a single line.',
+                    code: _quickActionsCode,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const _QuickActionsRow(),
+                SizedBox(height: ResponsiveHelper.sectionSpacing(context) + 8),
 
-            // --- Feature Grid ---
-            const _SectionHeader(title: 'Features'),
-            const SizedBox(height: 12),
-            const _FeatureGrid(features: _features),
-          ],
+                // --- Feature Grid ---
+                const _SectionHeader(title: 'Features'),
+                const SizedBox(height: 12),
+                _FeatureGrid(features: _features),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -175,26 +190,25 @@ class _QuickActionsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
       children: [
         _QuickActionButton(
           label: 'Success',
           color: Colors.green,
           onPressed: () => ToastKit.success('Operation completed!'),
         ),
-        const SizedBox(width: 8),
         _QuickActionButton(
           label: 'Error',
           color: Colors.red,
           onPressed: () => ToastKit.error('Something went wrong'),
         ),
-        const SizedBox(width: 8),
         _QuickActionButton(
           label: 'Warning',
           color: Colors.orange,
           onPressed: () => ToastKit.warning('Check your input'),
         ),
-        const SizedBox(width: 8),
         _QuickActionButton(
           label: 'Info',
           color: Colors.blue,
@@ -218,21 +232,19 @@ class _QuickActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: FilledButton.tonal(
-        style: FilledButton.styleFrom(
-          backgroundColor: color.withOpacity(0.12),
-          foregroundColor: color,
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+    return FilledButton.tonal(
+      style: FilledButton.styleFrom(
+        backgroundColor: color.withOpacity(0.12),
+        foregroundColor: color,
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
         ),
-        onPressed: onPressed,
-        child: Text(
-          label,
-          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-        ),
+      ),
+      onPressed: onPressed,
+      child: Text(
+        label,
+        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
       ),
     );
   }
@@ -249,15 +261,17 @@ class _FeatureGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final columns = ResponsiveHelper.gridColumns(context);
+
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: features.length,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: columns,
         mainAxisSpacing: 12,
         crossAxisSpacing: 12,
-        childAspectRatio: 1.05,
+        childAspectRatio: columns == 1 ? 2.2 : 1.05,
       ),
       itemBuilder: (context, index) {
         return _FeatureCard(item: features[index]);
@@ -270,64 +284,86 @@ class _FeatureGrid extends StatelessWidget {
 // Feature Card
 // ---------------------------------------------------------------------------
 
-class _FeatureCard extends StatelessWidget {
+class _FeatureCard extends StatefulWidget {
   const _FeatureCard({required this.item});
 
   final _FeatureItem item;
 
   @override
+  State<_FeatureCard> createState() => _FeatureCardState();
+}
+
+class _FeatureCardState extends State<_FeatureCard> {
+  bool _isHovered = false;
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final item = widget.item;
 
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: theme.colorScheme.outlineVariant.withOpacity(0.5),
-        ),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () => Navigator.pushNamed(context, item.route),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Icon badge
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: item.color.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(item.icon, color: item.color, size: 24),
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      cursor: SystemMouseCursors.click,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+        transform: _isHovered
+            ? (Matrix4.identity()..translate(0, -2, 0))
+            : Matrix4.identity(),
+        child: Card(
+          elevation: _isHovered ? 4 : 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(
+              color: _isHovered
+                  ? item.color.withOpacity(0.4)
+                  : theme.colorScheme.outlineVariant.withOpacity(0.5),
+            ),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () => context.go(item.route),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Icon badge
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: item.color.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(item.icon, color: item.color, size: 24),
+                  ),
+                  const Spacer(),
+                  // Title
+                  Text(
+                    item.title,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  // Subtitle
+                  Text(
+                    item.subtitle,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ),
-              const Spacer(),
-              // Title
-              Text(
-                item.title,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: theme.colorScheme.onSurface,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 4),
-              // Subtitle
-              Text(
-                item.subtitle,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
+            ),
           ),
         ),
       ),
