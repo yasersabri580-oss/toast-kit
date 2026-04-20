@@ -190,6 +190,7 @@ class ToastAccessibility {
         return 'Info';
       case ToastType.loading:
         return 'Loading';
+      // ignore: deprecated_member_use_from_same_package
       case ToastType.custom:
         return '';
     }

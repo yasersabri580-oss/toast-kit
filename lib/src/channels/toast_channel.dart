@@ -18,6 +18,14 @@ import '../core/toast_config.dart';
 class ToastChannel {
 
   /// Creates a [ToastChannel].
+  ///
+  /// Use [customVariantName] to assign a registered custom variant to this
+  /// channel. When set, all toasts on this channel will use the named custom
+  /// variant unless overridden by an explicit `customBuilder` on the event.
+  ///
+  /// If both [defaultVariant] and [customVariantName] are specified,
+  /// [customVariantName] takes precedence (custom variants override built-in
+  /// enum variants).
   const ToastChannel({
     required this.id,
     required this.label,
@@ -27,6 +35,7 @@ class ToastChannel {
     this.defaultDuration,
     this.defaultAnimation,
     this.defaultVariant,
+    this.customVariantName,
     this.enabled = true,
   });
   /// Unique identifier for this channel.
@@ -52,6 +61,13 @@ class ToastChannel {
 
   /// Override: default visual variant.
   final ToastVariant? defaultVariant;
+
+  /// Override: name of a registered [CustomToastVariantBuilder].
+  ///
+  /// When set, all toasts on this channel use this custom variant unless
+  /// the individual event specifies its own `customBuilder` or
+  /// `customVariantName`. Takes precedence over [defaultVariant].
+  final String? customVariantName;
 
   /// Whether this channel is enabled. Disabled channels silently drop events.
   final bool enabled;

@@ -114,6 +114,14 @@ enum ToastType {
   loading,
 
   /// Completely user-defined.
+  ///
+  /// **Deprecated:** Use [CustomToastVariantBuilder] and register it via
+  /// [ToastKit.registerVariant] instead. Assign a `customVariantName` on the
+  /// event or channel. This enum value will be removed in a future release.
+  @Deprecated(
+    'Use CustomToastVariantBuilder with ToastKit.registerVariant() instead. '
+    'See the migration guide in README.md.',
+  )
   custom,
 }
 
@@ -141,6 +149,13 @@ enum ToastState {
   info,
 
   /// Completely user-defined state.
+  ///
+  /// **Deprecated:** Prefer defining specific states using the extensible
+  /// variant system instead. This value will be removed in a future release.
+  @Deprecated(
+    'Use CustomToastVariantBuilder with ToastKit.registerVariant() instead. '
+    'See the migration guide in README.md.',
+  )
   custom,
 }
 

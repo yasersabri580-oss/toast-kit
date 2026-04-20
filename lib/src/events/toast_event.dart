@@ -43,6 +43,19 @@ class ToastAction {
 class ToastEvent {
 
   /// Creates a [ToastEvent].
+  ///
+  /// ## Rendering Precedence
+  ///
+  /// When multiple rendering strategies are specified, they are resolved
+  /// in the following order (highest priority first):
+  ///
+  /// 1. **[customBuilder]** — a one-off builder function; always wins.
+  /// 2. **[customVariantName]** — a named [CustomToastVariantBuilder]
+  ///    registered via [ToastKit.registerVariant].
+  /// 3. **Channel's `customVariantName`** — inherited from the channel.
+  /// 4. **[variant]** — a built-in [ToastVariant] enum value.
+  /// 5. **Channel's `defaultVariant`** — inherited from the channel.
+  /// 6. **Default for [type]** — determined by [VariantFactory.defaultVariantForType].
   ToastEvent({
     String? id,
     required this.type,
@@ -61,6 +74,7 @@ class ToastEvent {
     this.actions,
     this.customBuilder,
     this.variant,
+    this.customVariantName,
     this.persistent = false,
     this.dismissible = true,
     this.channel,
@@ -83,6 +97,7 @@ class ToastEvent {
     ToastPriority priority = ToastPriority.normal,
     String? deduplicationKey,
     ToastVariant? variant,
+    String? customVariantName,
     VoidCallback? onTap,
     VoidCallback? onDismiss,
     List<ToastAction>? actions,
@@ -101,6 +116,7 @@ class ToastEvent {
       priority: priority,
       deduplicationKey: deduplicationKey,
       variant: variant,
+      customVariantName: customVariantName,
       onTap: onTap,
       onDismiss: onDismiss,
       actions: actions,
@@ -121,6 +137,7 @@ class ToastEvent {
     ToastPriority priority = ToastPriority.normal,
     String? deduplicationKey,
     ToastVariant? variant,
+    String? customVariantName,
     VoidCallback? onTap,
     VoidCallback? onDismiss,
     List<ToastAction>? actions,
@@ -139,6 +156,7 @@ class ToastEvent {
       priority: priority,
       deduplicationKey: deduplicationKey,
       variant: variant,
+      customVariantName: customVariantName,
       onTap: onTap,
       onDismiss: onDismiss,
       actions: actions,
@@ -159,6 +177,7 @@ class ToastEvent {
     ToastPriority priority = ToastPriority.normal,
     String? deduplicationKey,
     ToastVariant? variant,
+    String? customVariantName,
     VoidCallback? onTap,
     VoidCallback? onDismiss,
     List<ToastAction>? actions,
@@ -177,6 +196,7 @@ class ToastEvent {
       priority: priority,
       deduplicationKey: deduplicationKey,
       variant: variant,
+      customVariantName: customVariantName,
       onTap: onTap,
       onDismiss: onDismiss,
       actions: actions,
@@ -197,6 +217,7 @@ class ToastEvent {
     ToastPriority priority = ToastPriority.normal,
     String? deduplicationKey,
     ToastVariant? variant,
+    String? customVariantName,
     VoidCallback? onTap,
     VoidCallback? onDismiss,
     List<ToastAction>? actions,
@@ -215,6 +236,7 @@ class ToastEvent {
       priority: priority,
       deduplicationKey: deduplicationKey,
       variant: variant,
+      customVariantName: customVariantName,
       onTap: onTap,
       onDismiss: onDismiss,
       actions: actions,
@@ -234,6 +256,7 @@ class ToastEvent {
     ToastPriority priority = ToastPriority.normal,
     String? deduplicationKey,
     ToastVariant? variant,
+    String? customVariantName,
     VoidCallback? onDismiss,
     bool persistent = true,
     bool dismissible = false,
@@ -250,6 +273,7 @@ class ToastEvent {
       priority: priority,
       deduplicationKey: deduplicationKey,
       variant: variant ?? ToastVariant.loading,
+      customVariantName: customVariantName,
       onDismiss: onDismiss,
       persistent: persistent,
       dismissible: dismissible,
@@ -271,6 +295,7 @@ class ToastEvent {
     String? channel,
   }) {
     return ToastEvent(
+      // ignore: deprecated_member_use_from_same_package
       type: ToastType.custom,
       customBuilder: builder,
       duration: duration,
@@ -331,10 +356,20 @@ class ToastEvent {
   final List<ToastAction>? actions;
 
   /// Fully custom builder (overrides variant rendering).
+  ///
+  /// **Precedence:** This always takes the highest priority. If set, neither
+  /// [variant] nor [customVariantName] are used for rendering.
   final Widget Function(BuildContext, ToastController)? customBuilder;
 
   /// Visual variant preset.
   final ToastVariant? variant;
+
+  /// Name of a registered [CustomToastVariantBuilder] to use for rendering.
+  ///
+  /// Takes precedence over [variant] but is overridden by [customBuilder].
+  /// The named variant must be registered via [ToastKit.registerVariant]
+  /// before the toast is displayed.
+  final String? customVariantName;
 
   /// When this event was created.
   final DateTime createdAt;

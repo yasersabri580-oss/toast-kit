@@ -18,6 +18,7 @@ class ChannelHandle {
     Duration? duration,
     ToastPosition? position,
     ToastVariant? variant,
+    String? customVariantName,
     ToastAnimationType? animation,
   }) {
     _emit(ToastEvent.success(
@@ -26,6 +27,7 @@ class ChannelHandle {
       duration: duration,
       position: position,
       variant: variant,
+      customVariantName: customVariantName,
       animation: animation,
       channel: _channelName,
     ));
@@ -37,6 +39,7 @@ class ChannelHandle {
     Duration? duration,
     ToastPosition? position,
     ToastVariant? variant,
+    String? customVariantName,
     ToastAnimationType? animation,
   }) {
     _emit(ToastEvent.error(
@@ -45,6 +48,7 @@ class ChannelHandle {
       duration: duration,
       position: position,
       variant: variant,
+      customVariantName: customVariantName,
       animation: animation,
       channel: _channelName,
     ));
@@ -56,6 +60,7 @@ class ChannelHandle {
     Duration? duration,
     ToastPosition? position,
     ToastVariant? variant,
+    String? customVariantName,
     ToastAnimationType? animation,
   }) {
     _emit(ToastEvent.warning(
@@ -64,6 +69,7 @@ class ChannelHandle {
       duration: duration,
       position: position,
       variant: variant,
+      customVariantName: customVariantName,
       animation: animation,
       channel: _channelName,
     ));
@@ -75,6 +81,7 @@ class ChannelHandle {
     Duration? duration,
     ToastPosition? position,
     ToastVariant? variant,
+    String? customVariantName,
     ToastAnimationType? animation,
   }) {
     _emit(ToastEvent.info(
@@ -83,6 +90,7 @@ class ChannelHandle {
       duration: duration,
       position: position,
       variant: variant,
+      customVariantName: customVariantName,
       animation: animation,
       channel: _channelName,
     ));
@@ -108,6 +116,7 @@ class ChannelHandle {
       actions: event.actions,
       customBuilder: event.customBuilder,
       variant: event.variant,
+      customVariantName: event.customVariantName,
       persistent: event.persistent,
       dismissible: event.dismissible,
       channel: _channelName,

@@ -17,6 +17,7 @@ Color colorForType(ToastType type, ToastThemeData theme) {
       return theme.infoColor;
     case ToastType.loading:
       return theme.infoColor;
+    // ignore: deprecated_member_use_from_same_package
     case ToastType.custom:
       return theme.foregroundColor;
   }
@@ -35,6 +36,7 @@ IconData iconForType(ToastType type) {
       return Icons.info_rounded;
     case ToastType.loading:
       return Icons.hourglass_empty_rounded;
+    // ignore: deprecated_member_use_from_same_package
     case ToastType.custom:
       return Icons.notifications_rounded;
   }
