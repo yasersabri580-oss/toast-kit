@@ -13,6 +13,8 @@ ToastKit goes beyond simple toasts — it provides a **headless + UI hybrid noti
 ## ✨ Features
 
 - **No BuildContext required** — show toasts from anywhere (services, blocs, repositories)
+- **Extensible custom variants** — define once, reuse everywhere with `CustomToastVariantBuilder`
+- **Per-channel variant assignment** — assign different custom variants to different channels
 - **Rule-based triggering** — deduplicate, set error thresholds, limit max triggers per channel
 - **Plugin architecture** — hook into lifecycle events for logging, analytics, haptics, and more
 - **12+ built-in variants** — Minimal, Material, iOS, Glassmorphism, Gradient, Compact, and more
@@ -801,6 +803,165 @@ Future<T> fetchWithRetry<T>(
 
 ---
 
+## 🧩 Custom Toast Variants (Extensibility)
+
+ToastKit supports a **plugin-style extensibility mechanism** for toast variants. Instead of repeating custom builder code across multiple screens, define a variant once and reuse it everywhere.
+
+### Creating a Custom Variant
+
+Extend `CustomToastVariantBuilder`:
+
+```dart
+import 'package:toast_kit/toast_kit.dart';
+
+class PaymentSuccessVariant extends CustomToastVariantBuilder {
+  @override
+  String get name => 'payment_success';
+
+  @override
+  Widget build(BuildContext context, ToastEvent event, ToastController controller) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.green.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.green),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.payment, color: Colors.green, size: 28),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (event.title != null)
+                  Text(event.title!, style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text(event.message ?? ''),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: controller.dismiss,
+          ),
+        ],
+      ),
+    );
+  }
+}
+```
+
+### Registering Custom Variants
+
+Register at init time or later:
+
+```dart
+// At init time
+ToastKit.init(navigatorKey: navigatorKey);
+ToastKit.configure(variants: [
+  PaymentSuccessVariant(),
+  NotificationBannerVariant(),
+]);
+
+// Or register individually
+ToastKit.registerVariant(PaymentSuccessVariant());
+```
+
+### Using Custom Variants
+
+Use by name on individual toast events:
+
+```dart
+// Per-event usage
+ToastKit.success('Payment received!', customVariantName: 'payment_success');
+ToastKit.error('Payment failed', customVariantName: 'payment_error');
+```
+
+### Assigning Variants to Channels
+
+Assign a custom variant to a channel so all toasts on that channel use it automatically:
+
+```dart
+ToastKit.registerChannel(
+  const ToastChannel(
+    id: 'payment',
+    label: 'Payment',
+    customVariantName: 'payment_success',  // All toasts on this channel use this variant
+    defaultPriority: ToastPriority.urgent,
+  ),
+);
+
+// Now all toasts on the payment channel use PaymentSuccessVariant
+ToastKit.channel('payment').success('Payment received!');
+ToastKit.channel('payment').error('Payment declined');
+```
+
+### Rendering Precedence Rules
+
+When multiple rendering strategies are specified, ToastKit resolves them in order (highest priority first):
+
+| Priority | Strategy | When to use |
+|----------|----------|-------------|
+| 1 (highest) | `customBuilder` on event | One-off, truly unique toast UIs |
+| 2 | `customVariantName` on event | Per-event override with a registered variant |
+| 3 | Channel's `customVariantName` | Channel-wide custom variant |
+| 4 | `variant` (enum) on event | Per-event built-in variant |
+| 5 | Channel's `defaultVariant` | Channel-wide built-in variant |
+| 6 (lowest) | Default for `ToastType` | Automatic fallback (e.g., `material`) |
+
+**Key rule:** An explicit `customBuilder` always overrides everything else. This is the escape hatch for single-use, highly custom UIs. For consistent reusable styling, prefer `CustomToastVariantBuilder`.
+
+```dart
+// This builder always wins, even if customVariantName or variant is also set
+ToastKit.show(ToastEvent(
+  type: ToastType.success,
+  message: 'Custom!',
+  customBuilder: (ctx, ctrl) => MyWidget(),     // ← Priority 1 (wins)
+  customVariantName: 'payment_success',          // ← Priority 2 (ignored)
+  variant: ToastVariant.material,                // ← Priority 4 (ignored)
+));
+```
+
+### Composing Variants
+
+Custom variants can delegate to other variants or compose them:
+
+```dart
+class BrandedVariant extends CustomToastVariantBuilder {
+  @override
+  String get name => 'branded';
+
+  @override
+  Widget build(BuildContext context, ToastEvent event, ToastController controller) {
+    // Wrap a built-in variant with branding
+    return Container(
+      decoration: BoxDecoration(
+        border: Border(left: BorderSide(color: MyBrand.primaryColor, width: 4)),
+      ),
+      child: VariantFactory.build(ToastVariant.material, event, controller),
+    );
+  }
+}
+```
+
+### `ToastType.custom` Deprecation
+
+`ToastType.custom` is now **deprecated**. With the extensible custom variant system, there is no longer a need for a catch-all "custom" type:
+
+| Before (deprecated) | After (recommended) |
+|---------------------|---------------------|
+| `ToastEvent.custom(builder: ...)` | `ToastKit.registerVariant(MyVariant())` + `customVariantName: 'my_variant'` |
+| `ToastType.custom` | Use any `ToastType` (success, error, etc.) + `customVariantName` |
+| `ToastState.custom` | Use standard states (success, error, etc.) |
+
+**Migration:** Replace `ToastEvent.custom(builder: myBuilder)` with either:
+1. A registered `CustomToastVariantBuilder` (recommended for reuse), or
+2. A standard `ToastEvent` with `customBuilder: myBuilder` (for one-off cases).
+
+---
+
 ## 🔌 Plugin System
 
 ### Plugin Interface
@@ -972,7 +1133,11 @@ ToastKit.unregisterPlugin('logger');
 | `ToastKit.info(msg)` | Show an info toast |
 | `ToastKit.showLoading(msg)` | Show loading toast, returns `ToastController` |
 | `ToastKit.loading(msg)` | Show loading toast (fire-and-forget) |
-| `ToastKit.custom(builder: ...)` | Show toast with custom builder |
+| `ToastKit.custom(builder: ...)` | Show toast with custom builder (**deprecated — use `registerVariant`**) |
+| `ToastKit.registerVariant(variant)` | Register a `CustomToastVariantBuilder` by name |
+| `ToastKit.unregisterVariant(name)` | Remove a custom variant |
+| `ToastKit.isVariantRegistered(name)` | Check if a custom variant is registered |
+| `ToastKit.configure(variants: [...])` | Batch-register plugins and/or custom variants |
 | `ToastKit.configureRule(ch, config)` | Set a config-based rule for a channel |
 | `ToastKit.addRule(rule)` | Add a custom `ToastRule` |
 | `ToastKit.removeRule(id)` | Remove a custom rule by ID |

@@ -89,6 +89,8 @@ export 'src/debug/toast_debug_overlay.dart';
 // Variants
 export 'src/variants/toast_variant_helpers.dart';
 export 'src/variants/variant_factory.dart';
+export 'src/variants/custom_variant_builder.dart';
+export 'src/variants/custom_variant_registry.dart';
 export 'src/variants/minimal_toast.dart';
 export 'src/variants/material_toast.dart';
 export 'src/variants/ios_toast.dart';

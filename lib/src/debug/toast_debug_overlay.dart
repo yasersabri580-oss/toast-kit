@@ -508,6 +508,7 @@ class _ToastDebugOverlayState extends State<ToastDebugOverlay> {
       ToastType.warning => (Icons.warning_amber, Colors.orangeAccent),
       ToastType.info => (Icons.info_outline, Colors.lightBlueAccent),
       ToastType.loading => (Icons.hourglass_top, Colors.amberAccent),
+      // ignore: deprecated_member_use_from_same_package
       ToastType.custom => (Icons.widgets, Colors.purpleAccent),
     };
     return Icon(icon, size: 12, color: color);

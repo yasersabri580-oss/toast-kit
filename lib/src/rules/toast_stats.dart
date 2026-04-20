@@ -54,6 +54,7 @@ class ToastStats {
         infoCount++;
         break;
       case ToastType.loading:
+      // ignore: deprecated_member_use_from_same_package
       case ToastType.custom:
         break;
     }

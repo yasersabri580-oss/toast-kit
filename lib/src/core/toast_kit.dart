@@ -11,6 +11,8 @@ import '../overlay/overlay_engine.dart';
 import '../animation/animation_factory.dart';
 import '../gestures/toast_gesture_handler.dart';
 import '../variants/variant_factory.dart';
+import '../variants/custom_variant_builder.dart';
+import '../variants/custom_variant_registry.dart';
 import '../channels/toast_channel.dart';
 import '../channels/channel_config.dart';
 import '../channels/channel_manager.dart';
@@ -111,6 +113,7 @@ class ToastKit {
   final ChannelManager _channelManager = ChannelManager();
   final PluginHub _pluginHub = PluginHub();
   final RuleEngine _ruleEngine = RuleEngine();
+  final CustomVariantRegistry _customVariantRegistry = CustomVariantRegistry();
   final ToastPersistence? _persistence;
   late final GroupCollapser _groupCollapser;
 
@@ -214,6 +217,7 @@ class ToastKit {
     Duration? duration,
     ToastPosition? position,
     ToastVariant? variant,
+    String? customVariantName,
     ToastAnimationType? animation,
     String? channel,
   }) {
@@ -223,6 +227,7 @@ class ToastKit {
       duration: duration,
       position: position,
       variant: variant,
+      customVariantName: customVariantName,
       animation: animation,
       channel: channel,
     ));
@@ -234,6 +239,7 @@ class ToastKit {
     Duration? duration,
     ToastPosition? position,
     ToastVariant? variant,
+    String? customVariantName,
     ToastAnimationType? animation,
     String? channel,
   }) {
@@ -243,6 +249,7 @@ class ToastKit {
       duration: duration,
       position: position,
       variant: variant,
+      customVariantName: customVariantName,
       animation: animation,
       channel: channel,
     ));
@@ -254,6 +261,7 @@ class ToastKit {
     Duration? duration,
     ToastPosition? position,
     ToastVariant? variant,
+    String? customVariantName,
     ToastAnimationType? animation,
     String? channel,
   }) {
@@ -263,6 +271,7 @@ class ToastKit {
       duration: duration,
       position: position,
       variant: variant,
+      customVariantName: customVariantName,
       animation: animation,
       channel: channel,
     ));
@@ -274,6 +283,7 @@ class ToastKit {
     Duration? duration,
     ToastPosition? position,
     ToastVariant? variant,
+    String? customVariantName,
     ToastAnimationType? animation,
     String? channel,
   }) {
@@ -283,6 +293,7 @@ class ToastKit {
       duration: duration,
       position: position,
       variant: variant,
+      customVariantName: customVariantName,
       animation: animation,
       channel: channel,
     ));
@@ -376,20 +387,33 @@ class ToastKit {
   // Plugins
   // -----------------------------------------------------------------------
 
-  /// Configure ToastKit with plugins after initialization.
+  /// Configure ToastKit with plugins and/or custom variants after
+  /// initialization.
   ///
   /// ```dart
   /// ToastKit.configure(
   ///   plugins: [
   ///     FirebaseToastAnalyticsPlugin(logEvent: analytics.logEvent),
   ///   ],
+  ///   variants: [
+  ///     PaymentSuccessVariant(),
+  ///     NotificationBannerVariant(),
+  ///   ],
   /// );
   /// ```
-  static void configure({List<ToastPlugin>? plugins}) {
+  static void configure({
+    List<ToastPlugin>? plugins,
+    List<CustomToastVariantBuilder>? variants,
+  }) {
     final inst = instance;
     if (plugins != null) {
       for (final plugin in plugins) {
         inst._pluginHub.register(plugin);
+      }
+    }
+    if (variants != null) {
+      for (final variant in variants) {
+        inst._customVariantRegistry.register(variant);
       }
     }
   }
@@ -406,6 +430,52 @@ class ToastKit {
 
   /// The plugin hub.
   static PluginHub get pluginHub => instance._pluginHub;
+
+  // -----------------------------------------------------------------------
+  // Custom Variants
+  // -----------------------------------------------------------------------
+
+  /// Register a [CustomToastVariantBuilder] so it can be referenced by name.
+  ///
+  /// Once registered, the variant can be used anywhere via its [name]:
+  ///
+  /// ```dart
+  /// ToastKit.registerVariant(PaymentSuccessVariant());
+  ///
+  /// // Use by name on a single toast
+  /// ToastKit.success('Paid!', customVariantName: 'payment_success');
+  ///
+  /// // Or assign to a channel
+  /// ToastKit.registerChannel(
+  ///   const ToastChannel(
+  ///     id: 'payment',
+  ///     label: 'Payment',
+  ///     customVariantName: 'payment_success',
+  ///   ),
+  /// );
+  /// ```
+  static void registerVariant(CustomToastVariantBuilder variant) {
+    instance._customVariantRegistry.register(variant);
+  }
+
+  /// Unregister a custom variant by name.
+  static void unregisterVariant(String name) {
+    instance._customVariantRegistry.unregister(name);
+  }
+
+  /// Look up a registered custom variant by name.
+  static CustomToastVariantBuilder? variant(String name) {
+    return instance._customVariantRegistry[name];
+  }
+
+  /// Whether a custom variant with the given name is registered.
+  static bool isVariantRegistered(String name) {
+    return instance._customVariantRegistry.isRegistered(name);
+  }
+
+  /// The custom variant registry.
+  static CustomVariantRegistry get variantRegistry =>
+      instance._customVariantRegistry;
 
   // -----------------------------------------------------------------------
   // Rules
@@ -521,6 +591,7 @@ class ToastKit {
     inst._channelManager.clear();
     inst._pluginHub.dispose();
     inst._ruleEngine.clear();
+    inst._customVariantRegistry.clear();
     inst._router.clear();
     for (final c in inst._controllers.values) {
       c.dispose();
@@ -641,19 +712,26 @@ class ToastKit {
     );
     _controllers[event.id] = controller;
 
-    // Build the variant widget.
-    Widget toastWidget;
-    if (event.customBuilder != null) {
-      toastWidget = Builder(
-        builder: (ctx) => event.customBuilder!(ctx, controller),
-      );
-    } else {
-      final variant = event.variant ??
-          VariantFactory.defaultVariantForType(event.type);
-      toastWidget = Builder(
-        builder: (ctx) => VariantFactory.build(variant, event, controller),
-      );
+    // Build the variant widget using the full precedence chain:
+    //   1. customBuilder > 2. customVariantName > 3. channel customVariantName
+    //   > 4. variant enum > 5. channel defaultVariant > 6. type default.
+    String? channelCustomVariantName;
+    ToastVariant? channelDefaultVariant;
+    if (event.channel != null) {
+      final ch = _channelRegistry[event.channel!];
+      if (ch != null) {
+        channelCustomVariantName = ch.customVariantName;
+        channelDefaultVariant = ch.defaultVariant;
+      }
     }
+
+    Widget toastWidget = VariantFactory.resolveAndBuild(
+      event: event,
+      controller: controller,
+      registry: _customVariantRegistry,
+      channelCustomVariantName: channelCustomVariantName,
+      channelDefaultVariant: channelDefaultVariant,
+    );
 
     // Wrap with gesture handler.
     toastWidget = ToastGestureHandler(
@@ -744,7 +822,9 @@ class ToastKit {
         return ToastState.info;
       case ToastType.loading:
         return ToastState.loading;
+      // ignore: deprecated_member_use_from_same_package
       case ToastType.custom:
+        // ignore: deprecated_member_use_from_same_package
         return ToastState.custom;
     }
   }
