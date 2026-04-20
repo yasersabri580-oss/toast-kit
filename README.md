@@ -1159,64 +1159,208 @@ ToastKit.unregisterPlugin('logger');
 
 See the [`example/`](example/) directory for a complete demo app with real-world scenarios.
 
+### Full-Featured ToastService Example
+
+The example app includes a production-quality `ToastService` that demonstrates comprehensive channel/variant/rules integration. Here is the key pattern:
+
+#### 1. Define Custom Variants
+
 ```dart
-import 'package:flutter/material.dart';
 import 'package:toast_kit/toast_kit.dart';
 
-void main() => runApp(const MyApp());
-
-class MyApp extends StatefulWidget {
-  const MyApp({super.key});
+/// Custom variant for payment notifications.
+class PaymentSuccessVariant extends CustomToastVariantBuilder {
+  @override
+  String get name => 'payment_success';
 
   @override
-  State<MyApp> createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
-  final _navKey = GlobalKey<NavigatorState>();
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ToastKit.init(
-        navigatorKey: _navKey,
-        config: const ToastConfig(
-          defaultPosition: ToastPosition.top,
-          maxVisibleToasts: 3,
-        ),
-        channels: [ToastChannel.auth, ToastChannel.payment],
-      );
-
-      ToastKit.configureRule('auth', RuleConfig(
-        errorThreshold: 3,
-        deduplicateWindow: Duration(seconds: 60),
-        maxTriggers: 1,
-      ));
-    });
-  }
-
-  @override
-  void dispose() {
-    ToastKit.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      navigatorKey: _navKey,
-      home: Scaffold(
-        body: Center(
-          child: ElevatedButton(
-            onPressed: () => ToastKit.success('Hello, ToastKit!'),
-            child: const Text('Show Toast'),
+  Widget build(BuildContext context, ToastEvent event, ToastController controller) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.green.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.green),
+      ),
+      child: Row(
+        children: [
+          Icon(event.icon ?? Icons.payment, color: Colors.green),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (event.title != null)
+                  Text(event.title!, style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text(event.message ?? ''),
+              ],
+            ),
           ),
-        ),
+          IconButton(icon: const Icon(Icons.close), onPressed: controller.dismiss),
+        ],
       ),
     );
   }
 }
+
+/// Custom variant for system errors.
+class SystemErrorVariant extends CustomToastVariantBuilder {
+  @override
+  String get name => 'system_error';
+
+  @override
+  Widget build(BuildContext context, ToastEvent event, ToastController controller) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E1E2E),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.red.withAlpha(80)),
+      ),
+      child: Row(
+        children: [
+          Icon(event.icon ?? Icons.error_outline, color: Colors.red.shade300),
+          const SizedBox(width: 12),
+          Expanded(child: Text(event.message ?? '', style: TextStyle(color: Colors.red.shade100))),
+          IconButton(icon: Icon(Icons.close, color: Colors.red.shade300), onPressed: controller.dismiss),
+        ],
+      ),
+    );
+  }
+}
+```
+
+#### 2. Define Channels with Variant Assignments
+
+```dart
+// Payment channel — auto-applies PaymentSuccessVariant
+const paymentChannel = ToastChannel(
+  id: 'payment',
+  label: 'Payment Channel',
+  customVariantName: 'payment_success', // All toasts use this variant
+  maxVisible: 1,
+  defaultPriority: ToastPriority.urgent,
+  defaultDuration: Duration(seconds: 5),
+  defaultPosition: ToastPosition.top,
+);
+
+// System channel — auto-applies SystemErrorVariant
+const systemChannel = ToastChannel(
+  id: 'system',
+  label: 'System Channel',
+  customVariantName: 'system_error',
+  maxVisible: 2,
+  defaultPriority: ToastPriority.high,
+);
+```
+
+#### 3. Initialize with Channels, Variants, and Rules
+
+```dart
+void initToastService(GlobalKey<NavigatorState> navigatorKey) {
+  // Initialize ToastKit
+  ToastKit.init(
+    navigatorKey: navigatorKey,
+    config: const ToastConfig(
+      defaultPosition: ToastPosition.top,
+      maxVisibleToasts: 3,
+      enableQueue: true,
+      queueMode: QueueMode.fifo,
+    ),
+    channels: [paymentChannel, systemChannel],
+  );
+
+  // Register custom variants
+  ToastKit.configure(variants: [
+    PaymentSuccessVariant(),
+    SystemErrorVariant(),
+  ]);
+
+  // Config-based rule: trigger after 3 payment errors
+  ToastKit.configureRule('payment', const RuleConfig(
+    errorThreshold: 3,
+    deduplicateWindow: Duration(seconds: 60),
+    maxTriggers: 1,
+  ));
+
+  // Custom rule: suggest help after 2 payment errors
+  ToastKit.addRule(ToastRule(
+    id: 'payment-help',
+    channel: 'payment',
+    maxTriggers: 1,
+    condition: (stats, event) => stats.errorCount >= 2,
+    action: (context) {
+      ToastKit.show(ToastEvent.info(
+        message: 'Try switching your payment method.',
+        variant: ToastVariant.action,
+        actions: [
+          ToastAction(
+            label: 'Switch Method',
+            onPressed: () => ToastKit.success('Updated!', channel: 'payment'),
+          ),
+        ],
+        channel: 'payment',
+      ));
+    },
+  ));
+
+  // Error burst detection on system channel
+  ToastKit.addRule(ToastRule(
+    id: 'system-burst',
+    channel: 'system',
+    deduplicateWindow: const Duration(seconds: 60),
+    condition: (stats, event) =>
+        stats.errorsInWindow(const Duration(seconds: 30)) >= 3,
+    action: (context) {
+      ToastKit.show(ToastEvent.error(
+        message: 'Error burst: ${context.stats.errorCount} errors detected.',
+        persistent: true,
+        channel: 'system',
+      ));
+    },
+  ));
+}
+```
+
+#### 4. Use Anywhere — No BuildContext Required
+
+```dart
+// Payment success — auto-uses PaymentSuccessVariant via channel
+ToastKit.channel('payment').success('Payment of \$49.99 received!');
+
+// Payment error — rules evaluate automatically
+ToastKit.channel('payment').error('Card declined');
+
+// System error — auto-uses SystemErrorVariant via channel
+ToastKit.error('Database timeout', channel: 'system');
+
+// Progress toast with lifecycle
+final ctrl = ToastKit.showLoading('Uploading file…');
+try {
+  for (var pct = 0; pct <= 100; pct += 10) {
+    await Future.delayed(Duration(milliseconds: 200));
+    ctrl.update(message: 'Uploading… $pct%');
+    ctrl.progress.value = pct / 100;
+  }
+  ctrl.success('Upload complete!');
+} catch (e) {
+  ctrl.error('Upload failed');
+}
+
+// Per-event variant override (use glassmorphism on payment channel)
+ToastKit.show(ToastEvent.success(
+  message: 'Override!',
+  variant: ToastVariant.glassmorphism, // Overrides channel default
+  channel: 'payment',
+));
+
+// Runtime rule management
+ToastKit.addRule(ToastRule(id: 'temp', channel: 'system', ...));
+ToastKit.removeRule('temp');
+ToastKit.ruleEngine.resetStats();
 ```
 
 ---
@@ -1249,6 +1393,16 @@ toast_kit/
 ├── example/
 │   ├── lib/
 │   │   ├── main.dart                     # Full demo app
+│   │   ├── mock/
+│   │   │   └── custom_variants.dart      # Reusable custom variant builders
+│   │   ├── services/
+│   │   │   └── toast_service.dart        # Production-quality ToastService
+│   │   ├── toast_demo/
+│   │   │   ├── toast_builder_demo.dart   # Channel/variant/rules demo
+│   │   │   ├── toast_showcase.dart       # All types/variants/positions
+│   │   │   ├── toast_rules_demo.dart     # Rule engine demonstrations
+│   │   │   ├── toast_progress_demo.dart  # Progress tracking
+│   │   │   └── ...
 │   │   └── scenarios/
 │   │       ├── api_error.dart            # API failure handling
 │   │       ├── form_validation.dart      # Form validation errors
@@ -1260,7 +1414,6 @@ toast_kit/
 ├── test/
 ├── pubspec.yaml
 ├── README.md
-├── VIDEO_TUTORIAL_PLAN.md
 └── analysis_options.yaml
 ```
 

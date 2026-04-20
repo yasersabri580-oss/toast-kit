@@ -1,5 +1,24 @@
 # Changelog
 
+## [2.1.0] - Comprehensive Builder Demo & ToastService Example
+
+### Added
+- **`example/lib/mock/custom_variants.dart`** — Three production-quality `CustomToastVariantBuilder` implementations (`PaymentSuccessVariant`, `SystemErrorVariant`, `NotificationBannerVariant`) demonstrating the extensible variant system.
+- **`example/lib/services/toast_service.dart`** — A centralized `ToastService` singleton showing best practices for multi-channel initialization, custom variant registration, per-channel variant assignment, config-based and custom rules, progress/loading toast lifecycle, and runtime rule management.
+- **`example/lib/toast_demo/toast_builder_demo.dart`** — An interactive demo screen covering:
+  - Multi-channel toasts (default, payment, system, notification)
+  - Custom variant registration and per-channel assignment
+  - Per-event variant override (e.g., glassmorphism on payment channel)
+  - Config-based and custom rules with real-time feedback
+  - Progress/loading toast lifecycle (start → update → success/fail)
+  - Runtime rule management (add, remove, reset stats)
+  - "See Code" modals with copy-paste-ready snippets for every feature
+
+### Changed
+- **README.md** — Replaced the minimal example app section with a comprehensive, multi-step guide covering custom variants, channel definitions, initialization with rules, and usage patterns. Updated folder structure to reflect new files.
+- **Dashboard** — Added "Builder Demo" entry linking to the new `ToastBuilderDemo` screen.
+- **Router** — Added `/toast/builder` route for the new demo.
+
 ## [2.0.0] - Extensible Custom Toast Variants
 
 ### Added
