@@ -1,5 +1,38 @@
 # Changelog
 
+## [2.2.0] - Full-Featured Toast Builder UI
+
+### Added
+- **Channels Tab** (`example/lib/toast_demo/builder/channel_builder_tab.dart`) — Interactive channel management with full CRUD operations:
+  - Add, edit, and remove toast channels
+  - Configure all `ToastChannel` properties: id, label, maxVisible, defaultPriority, defaultPosition, defaultDuration, defaultAnimation, defaultVariant, customVariantName, enabled
+  - Per-channel `ChannelConfig` policies: deduplication, throttling, interrupt behavior, queue limits
+- **Variants Tab** (`example/lib/toast_demo/builder/variant_builder_tab.dart`) — Variant management and assignment:
+  - Register custom variant names with quick-add for common examples
+  - Assign built-in or custom variants to any channel
+  - Visual gallery of all 12 built-in variant types
+  - Variant precedence documentation in tooltips
+- **Rules Tab** (`example/lib/toast_demo/builder/rules_builder_tab.dart`) — Rule configuration:
+  - Config-based rules (RuleConfig): error threshold, deduplication window, max triggers per channel
+  - Custom rules (ToastRule): condition types (error count, total count, window-based, warnings), action types (info/warning/error/action toasts), persistence and dismiss settings
+- **Full Code Generator** (`example/lib/toast_demo/builder/full_code_generator.dart`) — Complete, production-ready Dart code generation:
+  - Channel definitions as `const ToastChannel(...)` declarations
+  - Initialization function with `ToastKit.init(...)` and channel registration
+  - Custom variant registration scaffolding with class stubs
+  - Config-based and custom rule setup in `_configureRules()`
+  - Usage examples with both direct and fluent channel API
+- **Builder Data Models** (`example/lib/toast_demo/builder/builder_models.dart`) — Type-safe models for all builder state:
+  - `ChannelModel`, `ChannelConfigModel`, `RuleConfigModel`, `CustomRuleModel`
+  - `BuilderConfiguration` with `toJson()`/`fromJson()` for serialization
+  - Enum types for rule conditions and actions
+- **Import/Export** — Export builder configuration as JSON to clipboard; import previously exported configurations to restore state
+- **Full Setup Code Section** in Preview tab — generates complete initialization code alongside the single-toast code
+
+### Changed
+- **Toast Configurator Screen** — Expanded from 5 tabs to 8 tabs (Content, Style, Animation, Behavior, Channels, Variants, Rules, Preview)
+- **App Bar** — Added import/export action buttons alongside randomize and reset
+- **Preview Tab** — Now includes "Full Setup Code" section that generates complete channel/variant/rule initialization code
+
 ## [2.1.0] - Comprehensive Builder Demo & ToastService Example
 
 ### Added
