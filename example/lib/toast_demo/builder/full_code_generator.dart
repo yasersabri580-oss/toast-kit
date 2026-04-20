@@ -275,7 +275,7 @@ class FullCodeGenerator {
     buf.writeln("                        style: TextStyle(");
     buf.writeln("                          fontSize: ${variant.fontSize + 2},");
     if (variant.titleFontWeight != null) {
-      buf.writeln("                          fontWeight: FontWeight.w${variant.titleFontWeight!.value ~/ 100}00,");
+      buf.writeln("                          fontWeight: FontWeight.w${variant.titleFontWeight!.value},");
     }
     if (variant.textColor != null) {
       buf.writeln("                          color: Color(0x${variant.textColor!.value.toRadixString(16).padLeft(8, '0')}),");
@@ -288,7 +288,7 @@ class FullCodeGenerator {
     buf.writeln("                      style: TextStyle(");
     buf.writeln("                        fontSize: ${variant.fontSize},");
     if (variant.messageFontWeight != null) {
-      buf.writeln("                        fontWeight: FontWeight.w${variant.messageFontWeight!.value ~/ 100}00,");
+      buf.writeln("                        fontWeight: FontWeight.w${variant.messageFontWeight!.value},");
     }
     if (variant.textColor != null) {
       buf.writeln("                        color: Color(0x${variant.textColor!.value.toRadixString(16).padLeft(8, '0')}),");
