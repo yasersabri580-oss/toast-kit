@@ -9,6 +9,38 @@
 
 ToastKit goes beyond simple toasts — it provides a **headless + UI hybrid notification engine** with rule-based triggering, a plugin architecture, queue management, and 12+ ready-made toast variants. No `BuildContext` required.
 
+> 💡 **Perfect for:** Production apps, complex notification flows, enterprise applications, multi-channel systems, and scenarios requiring smart automation.
+
+---
+
+## 🎯 Key Highlights
+
+- ⚡ **Zero BuildContext** — Show toasts from anywhere (services, BLoCs, repositories)
+- 🎨 **12+ Built-in Variants** — Material, iOS, Glassmorphism, Gradient, Compact, and more
+- 🔧 **Custom Variants** — Define once, reuse everywhere with `CustomToastVariantBuilder`
+- 📺 **Channel System** — Group toasts by category with independent policies
+- 🤖 **Smart Rules** — Auto-trigger actions based on error thresholds, windows, conditions
+- 🔌 **Plugin Architecture** — Analytics, logging, haptics without touching core code
+- 📊 **Stateful Toasts** — Loading → success/error transitions with controllers
+- 🎬 **12 Animations** — Fade, slide, scale, bounce, elastic, spring, shake, blur, glow
+- 🚦 **Queue Management** — FIFO, LIFO, or priority-based with bounded limits
+- 🛡️ **Production-Ready** — Deduplication, throttling, persistence, accessibility
+
+---
+
+## 📚 Documentation
+
+- 📖 **[Quick Start Guide](document/quick_start.md)** — Get started in 2 minutes
+- 🧠 **[Core Concepts](document/core_concepts.md)** — Understanding the architecture
+- 🔍 **[API Reference](document/api_reference.md)** — Complete API documentation
+- 🎓 **[Examples](document/examples/)** — Real-world use cases
+- ⚙️ **[Advanced Configuration](document/advanced/configuration.md)** — Fine-tuning
+- 🎨 **[Customization Guide](document/advanced/customization.md)** — Custom variants and styles
+- 🤖 **[Rule Engine](document/advanced/rule_engine.md)** — Smart automation
+- 🚀 **[Performance](document/advanced/performance.md)** — Optimization tips
+- ❓ **[FAQ](document/faq.md)** — Common questions answered
+- 🐛 **[Troubleshooting](document/troubleshooting.md)** — Solving common issues
+
 ---
 
 ## 📑 Table of Contents
@@ -79,6 +111,14 @@ ToastKit goes beyond simple toasts — it provides a **headless + UI hybrid noti
 
 ## 📦 Installation
 
+### Requirements
+
+- **Flutter**: 3.10.0 or higher
+- **Dart**: 3.0.0 or higher
+- **Platforms**: iOS, Android, Web, Windows, macOS, Linux
+
+### Add Dependency
+
 Add ToastKit to your `pubspec.yaml`:
 
 ```yaml
@@ -86,12 +126,75 @@ dependencies:
   toast_kit:
     git:
       url: https://github.com/yasersabri580-oss/toast-kit.git
+      ref: main  # or specify a tag/commit
 ```
 
-Then run:
+Or for a specific version:
+
+```yaml
+dependencies:
+  toast_kit:
+    git:
+      url: https://github.com/yasersabri580-oss/toast-kit.git
+      ref: v2.2.0
+```
+
+### Install
+
+Run the following command:
 
 ```bash
 flutter pub get
+```
+
+### Import
+
+```dart
+import 'package:toast_kit/toast_kit.dart';
+```
+
+### Verify Installation
+
+Create a simple test:
+
+```dart
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatefulWidget {
+  const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  final _navigatorKey = GlobalKey<NavigatorState>();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ToastKit.init(navigatorKey: _navigatorKey);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      navigatorKey: _navigatorKey,
+      home: Scaffold(
+        body: Center(
+          child: ElevatedButton(
+            onPressed: () => ToastKit.success('ToastKit is ready! 🎉'),
+            child: const Text('Test Toast'),
+          ),
+        ),
+      ),
+    );
+  }
+}
 ```
 
 ---
@@ -135,6 +238,59 @@ try {
 } catch (e) {
   ctrl.error('Upload failed');
 }
+```
+
+---
+
+## 🎨 Toast Variants Showcase
+
+ToastKit includes 12+ pre-built variants, each optimized for different use cases:
+
+| Variant | Description | Best For |
+|---------|-------------|----------|
+| `material` | Material Design 3 style with elevation | Android apps, modern UIs |
+| `ios` | iOS Human Interface Guidelines style | iOS apps, native feel |
+| `minimal` | Clean, minimal design with subtle borders | Content-first apps |
+| `glassmorphism` | Frosted-glass effect with blur | Modern, premium UIs |
+| `gradient` | Gradient background with smooth transitions | Eye-catching notifications |
+| `floatingCard` | Elevated card with shadow | Prominent announcements |
+| `compact` | Small pill-shaped design | Unobtrusive notifications |
+| `fullWidth` | Full-width banner | Important site-wide messages |
+| `loading` | Spinner with progress indicator | Loading states |
+| `progress` | Determinate/indeterminate progress bar | File uploads, downloads |
+| `action` | Contains action buttons | Undo, retry, confirm actions |
+| `debug` | Developer info with monospace font | Debug builds, diagnostics |
+
+### Using Variants
+
+```dart
+// Material Design (default for most toasts)
+ToastKit.success('Saved!', variant: ToastVariant.material);
+
+// iOS style
+ToastKit.error('Failed', variant: ToastVariant.ios);
+
+// Glassmorphism effect
+ToastKit.info('Update available', variant: ToastVariant.glassmorphism);
+
+// Gradient background
+ToastKit.warning('Low storage', variant: ToastVariant.gradient);
+
+// Compact pill
+ToastKit.success('Done', variant: ToastVariant.compact);
+
+// Full-width banner
+ToastKit.warning('Maintenance mode', variant: ToastVariant.fullWidth);
+
+// With action buttons
+ToastKit.show(ToastEvent.error(
+  message: 'Delete failed',
+  variant: ToastVariant.action,
+  actions: [
+    ToastAction(label: 'Retry', onPressed: () => retryDelete()),
+    ToastAction(label: 'Cancel', onPressed: () {}),
+  ],
+));
 ```
 
 ---
