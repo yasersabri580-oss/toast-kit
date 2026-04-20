@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use_from_same_package
+
 import 'package:flutter/material.dart' hide RouterConfig;
 import 'package:flutter_test/flutter_test.dart';
 
@@ -171,6 +173,8 @@ void main() {
       expect(ToastState.values, contains(ToastState.error));
       expect(ToastState.values, contains(ToastState.warning));
       expect(ToastState.values, contains(ToastState.info));
+      // ignore: duplicate_ignore
+      // ignore: deprecated_member_use_from_same_package
       expect(ToastState.values, contains(ToastState.custom));
     });
   });

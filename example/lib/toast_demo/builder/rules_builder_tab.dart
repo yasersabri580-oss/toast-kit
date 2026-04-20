@@ -84,6 +84,7 @@ class _RulesBuilderTabState extends State<RulesBuilderTab> {
   // ---------------------------------------------------------------------------
 
   /// Returns the label for a channel, falling back to its id.
+  // ignore: unused_element
   String _channelLabel(String channelId) {
     for (final channel in widget.channels) {
       if (channel.id == channelId) return channel.label;

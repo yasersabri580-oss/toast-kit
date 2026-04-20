@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 
 import 'custom_variant_builder.dart';
 

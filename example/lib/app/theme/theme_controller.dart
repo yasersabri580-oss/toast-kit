@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Holds and notifies listeners of the current [ThemeMode].
 class ThemeController extends ValueNotifier<ThemeMode> {
-  ThemeController([ThemeMode initial = ThemeMode.system]) : super(initial);
+  ThemeController([super.initial = ThemeMode.system]);
 }
 
 /// An [InheritedNotifier] that exposes [ThemeController] to the widget tree.

@@ -661,16 +661,16 @@ class FullCodeGenerator {
       if (p.isEmpty) return '';
       return p[0].toUpperCase() + p.substring(1).toLowerCase();
     }).join();
-    return '${first}${rest}Channel';
+    return '$first${rest}Channel';
   }
 
   /// Convert a variant name like 'payment_success' to PascalCase class name.
   static String _variantClassName(String name) {
     final parts = name.split(RegExp(r'[_\-\s]+'));
-    return parts.map((p) {
+    return '${parts.map((p) {
       if (p.isEmpty) return '';
       return p[0].toUpperCase() + p.substring(1).toLowerCase();
-    }).join() + 'Variant';
+    }).join()}Variant';
   }
 
   /// Get the ToastKit convenience method name for a rule action type.

@@ -146,7 +146,7 @@ class _VariantBuilderTabState extends State<VariantBuilderTab> {
                   message: 'Create a new toast variant from the builder',
                   child: FilledButton.icon(
                     onPressed: () {
-                      // TODO: Open builder to create new variant
+                  
                       _showCreateVariantDialog(context);
                     },
                     icon: const Icon(Icons.add, size: 18),
@@ -374,7 +374,7 @@ class _VariantBuilderTabState extends State<VariantBuilderTab> {
                     ),
                   if (variant.assignedChannels.isNotEmpty)
                     Chip(
-                      avatar: Icon(Icons.link, size: 14),
+                      avatar: const Icon(Icons.link, size: 14),
                       label: Text(
                         '${variant.assignedChannels.length} channel(s)',
                         style: textTheme.labelSmall,
@@ -418,7 +418,7 @@ class _VariantBuilderTabState extends State<VariantBuilderTab> {
                     ),
                   if (variant.borderWidth > 0)
                     Chip(
-                      avatar: Icon(Icons.border_style, size: 14),
+                      avatar: const Icon(Icons.border_style, size: 14),
                       label: Text(
                         'Border',
                         style: textTheme.labelSmall,
@@ -725,6 +725,7 @@ class _VariantBuilderTabState extends State<VariantBuilderTab> {
           ...widget.channels
               .map((channel) =>
                   _buildChannelVariantCard(channel, colorScheme, textTheme))
+              // ignore: unnecessary_to_list_in_spreads
               .toList(),
       ],
     );

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/toast_config.dart';
 import '../events/toast_event.dart';
-import 'custom_variant_builder.dart';
 import 'custom_variant_registry.dart';
 import 'minimal_toast.dart';
 import 'material_toast.dart';
