@@ -428,7 +428,7 @@ class ToastKit {
     instance._pluginHub.unregister(name);
   }
 
-   /// The plugin hub.
+  /// The plugin hub.
   static PluginHub get pluginHub => instance._pluginHub;
 
   // -----------------------------------------------------------------------
