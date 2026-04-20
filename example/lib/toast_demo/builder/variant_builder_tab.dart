@@ -323,7 +323,7 @@ class _VariantBuilderTabState extends State<VariantBuilderTab> {
                     ),
                   if (variant.assignedChannels.isNotEmpty)
                     Chip(
-                      icon: Icon(Icons.link, size: 14),
+                      avatar: const Icon(Icons.link, size: 14),
                       label: Text(
                         '${variant.assignedChannels.length} channel(s)',
                         style: textTheme.labelSmall,
@@ -501,8 +501,7 @@ class _VariantBuilderTabState extends State<VariantBuilderTab> {
                 ),
                 const SizedBox(width: 8),
                 FilledButton.icon(
-                  onPressed: () =>
-                      _addVariantName(_variantNameController.text),
+                  onPressed: () => _addVariantName(_variantNameController.text),
                   icon: const Icon(Icons.add, size: 18),
                   label: const Text('Add'),
                 ),
@@ -749,8 +748,7 @@ class _VariantBuilderTabState extends State<VariantBuilderTab> {
                   ),
                   const SizedBox(width: 4),
                   Tooltip(
-                    message:
-                        'Assign multiple saved variants to this channel',
+                    message: 'Assign multiple saved variants to this channel',
                     child: Icon(
                       Icons.info_outline,
                       size: 16,

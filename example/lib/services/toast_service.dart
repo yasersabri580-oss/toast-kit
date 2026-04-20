@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide RouterConfig;
 import 'package:toast_kit/toast_kit.dart';
 
 import '../mock/custom_variants.dart';
