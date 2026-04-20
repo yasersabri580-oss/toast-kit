@@ -47,6 +47,7 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
   final List<RuleConfigModel> _builderRuleConfigs = [];
   final List<CustomRuleModel> _builderCustomRules = [];
   final List<String> _builderRegisteredVariants = [];
+  final List<VariantModel> _builderSavedVariants = [];
 
   // ---------------------------------------------------------------------------
   // Content
@@ -679,6 +680,7 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
         ruleConfigs: _builderRuleConfigs,
         customRules: _builderCustomRules,
         registeredVariantNames: _builderRegisteredVariants,
+        savedVariants: _builderSavedVariants,
       );
 
   /// Export the current configuration as JSON to clipboard.
@@ -899,6 +901,7 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
                   VariantBuilderTab(
                     channels: _builderChannels,
                     registeredVariantNames: _builderRegisteredVariants,
+                    savedVariants: _builderSavedVariants,
                     onChanged: () => setState(() {}),
                   ),
                   RulesBuilderTab(
