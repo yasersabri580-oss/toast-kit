@@ -3257,139 +3257,150 @@ class _CustomPreviewToastState extends State<_CustomPreviewToast>
       );
     }
 
-    return Opacity(
-      opacity: widget.opacity,
-      child: Container(
-        margin: EdgeInsets.symmetric(horizontal: widget.horizontalMargin),
-        clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          color: widget.useGradient ? null : widget.bgColor,
-          gradient: widget.useGradient
-              ? LinearGradient(
-                  colors: [widget.bgColor, widget.gradientEndColor],
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                )
-              : null,
-          borderRadius: BorderRadius.circular(widget.cornerRadius),
-          border: widget.borderWidth > 0
-              ? Border.all(
-                  color: widget.borderColor, width: widget.borderWidth)
-              : null,
-          boxShadow: [
-            BoxShadow(
-              color: widget.shadowColor.withAlpha(30),
-              blurRadius: widget.shadowBlur,
-              offset: Offset(widget.shadowOffsetX, widget.shadowOffsetY),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: EdgeInsets.all(widget.padding),
+    // Wrap with Padding to give space for shadow to render outside the container
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: widget.horizontalMargin,
+        // Add vertical padding to accommodate shadow spread
+        vertical: widget.shadowBlur > 0 ? (widget.shadowBlur / 2).clamp(4.0, 16.0) : 0,
+      ),
+      child: Opacity(
+        opacity: widget.opacity,
+        child: DecoratedBox(
+          // Use DecoratedBox for shadow so it's not clipped
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(widget.cornerRadius),
+            boxShadow: [
+              BoxShadow(
+                color: widget.shadowColor.withAlpha(60),
+                blurRadius: widget.shadowBlur,
+                spreadRadius: widget.shadowBlur > 0 ? 1 : 0,
+                offset: Offset(widget.shadowOffsetX, widget.shadowOffsetY),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            // ClipRRect only clips content, not the shadow from DecoratedBox
+            borderRadius: BorderRadius.circular(widget.cornerRadius),
+            child: Container(
+              decoration: BoxDecoration(
+                color: widget.useGradient ? null : widget.bgColor,
+                gradient: widget.useGradient
+                    ? LinearGradient(
+                        colors: [widget.bgColor, widget.gradientEndColor],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                      )
+                    : null,
+                border: widget.borderWidth > 0
+                    ? Border.all(
+                        color: widget.borderColor, width: widget.borderWidth)
+                    : null,
+              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Row(
-                    children: [
-                      iconWidget,
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
+                  Padding(
+                    padding: EdgeInsets.all(widget.padding),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
                           children: [
-                            Text(
-                              widget.title,
-                              style: TextStyle(
-                                color: textColor,
-                                fontWeight: widget.titleFontWeight,
-                                fontStyle: widget.titleItalic
-                                    ? FontStyle.italic
-                                    : FontStyle.normal,
-                                fontSize: widget.fontSize,
-                                letterSpacing: widget.titleLetterSpacing,
+                            iconWidget,
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    widget.title,
+                                    style: TextStyle(
+                                      color: textColor,
+                                      fontWeight: widget.titleFontWeight,
+                                      fontStyle: widget.titleItalic
+                                          ? FontStyle.italic
+                                          : FontStyle.normal,
+                                      fontSize: widget.fontSize,
+                                      letterSpacing: widget.titleLetterSpacing,
+                                    ),
+                                  ),
+                                  if (widget.subtitle.isNotEmpty) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      widget.subtitle,
+                                      style: TextStyle(
+                                        color: textColor.withAlpha(150),
+                                        fontSize: widget.fontSize - 2,
+                                        letterSpacing: widget.letterSpacing,
+                                      ),
+                                    ),
+                                  ],
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    widget.message,
+                                    style: TextStyle(
+                                      color: textColor.withAlpha(180),
+                                      fontWeight: widget.messageFontWeight,
+                                      fontSize: widget.fontSize - 1,
+                                      letterSpacing: widget.letterSpacing,
+                                    ),
+                                    maxLines: widget.messageMaxLines,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
                               ),
                             ),
-                            if (widget.subtitle.isNotEmpty) ...[
-                              const SizedBox(height: 2),
-                              Text(
-                                widget.subtitle,
-                                style: TextStyle(
-                                  color: textColor.withAlpha(150),
-                                  fontSize: widget.fontSize - 2,
-                                  letterSpacing: widget.letterSpacing,
-                                ),
+                            if (widget.showCloseButton)
+                              GestureDetector(
+                                onTap: widget.controller.dismiss,
+                                child: Icon(Icons.close,
+                                    size: 18, color: textColor.withAlpha(120)),
                               ),
-                            ],
-                            const SizedBox(height: 2),
-                            Text(
-                              widget.message,
-                              style: TextStyle(
-                                color: textColor.withAlpha(180),
-                                fontWeight: widget.messageFontWeight,
-                                fontSize: widget.fontSize - 1,
-                                letterSpacing: widget.letterSpacing,
-                              ),
-                              maxLines: widget.messageMaxLines,
-                              overflow: TextOverflow.ellipsis,
-                            ),
                           ],
                         ),
-                      ),
-                      if (widget.showCloseButton)
-                        GestureDetector(
-                          onTap: widget.controller.dismiss,
-                          child: Icon(Icons.close,
-                              size: 18, color: textColor.withAlpha(120)),
-                        ),
-                    ],
-                  ),
-                  if (widget.showActions) ...[
-                    const SizedBox(height: 10),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        _ActionChip(
-                          label: widget.actionLabel,
-                          color: widget.accentColor,
-                          onTap: widget.controller.dismiss,
-                        ),
-                        if (widget.showSecondAction) ...[
-                          const SizedBox(width: 8),
-                          _ActionChip(
-                            label: widget.secondActionLabel,
-                            color: textColor.withAlpha(180),
-                            onTap: widget.controller.dismiss,
+                        if (widget.showActions) ...[
+                          const SizedBox(height: 10),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              _ActionChip(
+                                label: widget.actionLabel,
+                                color: widget.accentColor,
+                                onTap: widget.controller.dismiss,
+                              ),
+                              if (widget.showSecondAction) ...[
+                                const SizedBox(width: 8),
+                                _ActionChip(
+                                  label: widget.secondActionLabel,
+                                  color: textColor.withAlpha(180),
+                                  onTap: widget.controller.dismiss,
+                                ),
+                              ],
+                            ],
                           ),
                         ],
                       ],
                     ),
-                  ],
+                  ),
+                  if (widget.showProgress && _progressCtrl != null)
+                    AnimatedBuilder(
+                      animation: _progressCtrl!,
+                      builder: (_, __) {
+                        return LinearProgressIndicator(
+                          value: 1.0 - _progressCtrl!.value,
+                          minHeight: 4,
+                          backgroundColor: widget.accentColor.withAlpha(40),
+                          valueColor:
+                              AlwaysStoppedAnimation(widget.accentColor),
+                        );
+                      },
+                    ),
                 ],
               ),
             ),
-            if (widget.showProgress && _progressCtrl != null)
-              AnimatedBuilder(
-                animation: _progressCtrl!,
-                builder: (_, __) {
-                  return ClipRRect(
-                    borderRadius: BorderRadius.vertical(
-                      bottom: Radius.circular(widget.cornerRadius),
-                    ),
-                    child: LinearProgressIndicator(
-                      value: 1.0 - _progressCtrl!.value,
-                      minHeight: 4,
-                      backgroundColor: widget.accentColor.withAlpha(40),
-                      valueColor:
-                          AlwaysStoppedAnimation(widget.accentColor),
-                    ),
-                  );
-                },
-              ),
-          ],
+          ),
         ),
       ),
     );
