@@ -439,9 +439,8 @@ class _VariantBuilderTabState extends State<VariantBuilderTab> {
                 borderRadius: BorderRadius.circular(12),
                 side: BorderSide(color: colorScheme.outlineVariant),
               ),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(12),
-                onTap: () {},
+              child: Padding(
+                padding: const EdgeInsets.all(8),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
