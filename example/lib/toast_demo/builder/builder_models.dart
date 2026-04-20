@@ -20,8 +20,10 @@ class ChannelModel {
     this.defaultAnimation,
     this.defaultVariant,
     this.customVariantName,
+    List<String>? assignedVariantIds,
     this.enabled = true,
-  }) : id = id ?? 'channel_${DateTime.now().millisecondsSinceEpoch}';
+  })  : id = id ?? 'channel_${DateTime.now().millisecondsSinceEpoch}',
+        assignedVariantIds = assignedVariantIds ?? [];
 
   String id;
   String label;
@@ -32,6 +34,11 @@ class ChannelModel {
   ToastAnimationType? defaultAnimation;
   ToastVariant? defaultVariant;
   String? customVariantName;
+
+  /// List of saved variant IDs assigned to this channel.
+  /// Channels can now have multiple variants assigned.
+  List<String> assignedVariantIds;
+
   bool enabled;
 
   ChannelModel copyWith({
@@ -51,6 +58,7 @@ class ChannelModel {
     bool clearVariant = false,
     String? customVariantName,
     bool clearCustomVariantName = false,
+    List<String>? assignedVariantIds,
     bool? enabled,
   }) {
     return ChannelModel(
@@ -70,6 +78,7 @@ class ChannelModel {
       customVariantName: clearCustomVariantName
           ? null
           : (customVariantName ?? this.customVariantName),
+      assignedVariantIds: assignedVariantIds ?? this.assignedVariantIds,
       enabled: enabled ?? this.enabled,
     );
   }
@@ -175,6 +184,326 @@ class VariantAssignment {
   String? customVariantName;
 }
 
+/// Represents a saved toast design variant that can be reused across channels.
+///
+/// A variant encapsulates the complete UI design of a toast including colors,
+/// sizes, styles, and behavior. Variants can be saved, loaded, edited, and
+/// assigned to multiple channels.
+class VariantModel {
+  VariantModel({
+    String? id,
+    required this.name,
+    this.description,
+    required this.toastType,
+    this.icon,
+    this.iconCodePoint,
+    this.backgroundColor,
+    this.textColor,
+    this.accentColor,
+    this.borderColor,
+    this.borderWidth = 0.0,
+    this.cornerRadius = 12.0,
+    this.padding = 16.0,
+    this.shadowBlur = 8.0,
+    this.opacity = 1.0,
+    this.fontSize = 14.0,
+    this.iconSize = 24.0,
+    this.titleFontWeight,
+    this.messageFontWeight,
+    this.messageMaxLines = 3,
+    this.useGradient = false,
+    this.gradientStartColor,
+    this.gradientEndColor,
+    this.variant,
+    this.position,
+    this.animation,
+    this.durationMs = 3000,
+    this.persistent = false,
+    this.dismissible = true,
+    this.showProgressBar = false,
+    this.enableHapticFeedback = false,
+    List<String>? assignedChannels,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  })  : id = id ?? 'variant_${DateTime.now().millisecondsSinceEpoch}',
+        assignedChannels = assignedChannels ?? [],
+        createdAt = createdAt ?? DateTime.now(),
+        updatedAt = updatedAt ?? DateTime.now();
+
+  /// Unique identifier for this variant.
+  String id;
+
+  /// Display name for this variant.
+  String name;
+
+  /// Optional description explaining what this variant is for.
+  String? description;
+
+  /// The toast type (success, error, warning, info, custom).
+  ToastType toastType;
+
+  /// Icon to display (nullable).
+  IconData? icon;
+
+  /// Icon code point for serialization (since IconData is not directly serializable).
+  int? iconCodePoint;
+
+  // ── Visual Properties ──
+  Color? backgroundColor;
+  Color? textColor;
+  Color? accentColor;
+  Color? borderColor;
+  double borderWidth;
+  double cornerRadius;
+  double padding;
+  double shadowBlur;
+  double opacity;
+  double fontSize;
+  double iconSize;
+
+  // ── Text Styling ──
+  FontWeight? titleFontWeight;
+  FontWeight? messageFontWeight;
+  int messageMaxLines;
+
+  // ── Gradient ──
+  bool useGradient;
+  Color? gradientStartColor;
+  Color? gradientEndColor;
+
+  // ── Behavior ──
+  ToastVariant? variant;
+  ToastPosition? position;
+  ToastAnimationType? animation;
+  int durationMs;
+  bool persistent;
+  bool dismissible;
+  bool showProgressBar;
+  bool enableHapticFeedback;
+
+  /// List of channel IDs this variant is assigned to.
+  List<String> assignedChannels;
+
+  /// When this variant was created.
+  DateTime createdAt;
+
+  /// When this variant was last modified.
+  DateTime updatedAt;
+
+  /// Create a copy of this variant with optional field overrides.
+  VariantModel copyWith({
+    String? id,
+    String? name,
+    String? description,
+    bool clearDescription = false,
+    ToastType? toastType,
+    IconData? icon,
+    bool clearIcon = false,
+    int? iconCodePoint,
+    bool clearIconCodePoint = false,
+    Color? backgroundColor,
+    bool clearBackgroundColor = false,
+    Color? textColor,
+    bool clearTextColor = false,
+    Color? accentColor,
+    bool clearAccentColor = false,
+    Color? borderColor,
+    bool clearBorderColor = false,
+    double? borderWidth,
+    double? cornerRadius,
+    double? padding,
+    double? shadowBlur,
+    double? opacity,
+    double? fontSize,
+    double? iconSize,
+    FontWeight? titleFontWeight,
+    bool clearTitleFontWeight = false,
+    FontWeight? messageFontWeight,
+    bool clearMessageFontWeight = false,
+    int? messageMaxLines,
+    bool? useGradient,
+    Color? gradientStartColor,
+    bool clearGradientStartColor = false,
+    Color? gradientEndColor,
+    bool clearGradientEndColor = false,
+    ToastVariant? variant,
+    bool clearVariant = false,
+    ToastPosition? position,
+    bool clearPosition = false,
+    ToastAnimationType? animation,
+    bool clearAnimation = false,
+    int? durationMs,
+    bool? persistent,
+    bool? dismissible,
+    bool? showProgressBar,
+    bool? enableHapticFeedback,
+    List<String>? assignedChannels,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return VariantModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      description: clearDescription ? null : (description ?? this.description),
+      toastType: toastType ?? this.toastType,
+      icon: clearIcon ? null : (icon ?? this.icon),
+      iconCodePoint:
+          clearIconCodePoint ? null : (iconCodePoint ?? this.iconCodePoint),
+      backgroundColor: clearBackgroundColor
+          ? null
+          : (backgroundColor ?? this.backgroundColor),
+      textColor: clearTextColor ? null : (textColor ?? this.textColor),
+      accentColor: clearAccentColor ? null : (accentColor ?? this.accentColor),
+      borderColor: clearBorderColor ? null : (borderColor ?? this.borderColor),
+      borderWidth: borderWidth ?? this.borderWidth,
+      cornerRadius: cornerRadius ?? this.cornerRadius,
+      padding: padding ?? this.padding,
+      shadowBlur: shadowBlur ?? this.shadowBlur,
+      opacity: opacity ?? this.opacity,
+      fontSize: fontSize ?? this.fontSize,
+      iconSize: iconSize ?? this.iconSize,
+      titleFontWeight: clearTitleFontWeight
+          ? null
+          : (titleFontWeight ?? this.titleFontWeight),
+      messageFontWeight: clearMessageFontWeight
+          ? null
+          : (messageFontWeight ?? this.messageFontWeight),
+      messageMaxLines: messageMaxLines ?? this.messageMaxLines,
+      useGradient: useGradient ?? this.useGradient,
+      gradientStartColor: clearGradientStartColor
+          ? null
+          : (gradientStartColor ?? this.gradientStartColor),
+      gradientEndColor: clearGradientEndColor
+          ? null
+          : (gradientEndColor ?? this.gradientEndColor),
+      variant: clearVariant ? null : (variant ?? this.variant),
+      position: clearPosition ? null : (position ?? this.position),
+      animation: clearAnimation ? null : (animation ?? this.animation),
+      durationMs: durationMs ?? this.durationMs,
+      persistent: persistent ?? this.persistent,
+      dismissible: dismissible ?? this.dismissible,
+      showProgressBar: showProgressBar ?? this.showProgressBar,
+      enableHapticFeedback: enableHapticFeedback ?? this.enableHapticFeedback,
+      assignedChannels: assignedChannels ?? this.assignedChannels,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  /// Convert to JSON for persistence.
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'description': description,
+      'toastType': toastType.name,
+      'iconCodePoint': iconCodePoint,
+      'backgroundColor': backgroundColor?.value,
+      'textColor': textColor?.value,
+      'accentColor': accentColor?.value,
+      'borderColor': borderColor?.value,
+      'borderWidth': borderWidth,
+      'cornerRadius': cornerRadius,
+      'padding': padding,
+      'shadowBlur': shadowBlur,
+      'opacity': opacity,
+      'fontSize': fontSize,
+      'iconSize': iconSize,
+      'titleFontWeight': titleFontWeight?.index,
+      'messageFontWeight': messageFontWeight?.index,
+      'messageMaxLines': messageMaxLines,
+      'useGradient': useGradient,
+      'gradientStartColor': gradientStartColor?.value,
+      'gradientEndColor': gradientEndColor?.value,
+      'variant': variant?.name,
+      'position': position?.name,
+      'animation': animation?.name,
+      'durationMs': durationMs,
+      'persistent': persistent,
+      'dismissible': dismissible,
+      'showProgressBar': showProgressBar,
+      'enableHapticFeedback': enableHapticFeedback,
+      'assignedChannels': assignedChannels,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
+    };
+  }
+
+  /// Create from JSON.
+  static VariantModel fromJson(Map<String, dynamic> json) {
+    // Helper to parse FontWeight from index
+    FontWeight? parseFontWeight(int? index) {
+      if (index == null) return null;
+      final weights = [
+        FontWeight.w100,
+        FontWeight.w200,
+        FontWeight.w300,
+        FontWeight.w400,
+        FontWeight.w500,
+        FontWeight.w600,
+        FontWeight.w700,
+        FontWeight.w800,
+        FontWeight.w900,
+      ];
+      return index >= 0 && index < weights.length ? weights[index] : null;
+    }
+
+    return VariantModel(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      description: json['description'] as String?,
+      toastType: ToastType.values.byName(json['toastType'] as String),
+      iconCodePoint: json['iconCodePoint'] as int?,
+      backgroundColor: json['backgroundColor'] != null
+          ? Color(json['backgroundColor'] as int)
+          : null,
+      textColor:
+          json['textColor'] != null ? Color(json['textColor'] as int) : null,
+      accentColor: json['accentColor'] != null
+          ? Color(json['accentColor'] as int)
+          : null,
+      borderColor: json['borderColor'] != null
+          ? Color(json['borderColor'] as int)
+          : null,
+      borderWidth: (json['borderWidth'] as num?)?.toDouble() ?? 0.0,
+      cornerRadius: (json['cornerRadius'] as num?)?.toDouble() ?? 12.0,
+      padding: (json['padding'] as num?)?.toDouble() ?? 16.0,
+      shadowBlur: (json['shadowBlur'] as num?)?.toDouble() ?? 8.0,
+      opacity: (json['opacity'] as num?)?.toDouble() ?? 1.0,
+      fontSize: (json['fontSize'] as num?)?.toDouble() ?? 14.0,
+      iconSize: (json['iconSize'] as num?)?.toDouble() ?? 24.0,
+      titleFontWeight: parseFontWeight(json['titleFontWeight'] as int?),
+      messageFontWeight: parseFontWeight(json['messageFontWeight'] as int?),
+      messageMaxLines: json['messageMaxLines'] as int? ?? 3,
+      useGradient: json['useGradient'] as bool? ?? false,
+      gradientStartColor: json['gradientStartColor'] != null
+          ? Color(json['gradientStartColor'] as int)
+          : null,
+      gradientEndColor: json['gradientEndColor'] != null
+          ? Color(json['gradientEndColor'] as int)
+          : null,
+      variant: json['variant'] != null
+          ? ToastVariant.values.byName(json['variant'] as String)
+          : null,
+      position: json['position'] != null
+          ? ToastPosition.values.byName(json['position'] as String)
+          : null,
+      animation: json['animation'] != null
+          ? ToastAnimationType.values.byName(json['animation'] as String)
+          : null,
+      durationMs: json['durationMs'] as int? ?? 3000,
+      persistent: json['persistent'] as bool? ?? false,
+      dismissible: json['dismissible'] as bool? ?? true,
+      showProgressBar: json['showProgressBar'] as bool? ?? false,
+      enableHapticFeedback: json['enableHapticFeedback'] as bool? ?? false,
+      assignedChannels:
+          (json['assignedChannels'] as List?)?.cast<String>() ?? [],
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      updatedAt: DateTime.parse(json['updatedAt'] as String),
+    );
+  }
+}
+
 /// Holds the complete builder configuration state.
 class BuilderConfiguration {
   BuilderConfiguration({
@@ -183,17 +512,22 @@ class BuilderConfiguration {
     List<RuleConfigModel>? ruleConfigs,
     List<CustomRuleModel>? customRules,
     List<String>? registeredVariantNames,
+    List<VariantModel>? savedVariants,
   })  : channels = channels ?? [],
         channelConfigs = channelConfigs ?? {},
         ruleConfigs = ruleConfigs ?? [],
         customRules = customRules ?? [],
-        registeredVariantNames = registeredVariantNames ?? [];
+        registeredVariantNames = registeredVariantNames ?? [],
+        savedVariants = savedVariants ?? [];
 
   final List<ChannelModel> channels;
   final Map<String, ChannelConfigModel> channelConfigs;
   final List<RuleConfigModel> ruleConfigs;
   final List<CustomRuleModel> customRules;
   final List<String> registeredVariantNames;
+
+  /// Saved toast design variants that can be loaded and reused.
+  final List<VariantModel> savedVariants;
 
   /// Export configuration as a JSON-compatible map.
   Map<String, dynamic> toJson() {
@@ -209,6 +543,7 @@ class BuilderConfiguration {
                 'defaultAnimation': c.defaultAnimation?.name,
                 'defaultVariant': c.defaultVariant?.name,
                 'customVariantName': c.customVariantName,
+                'assignedVariantIds': c.assignedVariantIds,
                 'enabled': c.enabled,
               })
           .toList(),
@@ -245,6 +580,7 @@ class BuilderConfiguration {
               })
           .toList(),
       'registeredVariantNames': registeredVariantNames,
+      'savedVariants': savedVariants.map((v) => v.toJson()).toList(),
     };
   }
 
@@ -275,6 +611,8 @@ class BuilderConfiguration {
                           .byName(c['defaultVariant'] as String)
                       : null,
                   customVariantName: c['customVariantName'] as String?,
+                  assignedVariantIds:
+                      (c['assignedVariantIds'] as List?)?.cast<String>() ?? [],
                   enabled: c['enabled'] as bool? ?? true,
                 ))
             .toList() ??
@@ -328,6 +666,11 @@ class BuilderConfiguration {
             .toList() ??
         [];
 
+    final savedVariants = (json['savedVariants'] as List?)
+            ?.map((v) => VariantModel.fromJson(v as Map<String, dynamic>))
+            .toList() ??
+        [];
+
     return BuilderConfiguration(
       channels: channels,
       channelConfigs: channelConfigs,
@@ -335,6 +678,7 @@ class BuilderConfiguration {
       customRules: customRules,
       registeredVariantNames:
           (json['registeredVariantNames'] as List?)?.cast<String>() ?? [],
+      savedVariants: savedVariants,
     );
   }
 }
