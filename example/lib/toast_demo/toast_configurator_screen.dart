@@ -1,5 +1,6 @@
 // ignore_for_file: unused_field, unused_element_parameter
 
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -8,6 +9,11 @@ import 'package:toast_kit/toast_kit.dart';
 
 import '../utils/responsive/responsive_helper.dart';
 import '../widgets/code_viewer_modal.dart';
+import 'builder/builder_models.dart';
+import 'builder/channel_builder_tab.dart';
+import 'builder/full_code_generator.dart';
+import 'builder/rules_builder_tab.dart';
+import 'builder/variant_builder_tab.dart';
 
 // =============================================================================
 // Toast Configurator — A Modern, Fully Interactive Toast Builder
@@ -32,6 +38,15 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
   // Tab controller
   // ---------------------------------------------------------------------------
   late final TabController _tabController;
+
+  // ---------------------------------------------------------------------------
+  // Builder configuration (channels, variants, rules)
+  // ---------------------------------------------------------------------------
+  final List<ChannelModel> _builderChannels = [];
+  final Map<String, ChannelConfigModel> _builderChannelConfigs = {};
+  final List<RuleConfigModel> _builderRuleConfigs = [];
+  final List<CustomRuleModel> _builderCustomRules = [];
+  final List<String> _builderRegisteredVariants = [];
 
   // ---------------------------------------------------------------------------
   // Content
@@ -370,7 +385,7 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this);
+    _tabController = TabController(length: 8, vsync: this);
   }
 
   @override
@@ -654,6 +669,107 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
   }
 
   // ---------------------------------------------------------------------------
+  // Import / Export Configuration
+  // ---------------------------------------------------------------------------
+
+  /// Get the current builder configuration.
+  BuilderConfiguration get _builderConfig => BuilderConfiguration(
+        channels: _builderChannels,
+        channelConfigs: _builderChannelConfigs,
+        ruleConfigs: _builderRuleConfigs,
+        customRules: _builderCustomRules,
+        registeredVariantNames: _builderRegisteredVariants,
+      );
+
+  /// Export the current configuration as JSON to clipboard.
+  void _exportConfig() {
+    final json = _builderConfig.toJson();
+    final jsonStr = const JsonEncoder.withIndent('  ').convert(json);
+    Clipboard.setData(ClipboardData(text: jsonStr));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Configuration exported to clipboard!'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  /// Import configuration from JSON in clipboard.
+  void _importConfig() {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) {
+        final controller = TextEditingController();
+        return AlertDialog(
+          title: const Text('Import Configuration'),
+          content: SizedBox(
+            width: 400,
+            height: 300,
+            child: TextField(
+              controller: controller,
+              maxLines: null,
+              expands: true,
+              decoration: const InputDecoration(
+                hintText: 'Paste exported JSON here…',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                try {
+                  final json =
+                      jsonDecode(controller.text) as Map<String, dynamic>;
+                  final config = BuilderConfiguration.fromJson(json);
+                  setState(() {
+                    _builderChannels
+                      ..clear()
+                      ..addAll(config.channels);
+                    _builderChannelConfigs
+                      ..clear()
+                      ..addAll(config.channelConfigs);
+                    _builderRuleConfigs
+                      ..clear()
+                      ..addAll(config.ruleConfigs);
+                    _builderCustomRules
+                      ..clear()
+                      ..addAll(config.customRules);
+                    _builderRegisteredVariants
+                      ..clear()
+                      ..addAll(config.registeredVariantNames);
+                  });
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Configuration imported successfully!'),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Invalid JSON: $e'),
+                      backgroundColor: Colors.red,
+                      duration: const Duration(seconds: 3),
+                    ),
+                  );
+                }
+              },
+              child: const Text('Import'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // ---------------------------------------------------------------------------
   // Build
   // ---------------------------------------------------------------------------
 
@@ -675,6 +791,16 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
             expandedHeight: 180,
             leading: const BackButton(),
             actions: [
+              IconButton(
+                icon: const Icon(Icons.file_download_outlined),
+                tooltip: 'Export configuration',
+                onPressed: _exportConfig,
+              ),
+              IconButton(
+                icon: const Icon(Icons.file_upload_outlined),
+                tooltip: 'Import configuration',
+                onPressed: _importConfig,
+              ),
               IconButton(
                 icon: const Icon(Icons.casino_outlined),
                 tooltip: 'Randomize',
@@ -744,6 +870,9 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
                     icon: Icon(Icons.animation, size: 18),
                     text: 'Animation'),
                 Tab(icon: Icon(Icons.tune, size: 18), text: 'Behavior'),
+                Tab(icon: Icon(Icons.layers, size: 18), text: 'Channels'),
+                Tab(icon: Icon(Icons.auto_awesome, size: 18), text: 'Variants'),
+                Tab(icon: Icon(Icons.rule, size: 18), text: 'Rules'),
                 Tab(icon: Icon(Icons.preview, size: 18), text: 'Preview'),
               ],
             ),
@@ -762,6 +891,22 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
                   _buildStyleTab(theme),
                   _buildAnimationTab(theme),
                   _buildBehaviorTab(theme),
+                  ChannelBuilderTab(
+                    channels: _builderChannels,
+                    channelConfigs: _builderChannelConfigs,
+                    onChanged: () => setState(() {}),
+                  ),
+                  VariantBuilderTab(
+                    channels: _builderChannels,
+                    registeredVariantNames: _builderRegisteredVariants,
+                    onChanged: () => setState(() {}),
+                  ),
+                  RulesBuilderTab(
+                    channels: _builderChannels,
+                    ruleConfigs: _builderRuleConfigs,
+                    customRules: _builderCustomRules,
+                    onChanged: () => setState(() {}),
+                  ),
                   _buildPreviewTab(theme),
                 ],
               ),
@@ -2312,6 +2457,19 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
             icon: Icons.code, title: 'Generated Code', color: cs.primary),
         const SizedBox(height: 8),
         _buildCodeExport(theme),
+        // Full setup code (channels, variants, rules)
+        if (_builderChannels.isNotEmpty ||
+            _builderRegisteredVariants.isNotEmpty ||
+            _builderRuleConfigs.isNotEmpty ||
+            _builderCustomRules.isNotEmpty) ...[
+          const SizedBox(height: 20),
+          const _SectionHeader(
+              icon: Icons.integration_instructions,
+              title: 'Full Setup Code',
+              color: Colors.teal),
+          const SizedBox(height: 8),
+          _buildFullSetupCodeExport(theme),
+        ],
       ],
     );
   }
@@ -2457,6 +2615,83 @@ class _ToastConfiguratorScreenState extends State<ToastConfiguratorScreen>
                     title: 'Generated Toast Code',
                     description:
                         'Copy this code to recreate your custom toast.',
+                    code: code,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.fullscreen, size: 18, color: cs.primary),
+                      const SizedBox(width: 6),
+                      Text('Full View',
+                          style: TextStyle(color: cs.primary)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFullSetupCodeExport(ThemeData theme) {
+    final cs = theme.colorScheme;
+    final code = FullCodeGenerator.generate(_builderConfig);
+    return _ModernCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Complete initialization code for all channels, variants, '
+            'and rules configured in the builder.',
+            style: theme.textTheme.bodySmall?.copyWith(color: cs.outline),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1E1E2E),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: SelectableText(
+              code,
+              style: const TextStyle(
+                fontFamily: 'monospace',
+                fontSize: 11,
+                color: Color(0xFFCDD6F4),
+                height: 1.5,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: code));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Full setup code copied to clipboard!'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.copy, size: 18),
+                  label: const Text('Copy Full Setup'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: FilledButton.tonal(
+                  onPressed: () => CodeViewerModal.show(
+                    context: context,
+                    title: 'Full Setup Code',
+                    description:
+                        'Complete initialization code including channels, '
+                        'variants, rules, and usage examples.',
                     code: code,
                   ),
                   child: Row(
