@@ -138,7 +138,7 @@ class FullCodeGenerator {
   /// Write a custom variant class generated from a saved VariantModel.
   ///
   /// Generates a complete CustomToastVariantBuilder implementation with
-  /// DartDoc comments and structured code.
+  /// DartDoc comments and structured code that properly handles shadows.
   static void _writeVariantClass(StringBuffer buf, VariantModel variant) {
     final className = _variantClassName(variant.name);
 
@@ -159,6 +159,15 @@ class FullCodeGenerator {
     if (variant.assignedChannels.isNotEmpty) {
       buf.writeln("///   - Assigned to ${variant.assignedChannels.length} channel(s)");
     }
+    if (variant.shadowBlur > 0) {
+      buf.writeln("///   - Shadow: blur=${variant.shadowBlur}, spread=1");
+    }
+    if (variant.useGradient) {
+      buf.writeln("///   - Uses gradient background");
+    }
+    if (variant.showProgressBar) {
+      buf.writeln("///   - Includes progress bar support");
+    }
     buf.writeln("class $className extends CustomToastVariantBuilder {");
     buf.writeln("  @override");
     buf.writeln("  String get name => '${variant.name.toLowerCase().replaceAll(' ', '_')}';");
@@ -169,6 +178,42 @@ class FullCodeGenerator {
     buf.writeln("    ToastEvent event,");
     buf.writeln("    ToastController controller,");
     buf.writeln("  ) {");
+    
+    // Add shadow using proper structure to avoid clipping
+    if (variant.shadowBlur > 0) {
+      buf.writeln("    // Use DecoratedBox for shadow to prevent clipping");
+      buf.writeln("    return Padding(");
+      buf.writeln("      padding: EdgeInsets.symmetric(");
+      buf.writeln("        horizontal: 16,");
+      buf.writeln("        vertical: ${(variant.shadowBlur / 2).clamp(4.0, 16.0)},");
+      buf.writeln("      ),");
+      buf.writeln("      child: DecoratedBox(");
+      buf.writeln("        decoration: BoxDecoration(");
+      buf.writeln("          borderRadius: BorderRadius.circular(${variant.cornerRadius}),");
+      buf.writeln("          boxShadow: [");
+      buf.writeln("            BoxShadow(");
+      buf.writeln("              color: Colors.black.withAlpha(60),");
+      buf.writeln("              blurRadius: ${variant.shadowBlur},");
+      buf.writeln("              spreadRadius: 1,");
+      buf.writeln("              offset: const Offset(0, 2),");
+      buf.writeln("            ),");
+      buf.writeln("          ],");
+      buf.writeln("        ),");
+      buf.writeln("        child: ClipRRect(");
+      buf.writeln("          borderRadius: BorderRadius.circular(${variant.cornerRadius}),");
+      buf.writeln("          child: _buildContent(context, event, controller),");
+      buf.writeln("        ),");
+      buf.writeln("      ),");
+      buf.writeln("    );");
+      buf.writeln("  }");
+      buf.writeln();
+      buf.writeln("  Widget _buildContent(");
+      buf.writeln("    BuildContext context,");
+      buf.writeln("    ToastEvent event,");
+      buf.writeln("    ToastController controller,");
+      buf.writeln("  ) {");
+    }
+
     buf.writeln("    return Container(");
     buf.writeln("      padding: EdgeInsets.all(${variant.padding}),");
     buf.writeln("      decoration: BoxDecoration(");
@@ -195,83 +240,103 @@ class FullCodeGenerator {
       buf.writeln("        ),");
     }
 
-    // Corner radius
-    buf.writeln("        borderRadius: BorderRadius.circular(${variant.cornerRadius}),");
-
-    // Shadow
-    if (variant.shadowBlur > 0) {
-      buf.writeln("        boxShadow: [");
-      buf.writeln("          BoxShadow(");
-      buf.writeln("            color: Colors.black26,");
-      buf.writeln("            blurRadius: ${variant.shadowBlur},");
-      buf.writeln("            offset: const Offset(0, 2),");
-      buf.writeln("          ),");
-      buf.writeln("        ],");
+    // Corner radius (only if no shadow wrapper)
+    if (variant.shadowBlur <= 0) {
+      buf.writeln("        borderRadius: BorderRadius.circular(${variant.cornerRadius}),");
     }
 
     buf.writeln("      ),");
-    buf.writeln("      child: Row(");
+    buf.writeln("      child: Column(");
+    buf.writeln("        mainAxisSize: MainAxisSize.min,");
     buf.writeln("        children: [");
+    buf.writeln("          Row(");
+    buf.writeln("            children: [");
 
     // Icon
     if (variant.iconCodePoint != null) {
-      buf.writeln("          Icon(");
-      buf.writeln("            IconData(${variant.iconCodePoint}, fontFamily: 'MaterialIcons'),");
-      buf.writeln("            size: ${variant.iconSize},");
+      buf.writeln("              Icon(");
+      buf.writeln("                IconData(${variant.iconCodePoint}, fontFamily: 'MaterialIcons'),");
+      buf.writeln("                size: ${variant.iconSize},");
       if (variant.accentColor != null) {
-        buf.writeln("            color: Color(0x${variant.accentColor!.value.toRadixString(16).padLeft(8, '0')}),");
+        buf.writeln("                color: Color(0x${variant.accentColor!.value.toRadixString(16).padLeft(8, '0')}),");
       }
-      buf.writeln("          ),");
-      buf.writeln("          const SizedBox(width: 12),");
+      buf.writeln("              ),");
+      buf.writeln("              const SizedBox(width: 12),");
     }
 
-    buf.writeln("          Expanded(");
-    buf.writeln("            child: Column(");
-    buf.writeln("              mainAxisSize: MainAxisSize.min,");
-    buf.writeln("              crossAxisAlignment: CrossAxisAlignment.start,");
-    buf.writeln("              children: [");
-    buf.writeln("                if (event.title != null)");
-    buf.writeln("                  Text(");
-    buf.writeln("                    event.title!,");
-    buf.writeln("                    style: TextStyle(");
-    buf.writeln("                      fontSize: ${variant.fontSize + 2},");
+    buf.writeln("              Expanded(");
+    buf.writeln("                child: Column(");
+    buf.writeln("                  mainAxisSize: MainAxisSize.min,");
+    buf.writeln("                  crossAxisAlignment: CrossAxisAlignment.start,");
+    buf.writeln("                  children: [");
+    buf.writeln("                    if (event.title != null)");
+    buf.writeln("                      Text(");
+    buf.writeln("                        event.title!,");
+    buf.writeln("                        style: TextStyle(");
+    buf.writeln("                          fontSize: ${variant.fontSize + 2},");
     if (variant.titleFontWeight != null) {
-      buf.writeln("                      fontWeight: FontWeight.w${variant.titleFontWeight!.value ~/ 100},");
+      buf.writeln("                          fontWeight: FontWeight.w${variant.titleFontWeight!.value ~/ 100}00,");
     }
     if (variant.textColor != null) {
-      buf.writeln("                      color: Color(0x${variant.textColor!.value.toRadixString(16).padLeft(8, '0')}),");
+      buf.writeln("                          color: Color(0x${variant.textColor!.value.toRadixString(16).padLeft(8, '0')}),");
     }
-    buf.writeln("                    ),");
-    buf.writeln("                  ),");
-    buf.writeln("                if (event.title != null) const SizedBox(height: 4),");
-    buf.writeln("                Text(");
-    buf.writeln("                  event.message ?? '',");
-    buf.writeln("                  style: TextStyle(");
-    buf.writeln("                    fontSize: ${variant.fontSize},");
+    buf.writeln("                        ),");
+    buf.writeln("                      ),");
+    buf.writeln("                    if (event.title != null) const SizedBox(height: 4),");
+    buf.writeln("                    Text(");
+    buf.writeln("                      event.message ?? '',");
+    buf.writeln("                      style: TextStyle(");
+    buf.writeln("                        fontSize: ${variant.fontSize},");
     if (variant.messageFontWeight != null) {
-      buf.writeln("                    fontWeight: FontWeight.w${variant.messageFontWeight!.value ~/ 100},");
+      buf.writeln("                        fontWeight: FontWeight.w${variant.messageFontWeight!.value ~/ 100}00,");
     }
     if (variant.textColor != null) {
-      buf.writeln("                    color: Color(0x${variant.textColor!.value.toRadixString(16).padLeft(8, '0')}),");
+      buf.writeln("                        color: Color(0x${variant.textColor!.value.toRadixString(16).padLeft(8, '0')}),");
     }
-    buf.writeln("                  ),");
-    buf.writeln("                  maxLines: ${variant.messageMaxLines},");
-    buf.writeln("                  overflow: TextOverflow.ellipsis,");
+    buf.writeln("                      ),");
+    buf.writeln("                      maxLines: ${variant.messageMaxLines},");
+    buf.writeln("                      overflow: TextOverflow.ellipsis,");
+    buf.writeln("                    ),");
+    buf.writeln("                  ],");
     buf.writeln("                ),");
-    buf.writeln("              ],");
-    buf.writeln("            ),");
-    buf.writeln("          ),");
+    buf.writeln("              ),");
 
     // Dismiss button
     if (variant.dismissible) {
-      buf.writeln("          IconButton(");
-      buf.writeln("            icon: const Icon(Icons.close, size: 20),");
+      buf.writeln("              IconButton(");
+      buf.writeln("                icon: const Icon(Icons.close, size: 20),");
       if (variant.textColor != null) {
-        buf.writeln("            color: Color(0x${variant.textColor!.value.toRadixString(16).padLeft(8, '0')}),");
+        buf.writeln("                color: Color(0x${variant.textColor!.value.toRadixString(16).padLeft(8, '0')}),");
       }
-      buf.writeln("            onPressed: controller.dismiss,");
-      buf.writeln("            padding: EdgeInsets.zero,");
-      buf.writeln("            constraints: const BoxConstraints(),");
+      buf.writeln("                onPressed: controller.dismiss,");
+      buf.writeln("                padding: EdgeInsets.zero,");
+      buf.writeln("                constraints: const BoxConstraints(),");
+      buf.writeln("              ),");
+    }
+
+    buf.writeln("            ],");
+    buf.writeln("          ),");
+
+    // Progress bar support
+    if (variant.showProgressBar) {
+      buf.writeln("          const SizedBox(height: 8),");
+      buf.writeln("          ValueListenableBuilder<double>(");
+      buf.writeln("            valueListenable: controller.progress,");
+      buf.writeln("            builder: (_, value, __) {");
+      buf.writeln("              return ClipRRect(");
+      buf.writeln("                borderRadius: BorderRadius.circular(4),");
+      buf.writeln("                child: LinearProgressIndicator(");
+      buf.writeln("                  value: value,");
+      if (variant.accentColor != null) {
+        buf.writeln("                  backgroundColor: Color(0x${variant.accentColor!.value.toRadixString(16).padLeft(8, '0')}).withAlpha(40),");
+        buf.writeln("                  color: Color(0x${variant.accentColor!.value.toRadixString(16).padLeft(8, '0')}),");
+      } else {
+        buf.writeln("                  backgroundColor: Colors.grey.withAlpha(40),");
+      }
+      buf.writeln("                  minHeight: 5,");
+      buf.writeln("                ),");
+      buf.writeln("              );");
+      buf.writeln("            },");
       buf.writeln("          ),");
     }
 
@@ -495,29 +560,94 @@ class FullCodeGenerator {
       buf.writeln("ToastKit.success('Operation completed!');");
       buf.writeln("ToastKit.error('Something went wrong.');");
       buf.writeln("ToastKit.info('New update available.');");
-      return;
+      buf.writeln();
+    } else {
+      for (final ch in config.channels) {
+        buf.writeln("// Show toasts on the '${ch.id}' channel");
+        buf.writeln("ToastKit.success('Success!', channel: '${ch.id}');");
+        buf.writeln("ToastKit.error('Error occurred.', channel: '${ch.id}');");
+        buf.writeln();
+        buf.writeln("// Using the fluent channel API");
+        buf.writeln("ToastKit.channel('${ch.id}').success('Done!');");
+        buf.writeln("ToastKit.channel('${ch.id}').error('Failed.');");
+        buf.writeln();
+      }
     }
 
-    for (final ch in config.channels) {
-      buf.writeln("// Show toasts on the '${ch.id}' channel");
-      buf.writeln("ToastKit.success('Success!', channel: '${ch.id}');");
-      buf.writeln("ToastKit.error('Error occurred.', channel: '${ch.id}');");
+    // Progress toast with complete lifecycle example
+    buf.writeln("// ─── Progress / Loading Toast Lifecycle ───────────────────");
+    buf.writeln();
+    buf.writeln("/// Start a loading toast with controller for progress updates");
+    buf.writeln("Future<void> uploadFile(File file) async {");
+    buf.writeln("  // Start loading toast");
+    buf.writeln("  final ctrl = ToastKit.showLoading('Uploading \${file.name}…');");
+    buf.writeln();
+    buf.writeln("  try {");
+    buf.writeln("    int pct = 0;");
+    buf.writeln("    // Simulate upload with progress updates");
+    buf.writeln("    while (pct < 100) {");
+    buf.writeln("      await Future.delayed(const Duration(milliseconds: 150));");
+    buf.writeln("      ");
+    buf.writeln("      // Check if user dismissed the toast");
+    buf.writeln("      if (ctrl.isDisposed) return;");
+    buf.writeln("      ");
+    buf.writeln("      pct += 5;");
+    buf.writeln("      ");
+    buf.writeln("      // Update message and progress value");
+    buf.writeln("      ctrl.update(message: 'Uploading \${file.name}… \$pct%');");
+    buf.writeln("      ctrl.progress.value = pct / 100;");
+    buf.writeln("    }");
+    buf.writeln("    ");
+    buf.writeln("    // Complete with success");
+    buf.writeln("    ctrl.success('Upload complete!');");
+    buf.writeln("  } catch (e) {");
+    buf.writeln("    // Complete with error");
+    buf.writeln("    ctrl.error('Upload failed: \${e.toString()}');");
+    buf.writeln("  }");
+    buf.writeln("}");
+    buf.writeln();
+
+    // Include saved variant usage examples
+    if (config.savedVariants.isNotEmpty) {
+      buf.writeln("// ─── Using Saved Variants ────────────────────────────────");
       buf.writeln();
-      buf.writeln("// Using the fluent channel API");
-      buf.writeln("ToastKit.channel('${ch.id}').success('Done!');");
-      buf.writeln("ToastKit.channel('${ch.id}').error('Failed.');");
-      buf.writeln();
+      for (final variant in config.savedVariants) {
+        final variantName = variant.name.toLowerCase().replaceAll(' ', '_');
+        buf.writeln("// Show toast using '${variant.name}' variant");
+        buf.writeln("ToastKit.success('Message', customVariantName: '$variantName');");
+        if (variant.showProgressBar) {
+          buf.writeln("// This variant supports progress bar - use with showLoading:");
+          buf.writeln("final ctrl = ToastKit.showLoading('Loading…', customVariantName: '$variantName');");
+          buf.writeln("ctrl.progress.value = 0.5; // Update progress");
+        }
+        buf.writeln();
+      }
     }
 
-    buf.writeln("// Progress / loading toast");
-    buf.writeln("final ctrl = ToastKit.showLoading('Processing…');");
-    buf.writeln("// Update progress:");
-    buf.writeln("// ctrl.update(message: 'Processing… 50%');");
-    buf.writeln("// ctrl.progress.value = 0.5;");
-    buf.writeln("// Complete:");
-    buf.writeln("// ctrl.success('Done!');");
-    buf.writeln("// Or fail:");
-    buf.writeln("// ctrl.error('Failed.');");
+    // Variant assignment by channel
+    final channelsWithVariants = config.channels.where(
+      (ch) => ch.customVariantName != null || ch.assignedVariantIds.isNotEmpty
+    );
+    if (channelsWithVariants.isNotEmpty) {
+      buf.writeln("// ─── Variant Assignments by Channel ──────────────────────");
+      buf.writeln();
+      for (final ch in channelsWithVariants) {
+        buf.writeln("// Channel '${ch.id}' uses:");
+        if (ch.customVariantName != null) {
+          buf.writeln("//   - Custom variant: '${ch.customVariantName}'");
+        }
+        if (ch.defaultVariant != null) {
+          buf.writeln("//   - Built-in variant: ToastVariant.${ch.defaultVariant!.name}");
+        }
+        if (ch.assignedVariantIds.isNotEmpty) {
+          final variants = config.savedVariants
+            .where((v) => ch.assignedVariantIds.contains(v.id))
+            .map((v) => v.name);
+          buf.writeln("//   - Assigned saved variants: ${variants.join(', ')}");
+        }
+        buf.writeln();
+      }
+    }
   }
 
   // ── Helpers ──

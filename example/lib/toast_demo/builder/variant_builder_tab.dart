@@ -206,12 +206,18 @@ class _VariantBuilderTabState extends State<VariantBuilderTab> {
     );
   }
 
-  /// Build a card for a single saved variant with actions.
+  /// Build a card for a single saved variant with actions and style preview.
   Widget _buildVariantCard(
     VariantModel variant,
     ColorScheme colorScheme,
     TextTheme textTheme,
   ) {
+    // Build a mini preview of the variant's style
+    final hasVisibleStyle = variant.backgroundColor != null ||
+        variant.useGradient ||
+        variant.borderWidth > 0 ||
+        variant.shadowBlur > 0;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Card(
@@ -226,7 +232,53 @@ class _VariantBuilderTabState extends State<VariantBuilderTab> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Style preview swatch
+                  if (hasVisibleStyle)
+                    Container(
+                      width: 48,
+                      height: 48,
+                      margin: const EdgeInsets.only(right: 12),
+                      decoration: BoxDecoration(
+                        color: variant.useGradient ? null : variant.backgroundColor,
+                        gradient: variant.useGradient &&
+                            variant.gradientStartColor != null &&
+                            variant.gradientEndColor != null
+                            ? LinearGradient(
+                                colors: [
+                                  variant.gradientStartColor!,
+                                  variant.gradientEndColor!,
+                                ],
+                              )
+                            : null,
+                        borderRadius: BorderRadius.circular(
+                          variant.cornerRadius.clamp(4.0, 12.0),
+                        ),
+                        border: variant.borderWidth > 0 && variant.borderColor != null
+                            ? Border.all(
+                                color: variant.borderColor!,
+                                width: variant.borderWidth.clamp(1.0, 3.0),
+                              )
+                            : null,
+                        boxShadow: variant.shadowBlur > 0
+                            ? [
+                                BoxShadow(
+                                  color: Colors.black26,
+                                  blurRadius: variant.shadowBlur.clamp(2.0, 8.0),
+                                  offset: const Offset(0, 2),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Center(
+                        child: Icon(
+                          variant.icon ?? Icons.notifications,
+                          color: variant.accentColor ?? variant.textColor ?? Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ),
                   // Variant name and description
                   Expanded(
                     child: Column(
@@ -267,7 +319,6 @@ class _VariantBuilderTabState extends State<VariantBuilderTab> {
                             color: colorScheme.primary,
                           ),
                           onPressed: () {
-                            // TODO: Load variant into builder for editing
                             _showEditVariantDialog(context, variant);
                           },
                         ),
@@ -299,7 +350,7 @@ class _VariantBuilderTabState extends State<VariantBuilderTab> {
                 ],
               ),
               const SizedBox(height: 8),
-              // Variant metadata
+              // Variant metadata with style details
               Wrap(
                 spacing: 8,
                 runSpacing: 4,
@@ -323,9 +374,53 @@ class _VariantBuilderTabState extends State<VariantBuilderTab> {
                     ),
                   if (variant.assignedChannels.isNotEmpty)
                     Chip(
-                      icon: Icon(Icons.link, size: 14),
+                      avatar: Icon(Icons.link, size: 14),
                       label: Text(
                         '${variant.assignedChannels.length} channel(s)',
+                        style: textTheme.labelSmall,
+                      ),
+                      padding: EdgeInsets.zero,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  // Style indicators
+                  if (variant.shadowBlur > 0)
+                    Chip(
+                      avatar: Icon(Icons.blur_on, size: 14, color: colorScheme.tertiary),
+                      label: Text(
+                        'Shadow',
+                        style: textTheme.labelSmall,
+                      ),
+                      padding: EdgeInsets.zero,
+                      visualDensity: VisualDensity.compact,
+                      backgroundColor: colorScheme.tertiaryContainer.withAlpha(100),
+                    ),
+                  if (variant.useGradient)
+                    Chip(
+                      avatar: Icon(Icons.gradient, size: 14, color: colorScheme.secondary),
+                      label: Text(
+                        'Gradient',
+                        style: textTheme.labelSmall,
+                      ),
+                      padding: EdgeInsets.zero,
+                      visualDensity: VisualDensity.compact,
+                      backgroundColor: colorScheme.secondaryContainer.withAlpha(100),
+                    ),
+                  if (variant.showProgressBar)
+                    Chip(
+                      avatar: Icon(Icons.linear_scale, size: 14, color: colorScheme.primary),
+                      label: Text(
+                        'Progress',
+                        style: textTheme.labelSmall,
+                      ),
+                      padding: EdgeInsets.zero,
+                      visualDensity: VisualDensity.compact,
+                      backgroundColor: colorScheme.primaryContainer.withAlpha(100),
+                    ),
+                  if (variant.borderWidth > 0)
+                    Chip(
+                      avatar: Icon(Icons.border_style, size: 14),
+                      label: Text(
+                        'Border',
                         style: textTheme.labelSmall,
                       ),
                       padding: EdgeInsets.zero,
