@@ -1,5 +1,7 @@
 # Changelog
 
+## [2.2.1] - Added Readme.md
+
 ## [2.2.0] - Full-Featured Toast Builder UI
 
 ### Added
