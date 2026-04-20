@@ -3,10 +3,58 @@
 [![Dart](https://img.shields.io/badge/Dart-3.0+-blue)](https://dart.dev)
 [![Flutter](https://img.shields.io/badge/Flutter-3.10+-blue)](https://flutter.dev)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/version-2.2.0-orange)](https://github.com/yasersabri580-oss/toast-kit)
 
-**A smart, rule-driven toast and notification system for Flutter.**
+**A production-grade, rule-driven toast and notification system for Flutter.**
 
 ToastKit goes beyond simple toasts — it provides a **headless + UI hybrid notification engine** with rule-based triggering, a plugin architecture, queue management, and 12+ ready-made toast variants. No `BuildContext` required.
+
+---
+
+## 📑 Table of Contents
+
+- [Features](#-features)
+- [Installation](#-installation)
+- [Quick Start](#-quick-start)
+- [Core Concepts](#-core-concepts)
+  - [Toasts](#toasts)
+  - [Rules](#rules)
+  - [Plugins](#plugins)
+  - [Builders](#builders)
+- [Usage](#-usage)
+  - [Basic Toasts](#basic-toasts)
+  - [Toast Variants](#toast-variants)
+  - [Channels](#channels)
+  - [Controllers](#controllers)
+  - [Rule Configuration](#rule-configuration)
+  - [Queue Handling](#queue-handling)
+  - [Global Configuration](#global-configuration)
+- [Advanced Usage](#-advanced-usage)
+  - [Preventing Toast Spam](#preventing-toast-spam)
+  - [API Error Handling](#api-error-handling)
+  - [Form Validation](#form-validation)
+  - [Login Attempt Limiting](#login-attempt-limiting)
+  - [Payment Failure Scenario](#payment-failure-scenario)
+  - [Network Retry Messaging](#network-retry-messaging)
+- [Custom Toast Variants](#-custom-toast-variants-extensibility)
+- [Plugin System](#-plugin-system)
+- [Channels Deep Dive](#-channels-deep-dive)
+- [Controllers Deep Dive](#-controllers-deep-dive)
+- [Persistence](#-persistence)
+- [Accessibility](#-accessibility)
+- [Performance Optimization](#-performance-optimization)
+- [API Overview](#-api-overview)
+- [Example App](#-example-app)
+- [Folder Structure](#-folder-structure)
+- [Comparison with Other Libraries](#-comparison-with-other-libraries)
+- [Troubleshooting](#-troubleshooting)
+- [FAQ](#-faq)
+- [Migration Guide](#-migration-guide)
+- [Quick Reference](#-quick-reference)
+- [Contributing](#-contributing)
+- [License](#-license)
+
+---
 
 
 
@@ -803,6 +851,487 @@ Future<T> fetchWithRetry<T>(
 
 ---
 
+## 📊 Channels Deep Dive
+
+Channels are the foundation of ToastKit's organization system. They group toasts by category and apply independent policies.
+
+### What is a Channel?
+
+A **channel** is a logical grouping for related toasts (e.g., "auth", "network", "payment"). Each channel can have:
+- Its own display policies (max visible toasts, default priority)
+- Default visual styling (variant, position, animation)
+- Unique queue behavior (deduplication, throttling)
+- Dedicated rule-based automation
+
+### Built-in Channels
+
+ToastKit provides pre-configured channels for common scenarios:
+
+```dart
+ToastChannel.auth       // maxVisible: 1, priority: high
+ToastChannel.network    // priority: normal
+ToastChannel.sync       // priority: normal
+ToastChannel.payment    // maxVisible: 1, priority: urgent
+ToastChannel.debug      // priority: low, variant: debug
+```
+
+### Creating Custom Channels
+
+Define channels with complete control over behavior:
+
+```dart
+const customChannel = ToastChannel(
+  id: 'notifications',
+  label: 'App Notifications',
+  
+  // Display limits
+  maxVisible: 3,                          // Max 3 toasts visible at once
+  
+  // Default styling
+  defaultVariant: ToastVariant.material,   // Visual style
+  defaultPosition: ToastPosition.top,      // Screen position
+  defaultAnimation: ToastAnimationType.slideFromTop,
+  defaultDuration: Duration(seconds: 4),
+  
+  // Priority
+  defaultPriority: ToastPriority.normal,
+  
+  // Custom variant (for reusable custom UI)
+  customVariantName: 'my_custom_variant',
+  
+  // Enable/disable channel
+  enabled: true,
+);
+
+// Register the channel
+ToastKit.registerChannel(customChannel);
+```
+
+### Using Channels
+
+Two ways to show toasts on a specific channel:
+
+```dart
+// Method 1: Direct channel parameter
+ToastKit.success('Done!', channel: 'notifications');
+
+// Method 2: Fluent channel API (recommended)
+ToastKit.channel('notifications').success('Done!');
+ToastKit.channel('notifications').error('Failed');
+ToastKit.channel('notifications').warning('Careful');
+```
+
+### Multiple Variants in Same Channel
+
+**Important:** Channels support multiple variants through precedence rules:
+
+```dart
+// Define a channel with a default variant
+const myChannel = ToastChannel(
+  id: 'app',
+  label: 'App',
+  defaultVariant: ToastVariant.material,  // Default for all toasts
+);
+
+ToastKit.registerChannel(myChannel);
+
+// Use default variant (material)
+ToastKit.channel('app').success('Using default');
+
+// Override with different variant per toast
+ToastKit.channel('app').success(
+  'Using glassmorphism',
+  variant: ToastVariant.glassmorphism,  // Overrides channel default
+);
+
+ToastKit.channel('app').error(
+  'Using gradient',
+  variant: ToastVariant.gradient,  // Different override
+);
+```
+
+### Channel Configuration
+
+Advanced channel behavior via `ChannelConfig`:
+
+```dart
+ToastKit.registerChannel(
+  myChannel,
+  config: const ChannelConfig(
+    maxVisible: 2,
+    duration: Duration(seconds: 5),
+    
+    // Deduplication
+    enableDeduplication: true,
+    deduplicationWindow: Duration(seconds: 3),
+    
+    // Throttling
+    enableThrottling: true,
+    throttleInterval: Duration(milliseconds: 500),
+    
+    // Interrupt behavior
+    interruptCurrent: false,  // New toasts queue instead of replacing
+  ),
+);
+```
+
+### Channel Capacity Management
+
+When a channel reaches `maxVisible`, additional toasts are queued or dropped:
+
+```dart
+const authChannel = ToastChannel(
+  id: 'auth',
+  label: 'Authentication',
+  maxVisible: 1,  // Only show 1 auth toast at a time
+);
+
+// If one auth toast is visible, the next one queues
+ToastKit.channel('auth').error('Login failed');
+ToastKit.channel('auth').info('Please try again');  // Queued
+```
+
+### Per-Channel Stats
+
+Track activity per channel:
+
+```dart
+final stats = ToastKit.ruleEngine.getStats('payment');
+print('Total: ${stats.totalCount}');
+print('Errors: ${stats.errorCount}');
+print('Warnings: ${stats.warningCount}');
+print('Success: ${stats.successCount}');
+```
+
+---
+
+## 🎮 Controllers Deep Dive
+
+`ToastController` enables dynamic, stateful toast management — perfect for loading states, progress tracking, and state transitions.
+
+### Creating Controllers
+
+```dart
+// From showLoading (recommended)
+final ctrl = ToastKit.showLoading('Loading…');
+
+// Or from show() method
+final event = ToastEvent.info(message: 'Processing…');
+final ctrl = ToastKit.show(event);
+```
+
+### Controller Methods
+
+| Method | Description |
+|--------|-------------|
+| `dismiss()` | Immediately dismiss the toast |
+| `pause()` | Pause the auto-dismiss timer |
+| `resume()` | Resume the auto-dismiss timer |
+| `update(...)` | Update message, progress, state, or icon |
+| `success(message)` | Transition to success state |
+| `error(message)` | Transition to error state |
+| `warning(message)` | Transition to warning state |
+| `info(message)` | Transition to info state |
+
+### State Transitions
+
+Perfect for async operations:
+
+```dart
+final ctrl = ToastKit.showLoading('Uploading file…');
+
+try {
+  await uploadFile();
+  ctrl.success('Upload complete!');  // Smooth transition
+} catch (e) {
+  ctrl.error('Upload failed');       // Error transition
+}
+```
+
+### Progress Tracking
+
+Update progress dynamically:
+
+```dart
+final ctrl = ToastKit.showLoading('Downloading…');
+
+for (var i = 0; i <= 100; i += 10) {
+  await Future.delayed(Duration(milliseconds: 200));
+  ctrl.update(
+    message: 'Downloading… $i%',
+    progressValue: i / 100,
+  );
+}
+
+ctrl.success('Download complete!');
+```
+
+### Updating Toast Content
+
+```dart
+final ctrl = ToastKit.showLoading('Processing…');
+
+// Update message only
+ctrl.update(message: 'Still processing…');
+
+// Update multiple properties
+ctrl.update(
+  message: 'Almost done…',
+  progressValue: 0.8,
+  icon: Icons.hourglass_bottom,
+);
+```
+
+### ValueNotifiers
+
+Controllers expose reactive value notifiers:
+
+```dart
+final ctrl = ToastKit.showLoading('Loading…');
+
+// Listen to state changes
+ctrl.stateNotifier.addListener(() {
+  print('State: ${ctrl.stateNotifier.value}');
+});
+
+// Listen to message changes
+ctrl.messageNotifier.addListener(() {
+  print('Message: ${ctrl.messageNotifier.value}');
+});
+
+// Listen to progress
+ctrl.progress.addListener(() {
+  print('Progress: ${ctrl.progress.value}');
+});
+```
+
+### Pause/Resume Auto-Dismiss
+
+```dart
+final ctrl = ToastKit.success('Hover to pause');
+
+// Pause when user hovers (handled automatically)
+// Or manually:
+ctrl.pause();
+
+// Resume later
+ctrl.resume();
+```
+
+### Multi-Step Workflows
+
+```dart
+Future<void> multiStepProcess() async {
+  final ctrl = ToastKit.showLoading('Step 1/3: Validating…');
+  
+  await validate();
+  ctrl.update(message: 'Step 2/3: Processing…', progressValue: 0.33);
+  
+  await process();
+  ctrl.update(message: 'Step 3/3: Finalizing…', progressValue: 0.66);
+  
+  await finalize();
+  ctrl.success('All steps complete!');
+}
+```
+
+---
+
+## 💾 Persistence
+
+ToastKit can save and restore critical toasts across app restarts.
+
+### Enabling Persistence
+
+Mark toasts as persistent:
+
+```dart
+ToastKit.show(ToastEvent.error(
+  message: 'Critical system error',
+  persistent: true,      // Save this toast
+  dismissible: false,    // Prevent dismissal
+  channel: 'system',
+));
+```
+
+### Custom Persistence Adapter
+
+Implement your own storage:
+
+```dart
+class MyPersistenceAdapter extends ToastPersistenceAdapter {
+  @override
+  Future<void> save(List<ToastEvent> events) async {
+    // Save to shared preferences, SQLite, etc.
+    final prefs = await SharedPreferences.getInstance();
+    final json = events.map((e) => e.toJson()).toList();
+    await prefs.setString('toasts', jsonEncode(json));
+  }
+  
+  @override
+  Future<List<ToastEvent>> load() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonStr = prefs.getString('toasts');
+    if (jsonStr == null) return [];
+    
+    final List<dynamic> json = jsonDecode(jsonStr);
+    return json.map((e) => ToastEvent.fromJson(e)).toList();
+  }
+  
+  @override
+  Future<void> clear() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('toasts');
+  }
+}
+
+// Register adapter
+ToastKit.init(
+  navigatorKey: navigatorKey,
+  persistenceAdapter: MyPersistenceAdapter(),
+);
+```
+
+### Restoring Toasts
+
+```dart
+// Restore on app launch
+await ToastKit.restorePersistedToasts();
+```
+
+### Use Cases
+
+- **Critical errors** that users must acknowledge
+- **Pending actions** that survive app restarts
+- **Important notifications** during app updates
+- **Incomplete transactions** requiring user attention
+
+---
+
+## ♿ Accessibility
+
+ToastKit includes comprehensive accessibility support.
+
+### Screen Reader Support
+
+Toasts announce themselves automatically:
+
+```dart
+ToastKit.success('File saved');  // Announces "Success: File saved"
+ToastKit.error('Upload failed'); // Announces "Error: Upload failed"
+```
+
+### Semantic Labels
+
+Custom semantic labels:
+
+```dart
+ToastKit.show(ToastEvent.info(
+  message: 'Processing…',
+  semanticLabel: 'Processing your request, please wait',
+));
+```
+
+### Keyboard Avoidance
+
+Toasts automatically avoid keyboard:
+
+```dart
+ToastKit.init(
+  navigatorKey: navigatorKey,
+  config: const ToastConfig(
+    keyboardAvoidance: true,  // Move toasts above keyboard
+  ),
+);
+```
+
+### Safe Area Respect
+
+Toasts respect device safe areas:
+
+```dart
+ToastKit.init(
+  navigatorKey: navigatorKey,
+  config: const ToastConfig(
+    safeAreaEnabled: true,  // Avoid notches, home indicators
+  ),
+);
+```
+
+### Focus Management
+
+Toasts don't steal focus from form fields or interactive elements.
+
+### Reduced Motion
+
+Respects system accessibility settings for reduced motion.
+
+---
+
+## ⚡ Performance Optimization
+
+### Queue Limits
+
+Prevent memory issues with bounded queues:
+
+```dart
+ToastKit.init(
+  navigatorKey: navigatorKey,
+  config: const ToastConfig(
+    maxVisibleToasts: 3,      // Max 3 on screen
+    maxQueueSize: 50,          // Max 50 in queue
+  ),
+);
+```
+
+### Deduplication
+
+Reduce redundant toasts:
+
+```dart
+ToastKit.init(
+  navigatorKey: navigatorKey,
+  routerConfig: const RouterConfig(
+    enableDeduplication: true,
+    deduplicationWindow: Duration(seconds: 2),
+  ),
+);
+```
+
+### Throttling
+
+Limit toast frequency:
+
+```dart
+ToastKit.init(
+  navigatorKey: navigatorKey,
+  routerConfig: const RouterConfig(
+    enableThrottling: true,
+  ),
+);
+```
+
+### Lazy Loading
+
+Variants are built only when shown, not at initialization.
+
+### Memory Management
+
+- Controllers auto-dispose when toasts dismiss
+- Event streams use broadcast streams (no memory leaks)
+- Plugins are weakly referenced
+
+### Best Practices
+
+1. **Use channels** to group related toasts
+2. **Set maxVisible** per channel to limit concurrent toasts
+3. **Enable deduplication** to prevent spam
+4. **Use deduplicationKey** for unique toast identification
+5. **Dispose unused plugins** with `unregisterPlugin`
+6. **Clear stats periodically** with `ruleEngine.resetStats()`
+
+---
+
 ## 🧩 Custom Toast Variants (Extensibility)
 
 ToastKit supports a **plugin-style extensibility mechanism** for toast variants. Instead of repeating custom builder code across multiple screens, define a variant once and reuse it everywhere.
@@ -1499,6 +2028,43 @@ toast_kit/
 
 ---
 
+## 📊 Comparison with Other Libraries
+
+| Feature | ToastKit | flutter_toast | fluttertoast | bot_toast |
+|---------|----------|---------------|--------------|-----------|
+| No BuildContext | ✅ | ❌ | ✅ | ✅ |
+| Stateful Toasts | ✅ | ❌ | ❌ | ❌ |
+| Channel System | ✅ | ❌ | ❌ | ❌ |
+| Rule Engine | ✅ | ❌ | ❌ | ❌ |
+| Plugin System | ✅ | ❌ | ❌ | ❌ |
+| Queue Management | ✅ FIFO/LIFO/Priority | ❌ | ❌ | ✅ Basic |
+| Custom Variants | ✅ Extensible | ❌ | ❌ | ✅ Limited |
+| Deduplication | ✅ | ❌ | ❌ | ❌ |
+| Progress Tracking | ✅ | ❌ | ❌ | ❌ |
+| Persistence | ✅ | ❌ | ❌ | ❌ |
+| Built-in Variants | 12+ | 1 | 1 | 3 |
+| Animations | 12+ | 1 | 1 | 4 |
+| Analytics Hooks | ✅ | ❌ | ❌ | ❌ |
+| Accessibility | ✅ Full | ⚠️ Basic | ⚠️ Basic | ⚠️ Basic |
+| Dependencies | 0 (Flutter only) | 0 | 0 | 0 |
+
+### Why Choose ToastKit?
+
+**Choose ToastKit if you need:**
+- Production-grade notification management
+- Loading → success/error flows
+- Smart rules and automation
+- Multi-channel organization
+- Analytics and telemetry
+- Enterprise-level features
+
+**Choose simpler libraries if you need:**
+- Just basic toasts
+- Minimal setup
+- Small app with few notifications
+
+---
+
 ## 🔧 Troubleshooting
 
 ### Toast not showing
@@ -1528,6 +2094,321 @@ toast_kit/
 
 - Confirm the plugin is registered via `ToastKit.init(plugins: [...])` or `ToastKit.registerPlugin(...)`.
 - Plugin names must be unique — a second plugin with the same name replaces the first.
+
+
+---
+
+## ❓ FAQ
+
+### General Questions
+
+**Q: Do I need BuildContext to show toasts?**  
+A: No! ToastKit is designed to work without `BuildContext`. Initialize once with `navigatorKey`, then show toasts from anywhere.
+
+**Q: Can I use ToastKit with BLoC/Riverpod/Provider?**  
+A: Yes! ToastKit works with any state management solution. Just call `ToastKit.show()` from your business logic layer.
+
+**Q: How many toasts can I show at once?**  
+A: Configure with `maxVisibleToasts` (default: 3). Excess toasts queue automatically.
+
+**Q: Does ToastKit work on web/desktop?**  
+A: Yes! ToastKit works on all Flutter platforms: iOS, Android, Web, Windows, macOS, and Linux.
+
+**Q: What's the minimum Flutter version?**  
+A: Flutter 3.10.0+ and Dart 3.0.0+
+
+### Channels
+
+**Q: Do I need to register channels?**  
+A: No, but it's recommended. Unregistered channels use default settings. Registration gives you control over behavior.
+
+**Q: Can I use multiple variants in the same channel?**  
+A: Yes! Set a default variant on the channel, then override per toast using the `variant` or `customVariantName` parameter.
+
+**Q: What happens when a channel is full?**  
+A: When `maxVisible` is reached, new toasts either queue (if `enableQueue: true`) or drop (if false).
+
+**Q: Can I have different rules for different channels?**  
+A: Yes! Rules are configured per channel. Each channel has independent stats and rules.
+
+### Variants
+
+**Q: How do I create a custom variant?**  
+A: Extend `CustomToastVariantBuilder`, implement the `build` method, register with `ToastKit.registerVariant()`, then use via `customVariantName`.
+
+**Q: Can I combine multiple variants?**  
+A: Yes! Custom variants can wrap or compose built-in variants using `VariantFactory.build()`.
+
+**Q: What's the difference between `variant` and `customVariantName`?**  
+A: `variant` uses built-in enum variants (material, iOS, glassmorphism, etc.). `customVariantName` references a registered custom variant builder.
+
+### Rules
+
+**Q: When do rules trigger?**  
+A: Rules evaluate after every toast event on their configured channel. Conditions check stats, and actions fire when conditions are met.
+
+**Q: Can I have multiple rules on one channel?**  
+A: Yes! Both config-based and custom rules work together. All matching rules trigger.
+
+**Q: How do I prevent rules from firing repeatedly?**  
+A: Use `maxTriggers` (fire only N times) or `deduplicateWindow` (cooldown between triggers).
+
+**Q: Can rules create new toasts?**  
+A: Yes! Rule actions can call `ToastKit.show()`. The system prevents infinite loops with re-entrancy guards.
+
+### Performance
+
+**Q: Will ToastKit slow down my app?**  
+A: No. ToastKit is optimized with lazy loading, bounded queues, and efficient event streams. Minimal overhead when idle.
+
+**Q: How do I prevent toast spam?**  
+A: Use deduplication (via `deduplicationKey`), throttling, or channel capacity limits (`maxVisible`).
+
+**Q: Can I limit how many toasts are queued?**  
+A: Yes! Set `maxQueueSize` in `ToastConfig` (default: 50).
+
+### Troubleshooting
+
+**Q: My toasts aren't showing. What's wrong?**  
+A: Check these:
+1. Is `ToastKit.init()` called after the first frame?
+2. Is `navigatorKey` passed to both `ToastKit.init()` and `MaterialApp`?
+3. Is the channel enabled?
+4. Is the channel full?
+
+**Q: Rules aren't triggering. Why?**  
+A: Verify:
+1. Channel is registered: `ToastKit.registerChannel()`
+2. Toasts include the correct `channel` parameter
+3. Error threshold is reached (default: 5)
+4. `maxTriggers` hasn't been exceeded
+
+**Q: How do I debug toast issues?**  
+A: Register `LoggerPlugin` to see all toast lifecycle events:
+```dart
+ToastKit.registerPlugin(LoggerPlugin());
+```
+
+---
+
+## 📚 Migration Guide
+
+### From v1.x to v2.x
+
+#### Breaking Changes
+
+1. **`ToastType.custom` is deprecated**
+   ```dart
+   // Before (v1.x)
+   ToastEvent.custom(builder: (ctx, ctrl) => MyWidget())
+   
+   // After (v2.x) — Option 1: Register custom variant
+   ToastKit.registerVariant(MyVariant());
+   ToastKit.show(ToastEvent.success(
+     message: 'Done',
+     customVariantName: 'my_variant',
+   ));
+   
+   // After (v2.x) — Option 2: Use customBuilder
+   ToastKit.show(ToastEvent.success(
+     message: 'Done',
+     customBuilder: (ctx, ctrl) => MyWidget(),
+   ));
+   ```
+
+2. **Channel registration syntax**
+   ```dart
+   // Before (v1.x)
+   ToastKit.registerChannel('payment', ToastChannel(...));
+   
+   // After (v2.x)
+   ToastKit.registerChannel(ToastChannel(id: 'payment', ...));
+   ```
+
+3. **Rule configuration changes**
+   ```dart
+   // Before (v1.x)
+   ToastKit.addRule('payment', errorLimit: 5);
+   
+   // After (v2.x)
+   ToastKit.configureRule('payment', RuleConfig(
+     errorThreshold: 5,
+   ));
+   ```
+
+#### New Features in v2.x
+
+- ✨ **Custom variant system** with `CustomToastVariantBuilder`
+- ✨ **Per-channel variant assignment** via `customVariantName`
+- ✨ **Full Toast Builder UI** in example app
+- ✨ **Channel configs** with deduplication and throttling
+- ✨ **Windowed rate detection** with `errorsInWindow()`
+- ✨ **Code generation** for complete setups
+- ✨ **Import/Export** for builder configurations
+
+### From flutter_toast/fluttertoast
+
+```dart
+// Before (flutter_toast)
+Fluttertoast.showToast(
+  msg: "This is a toast",
+  toastLength: Toast.LENGTH_SHORT,
+  gravity: ToastGravity.BOTTOM,
+);
+
+// After (ToastKit)
+ToastKit.init(navigatorKey: navigatorKey);  // Once at app start
+ToastKit.success(
+  'This is a toast',
+  position: ToastPosition.bottom,
+  duration: Duration(seconds: 2),
+);
+```
+
+### From bot_toast
+
+```dart
+// Before (bot_toast)
+BotToast.showText(text: "Hello");
+
+// After (ToastKit)
+ToastKit.info('Hello');
+```
+
+---
+
+## 📖 Quick Reference
+
+### Essential Methods
+
+```dart
+// Initialize (once)
+ToastKit.init(navigatorKey: navigatorKey);
+
+// Show toasts
+ToastKit.success('Done!');
+ToastKit.error('Failed');
+ToastKit.warning('Careful');
+ToastKit.info('FYI');
+
+// Loading → Result
+final ctrl = ToastKit.showLoading('Processing…');
+ctrl.success('Done!');  // or ctrl.error('Failed')
+
+// Channels
+ToastKit.channel('auth').error('Login failed');
+
+// Custom variant
+ToastKit.registerVariant(MyVariant());
+ToastKit.success('Done', customVariantName: 'my_variant');
+
+// Rules
+ToastKit.configureRule('payment', RuleConfig(errorThreshold: 3));
+
+// Dismiss
+ToastKit.dismiss(toastId);
+ToastKit.dismissAll();
+```
+
+### Common Patterns
+
+#### API Call with Loading State
+```dart
+final ctrl = ToastKit.showLoading('Fetching data…');
+try {
+  final data = await api.fetchData();
+  ctrl.success('Data loaded!');
+} catch (e) {
+  ctrl.error('Failed to load data');
+}
+```
+
+#### Form Validation
+```dart
+void validateForm() {
+  if (email.isEmpty) {
+    ToastKit.warning('Email required', channel: 'form');
+  }
+  if (password.length < 8) {
+    ToastKit.warning('Password too short', channel: 'form');
+  }
+}
+```
+
+#### Error Threshold Detection
+```dart
+ToastKit.registerChannel(ToastChannel.auth);
+ToastKit.configureRule('auth', RuleConfig(
+  errorThreshold: 3,
+  maxTriggers: 1,
+));
+
+// After 3 errors on 'auth' channel, rule fires once
+```
+
+#### Progress Tracking
+```dart
+final ctrl = ToastKit.showLoading('Downloading…');
+for (var i = 0; i <= 100; i += 10) {
+  await Future.delayed(Duration(milliseconds: 200));
+  ctrl.update(
+    message: 'Downloading… $i%',
+    progressValue: i / 100,
+  );
+}
+ctrl.success('Download complete!');
+```
+
+### Variant Precedence
+
+1. `customBuilder` on event (highest priority)
+2. `customVariantName` on event
+3. Channel's `customVariantName`
+4. `variant` enum on event
+5. Channel's `defaultVariant`
+6. Default for `ToastType` (lowest priority)
+
+### Configuration Cheat Sheet
+
+```dart
+ToastKit.init(
+  navigatorKey: navigatorKey,
+  
+  // Global config
+  config: const ToastConfig(
+    defaultPosition: ToastPosition.top,
+    defaultDuration: Duration(seconds: 3),
+    maxVisibleToasts: 3,
+    enableQueue: true,
+    queueMode: QueueMode.fifo,
+    maxQueueSize: 50,
+    safeAreaEnabled: true,
+    keyboardAvoidance: true,
+    density: ToastDensity.comfortable,
+  ),
+  
+  // Router config
+  routerConfig: const RouterConfig(
+    enableDeduplication: true,
+    deduplicationWindow: Duration(seconds: 2),
+    enableThrottling: false,
+    replacementStrategy: ReplacementStrategy.dropNew,
+  ),
+  
+  // Channels
+  channels: [
+    ToastChannel.auth,
+    ToastChannel.network,
+    ToastChannel.payment,
+  ],
+  
+  // Plugins
+  plugins: [
+    LoggerPlugin(),
+    AnalyticsPlugin(),
+  ],
+);
+```
 
 ---
 
