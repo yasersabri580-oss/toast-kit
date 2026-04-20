@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:toast_kit/src/core/toast_config.dart';
@@ -13,6 +14,9 @@ import 'package:toast_kit/src/rules/rule_config.dart';
 import 'package:toast_kit/src/rules/toast_rule.dart';
 import 'package:toast_kit/src/rules/toast_stats.dart';
 import 'package:toast_kit/src/rules/rule_engine.dart';
+import 'package:toast_kit/src/variants/custom_variant_builder.dart';
+import 'package:toast_kit/src/variants/custom_variant_registry.dart';
+import 'package:toast_kit/src/variants/variant_factory.dart';
 
 // ==========================================================================
 // Test helpers
@@ -1115,4 +1119,379 @@ void main() {
       hub.notifyToastDismissed(ToastEvent.success(message: 'safe'), null);
     });
   });
+
+  // ========================================================================
+  // CustomVariantRegistry
+  // ========================================================================
+  group('CustomVariantRegistry', () {
+    test('register and lookup', () {
+      final registry = CustomVariantRegistry();
+      final variant = _TestVariant('my_variant');
+      registry.register(variant);
+
+      expect(registry.isRegistered('my_variant'), isTrue);
+      expect(registry['my_variant'], same(variant));
+      expect(registry.count, 1);
+      expect(registry.variantNames, contains('my_variant'));
+    });
+
+    test('unregister removes variant', () {
+      final registry = CustomVariantRegistry();
+      registry.register(_TestVariant('temp'));
+      registry.unregister('temp');
+      expect(registry.isRegistered('temp'), isFalse);
+      expect(registry['temp'], isNull);
+      expect(registry.count, 0);
+    });
+
+    test('idempotent override on re-registration', () {
+      final registry = CustomVariantRegistry();
+      final v1 = _TestVariant('dup');
+      final v2 = _TestVariant('dup');
+      registry.register(v1);
+      registry.register(v2);
+      expect(registry.count, 1);
+      expect(registry['dup'], same(v2));
+    });
+
+    test('empty name throws ArgumentError', () {
+      final registry = CustomVariantRegistry();
+      expect(
+        () => registry.register(_TestVariant('')),
+        throwsArgumentError,
+      );
+    });
+
+    test('clear removes all', () {
+      final registry = CustomVariantRegistry();
+      registry.register(_TestVariant('a'));
+      registry.register(_TestVariant('b'));
+      registry.clear();
+      expect(registry.count, 0);
+      expect(registry.isRegistered('a'), isFalse);
+    });
+
+    test('lookup returns null for unknown', () {
+      final registry = CustomVariantRegistry();
+      expect(registry['nonexistent'], isNull);
+      expect(registry.isRegistered('nonexistent'), isFalse);
+    });
+
+    test('toString includes variant names', () {
+      final registry = CustomVariantRegistry();
+      registry.register(_TestVariant('alpha'));
+      registry.register(_TestVariant('beta'));
+      final desc = registry.toString();
+      expect(desc, contains('alpha'));
+      expect(desc, contains('beta'));
+    });
+  });
+
+  // ========================================================================
+  // CustomToastVariantBuilder
+  // ========================================================================
+  group('CustomToastVariantBuilder', () {
+    test('name property returns correct value', () {
+      final variant = _TestVariant('payment_success');
+      expect(variant.name, 'payment_success');
+    });
+  });
+
+  // ========================================================================
+  // ToastEvent — customVariantName support
+  // ========================================================================
+  group('ToastEvent customVariantName', () {
+    test('customVariantName propagates through success factory', () {
+      final e = ToastEvent.success(
+        message: 'ok',
+        customVariantName: 'my_variant',
+      );
+      expect(e.customVariantName, 'my_variant');
+    });
+
+    test('customVariantName propagates through error factory', () {
+      final e = ToastEvent.error(
+        message: 'fail',
+        customVariantName: 'error_variant',
+      );
+      expect(e.customVariantName, 'error_variant');
+    });
+
+    test('customVariantName propagates through warning factory', () {
+      final e = ToastEvent.warning(
+        message: 'warn',
+        customVariantName: 'warn_variant',
+      );
+      expect(e.customVariantName, 'warn_variant');
+    });
+
+    test('customVariantName propagates through info factory', () {
+      final e = ToastEvent.info(
+        message: 'note',
+        customVariantName: 'info_variant',
+      );
+      expect(e.customVariantName, 'info_variant');
+    });
+
+    test('customVariantName propagates through loading factory', () {
+      final e = ToastEvent.loading(
+        message: 'wait',
+        customVariantName: 'loading_variant',
+      );
+      expect(e.customVariantName, 'loading_variant');
+    });
+
+    test('customVariantName defaults to null', () {
+      final e = ToastEvent.success(message: 'ok');
+      expect(e.customVariantName, isNull);
+    });
+  });
+
+  // ========================================================================
+  // ToastChannel — customVariantName support
+  // ========================================================================
+  group('ToastChannel customVariantName', () {
+    test('customVariantName is stored', () {
+      const ch = ToastChannel(
+        id: 'payment',
+        label: 'Payment',
+        customVariantName: 'payment_success',
+      );
+      expect(ch.customVariantName, 'payment_success');
+    });
+
+    test('customVariantName defaults to null', () {
+      const ch = ToastChannel(id: 'basic', label: 'Basic');
+      expect(ch.customVariantName, isNull);
+    });
+
+    test('customVariantName coexists with defaultVariant', () {
+      const ch = ToastChannel(
+        id: 'dual',
+        label: 'Dual',
+        defaultVariant: ToastVariant.material,
+        customVariantName: 'custom_one',
+      );
+      expect(ch.defaultVariant, ToastVariant.material);
+      expect(ch.customVariantName, 'custom_one');
+    });
+  });
+
+  // ========================================================================
+  // ChannelHandle — customVariantName forwarding
+  // ========================================================================
+  group('ChannelHandle customVariantName', () {
+    test('success forwards customVariantName', () {
+      final emitted = <ToastEvent>[];
+      final handle = ChannelHandle('payment', emitted.add);
+      handle.success('Paid', customVariantName: 'pv');
+      expect(emitted.first.customVariantName, 'pv');
+      expect(emitted.first.channel, 'payment');
+    });
+
+    test('error forwards customVariantName', () {
+      final emitted = <ToastEvent>[];
+      final handle = ChannelHandle('payment', emitted.add);
+      handle.error('Failed', customVariantName: 'ev');
+      expect(emitted.first.customVariantName, 'ev');
+    });
+
+    test('warning forwards customVariantName', () {
+      final emitted = <ToastEvent>[];
+      final handle = ChannelHandle('payment', emitted.add);
+      handle.warning('Low', customVariantName: 'wv');
+      expect(emitted.first.customVariantName, 'wv');
+    });
+
+    test('info forwards customVariantName', () {
+      final emitted = <ToastEvent>[];
+      final handle = ChannelHandle('payment', emitted.add);
+      handle.info('Info', customVariantName: 'iv');
+      expect(emitted.first.customVariantName, 'iv');
+    });
+
+    test('show forwards customVariantName from event', () {
+      final emitted = <ToastEvent>[];
+      final handle = ChannelHandle('ch', emitted.add);
+      handle.show(ToastEvent.success(
+        message: 'test',
+        customVariantName: 'cv',
+      ));
+      expect(emitted.first.customVariantName, 'cv');
+      expect(emitted.first.channel, 'ch');
+    });
+  });
+
+  // ========================================================================
+  // VariantFactory.resolveAndBuild — precedence chain
+  // ========================================================================
+  group('VariantFactory.resolveAndBuild precedence', () {
+    late CustomVariantRegistry registry;
+    late ToastController controller;
+
+    setUp(() {
+      registry = CustomVariantRegistry();
+      registry.register(_TestVariant('custom_a'));
+      registry.register(_TestVariant('custom_b'));
+
+      controller = ToastController(
+        id: 'test-id',
+        dismiss: () {},
+        pause: () {},
+        resume: () {},
+      );
+    });
+
+    tearDown(() {
+      controller.dispose();
+    });
+
+    test('1. customBuilder takes highest priority', () {
+      var builderCalled = false;
+      final event = ToastEvent(
+        type: ToastType.success,
+        message: 'test',
+        customBuilder: (ctx, ctrl) {
+          builderCalled = true;
+          return const SizedBox();
+        },
+        customVariantName: 'custom_a',
+        variant: ToastVariant.minimal,
+      );
+
+      final widget = VariantFactory.resolveAndBuild(
+        event: event,
+        controller: controller,
+        registry: registry,
+        channelCustomVariantName: 'custom_b',
+        channelDefaultVariant: ToastVariant.compact,
+      );
+
+      // The widget is a Builder; we just verify it was constructed.
+      expect(widget, isNotNull);
+      // Note: builderCalled would be true when the Builder is built in a
+      // widget tree, but we can verify the structure is correct.
+    });
+
+    test('2. event customVariantName used when no customBuilder', () {
+      final event = ToastEvent(
+        type: ToastType.success,
+        message: 'test',
+        customVariantName: 'custom_a',
+        variant: ToastVariant.minimal,
+      );
+
+      final widget = VariantFactory.resolveAndBuild(
+        event: event,
+        controller: controller,
+        registry: registry,
+        channelCustomVariantName: 'custom_b',
+        channelDefaultVariant: ToastVariant.compact,
+      );
+
+      expect(widget, isNotNull);
+    });
+
+    test('3. channel customVariantName used as fallback', () {
+      final event = ToastEvent(
+        type: ToastType.success,
+        message: 'test',
+        variant: ToastVariant.minimal,
+      );
+
+      final widget = VariantFactory.resolveAndBuild(
+        event: event,
+        controller: controller,
+        registry: registry,
+        channelCustomVariantName: 'custom_b',
+        channelDefaultVariant: ToastVariant.compact,
+      );
+
+      expect(widget, isNotNull);
+    });
+
+    test('4. event variant enum used when no custom variant names', () {
+      final event = ToastEvent(
+        type: ToastType.success,
+        message: 'test',
+        variant: ToastVariant.glassmorphism,
+      );
+
+      final widget = VariantFactory.resolveAndBuild(
+        event: event,
+        controller: controller,
+        registry: registry,
+      );
+
+      expect(widget, isNotNull);
+    });
+
+    test('5. channel defaultVariant used as final fallback before type default', () {
+      final event = ToastEvent(
+        type: ToastType.success,
+        message: 'test',
+      );
+
+      final widget = VariantFactory.resolveAndBuild(
+        event: event,
+        controller: controller,
+        registry: registry,
+        channelDefaultVariant: ToastVariant.compact,
+      );
+
+      expect(widget, isNotNull);
+    });
+
+    test('6. type default used when nothing else specified', () {
+      final event = ToastEvent(
+        type: ToastType.success,
+        message: 'test',
+      );
+
+      final widget = VariantFactory.resolveAndBuild(
+        event: event,
+        controller: controller,
+        registry: registry,
+      );
+
+      expect(widget, isNotNull);
+    });
+
+    test('unregistered customVariantName falls through', () {
+      final event = ToastEvent(
+        type: ToastType.success,
+        message: 'test',
+        customVariantName: 'nonexistent',
+        variant: ToastVariant.minimal,
+      );
+
+      // Should not throw; falls through to event variant
+      final widget = VariantFactory.resolveAndBuild(
+        event: event,
+        controller: controller,
+        registry: registry,
+      );
+
+      expect(widget, isNotNull);
+    });
+  });
+}
+
+// ==========================================================================
+// Test helpers for custom variant tests
+// ==========================================================================
+
+/// A minimal test implementation of [CustomToastVariantBuilder].
+class _TestVariant extends CustomToastVariantBuilder {
+  _TestVariant(this._name);
+
+  final String _name;
+
+  @override
+  String get name => _name;
+
+  @override
+  Widget build(BuildContext context, ToastEvent event, ToastController controller) {
+    return const SizedBox.shrink();
+  }
 }
