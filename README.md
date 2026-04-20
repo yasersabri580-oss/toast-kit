@@ -1159,6 +1159,79 @@ ToastKit.unregisterPlugin('logger');
 
 See the [`example/`](example/) directory for a complete demo app with real-world scenarios.
 
+### 🛠️ Toast Builder UI
+
+The example app includes a **full-featured interactive Toast Builder** accessible via the floating action button on any screen. The builder enables users to design, configure, and export complete ToastKit setups without writing code manually.
+
+#### Accessing the Builder
+
+The "Toast Builder" floating action button appears on every screen. Tap it to open the configurator at `/toast/configurator`.
+
+#### Builder Tabs
+
+The Toast Builder is organized into **8 tabs**:
+
+| Tab | Purpose |
+|-----|---------|
+| **Content** | Set toast title, message, subtitle, icon, and action buttons |
+| **Style** | Configure colors, gradients, borders, shadows, opacity, and layout |
+| **Animation** | Choose from 12 animation types and configure position |
+| **Behavior** | Set duration, progress bar, dismiss behavior, priority, and feedback |
+| **Channels** | Define and manage toast channels with all `ToastChannel` properties |
+| **Variants** | Register custom variants and assign them to channels |
+| **Rules** | Create config-based and custom rules per channel |
+| **Preview** | Live preview, configuration summary, and generated code |
+
+#### Channel Management (Channels Tab)
+
+- **Add/Edit/Remove channels** with all `ToastChannel` properties:
+  - ID, label, enabled state
+  - Max visible toasts, default priority, position, duration, animation
+  - Built-in variant assignment and custom variant name
+- **Per-channel policies** via `ChannelConfig`:
+  - Deduplication with configurable window
+  - Throttling with configurable interval
+  - Interrupt behavior and queue limits
+
+#### Variant Management (Variants Tab)
+
+- **Register custom variant names** — add names of `CustomToastVariantBuilder` classes
+- **Quick-add example variants** — one-tap chips for `payment_success`, `system_error`, `notification_banner`
+- **Per-channel assignment** — assign a built-in `ToastVariant` or registered custom variant to each channel
+- **Built-in variant gallery** — visual reference of all 12 built-in variants
+
+#### Rules Configuration (Rules Tab)
+
+- **Config-based rules** (`RuleConfig`):
+  - Error threshold, deduplication window, max triggers per channel
+- **Custom rules** (`ToastRule`):
+  - Condition types: error count, total count, windowed error rate, warning count
+  - Action types: show info/warning/error toast, or action toast with button
+  - Persistence and dismiss settings
+
+#### Code Generation
+
+The **Preview tab** generates two types of code:
+
+1. **Single Toast Code** — The exact `ToastEvent.custom(...)` code to reproduce the designed toast
+2. **Full Setup Code** — Complete initialization code including:
+   - `const ToastChannel(...)` definitions
+   - `ToastKit.init(...)` with channel registration
+   - `ToastKit.registerVariant(...)` calls with class stubs
+   - `_configureRules()` with all config-based and custom rules
+   - Usage examples with direct and fluent channel API
+
+All generated code is:
+- ✅ Complete (no hidden or omitted options)
+- ✅ Well-commented with section headers
+- ✅ Production-ready and copy-paste friendly
+- ✅ Copyable to clipboard with one tap
+
+#### Import / Export
+
+- **Export** (↓ button in app bar) — copies the full builder configuration as JSON to clipboard
+- **Import** (↑ button in app bar) — paste previously exported JSON to restore a configuration
+
 ### Full-Featured ToastService Example
 
 The example app includes a production-quality `ToastService` that demonstrates comprehensive channel/variant/rules integration. Here is the key pattern:
@@ -1398,10 +1471,17 @@ toast_kit/
 │   │   ├── services/
 │   │   │   └── toast_service.dart        # Production-quality ToastService
 │   │   ├── toast_demo/
+│   │   │   ├── toast_configurator_screen.dart # Full Toast Builder UI (8 tabs)
 │   │   │   ├── toast_builder_demo.dart   # Channel/variant/rules demo
 │   │   │   ├── toast_showcase.dart       # All types/variants/positions
 │   │   │   ├── toast_rules_demo.dart     # Rule engine demonstrations
 │   │   │   ├── toast_progress_demo.dart  # Progress tracking
+│   │   │   ├── builder/
+│   │   │   │   ├── builder_models.dart        # Builder data models
+│   │   │   │   ├── channel_builder_tab.dart   # Channel management tab
+│   │   │   │   ├── variant_builder_tab.dart   # Variant management tab
+│   │   │   │   ├── rules_builder_tab.dart     # Rules configuration tab
+│   │   │   │   └── full_code_generator.dart   # Complete code generator
 │   │   │   └── ...
 │   │   └── scenarios/
 │   │       ├── api_error.dart            # API failure handling
