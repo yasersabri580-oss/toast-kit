@@ -81,6 +81,13 @@ class DashboardScreen extends StatelessWidget {
       route: '/toast/configurator',
       color: Colors.pink,
     ),
+    _FeatureItem(
+      title: 'Builder Demo',
+      subtitle: 'Channels, variants, rules & progress',
+      icon: Icons.build_circle_outlined,
+      route: '/toast/builder',
+      color: Colors.deepPurple,
+    ),
   ];
 
   @override
