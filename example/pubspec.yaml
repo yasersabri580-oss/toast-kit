@@ -1,6 +1,6 @@
 name: toast_kit_example
 description: Example application demonstrating the ToastKit SDK.
-version: 1.0.0
+version: 2.2.0
 publish_to: none
 
 environment:
