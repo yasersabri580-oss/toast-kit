@@ -173,7 +173,18 @@ class ToastKit {
   // -----------------------------------------------------------------------
 
   /// Show an arbitrary [ToastEvent].
-  static void show(ToastEvent event) => instance._eventBus.emit(event);
+  ///
+  /// If [ToastEvent.delay] is set, the event is emitted after the specified
+  /// duration rather than immediately.
+  static void show(ToastEvent event) {
+    if (event.delay != null) {
+      Future.delayed(event.delay!, () {
+        if (isInitialized) instance._eventBus.emit(event);
+      });
+    } else {
+      instance._eventBus.emit(event);
+    }
+  }
 
   /// Show an arbitrary [ToastEvent] and return its [ToastController].
   ///
@@ -743,12 +754,22 @@ class ToastKit {
       child: toastWidget,
     );
 
+    // Resolve effective toast spacing: channel config > global config.
+    double effectiveSpacing = _config.toastSpacing;
+    if (event.channel != null) {
+      final channelCfg = _channelManager.configFor(event.channel!);
+      if (channelCfg?.toastSpacing != null) {
+        effectiveSpacing = channelCfg!.toastSpacing!;
+      }
+    }
+
     _overlayEngine.showToast(
       id: event.id,
       toastWidget: toastWidget,
       position: position,
       animationDuration: _config.defaultAnimationDuration,
       animation: animObj,
+      spacing: effectiveSpacing,
       autoDismiss: event.persistent ? null : duration,
       onDismissed: () {
         _onToastDismissed(event, DismissReason.timeout);

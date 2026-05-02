@@ -38,8 +38,13 @@ class ActionToast extends StatelessWidget {
                     padding: const EdgeInsets.only(left: 6),
                     child: FilledButton(
                       onPressed: () {
-                        a.onPressed();
-                        controller.dismiss();
+                        if (a.onPressedWithController != null) {
+                          // User has full control — no automatic dismiss.
+                          a.onPressedWithController!(controller);
+                        } else {
+                          a.onPressed?.call();
+                          controller.dismiss();
+                        }
                       },
                       style: FilledButton.styleFrom(backgroundColor: a.color ?? accent),
                       child: Text(a.label),

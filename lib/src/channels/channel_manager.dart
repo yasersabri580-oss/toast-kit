@@ -120,6 +120,7 @@ class ChannelHandle {
       persistent: event.persistent,
       dismissible: event.dismissible,
       channel: _channelName,
+      delay: event.delay,
     ));
   }
 }

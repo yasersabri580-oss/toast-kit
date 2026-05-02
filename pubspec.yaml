@@ -1,7 +1,7 @@
 name: toast_kit
 description: >-
   A production-grade Flutter SDK for in-app toast notifications.
-version: 2.2.1
+version: 2.3.0
 homepage: https://github.com/yasersabri580-oss/toast-kit
 repository: https://github.com/yasersabri580-oss/toast-kit
 issue_tracker: https://github.com/yasersabri580-oss/toast-kit/issues

@@ -1,5 +1,64 @@
 # Changelog
 
+## [2.3.0] - Delayed Toasts, Per-Channel Spacing & Action Controller Access
+
+### Added
+
+- **`ToastEvent.delay`** — New optional `Duration` field on every `ToastEvent` (and all factory
+  constructors: `success`, `error`, `warning`, `info`, `loading`, `custom`).  When set, the toast
+  is displayed after the specified delay instead of immediately.
+
+  ```dart
+  ToastKit.show(ToastEvent.success(
+    message: 'Welcome back!',
+    delay: Duration(seconds: 3),
+  ));
+  ```
+
+- **`ChannelConfig.toastSpacing`** — New optional `double?` field that overrides the global
+  `ToastConfig.toastSpacing` for all toasts on a specific channel.  This enables independent
+  vertical spacing between stacked toasts on a per-channel basis.
+
+  ```dart
+  ToastKit.registerChannel(
+    ToastChannel(id: 'notifications', label: 'Notifications'),
+    config: const ChannelConfig(toastSpacing: 16.0),
+  );
+  ```
+
+- **`ToastAction.onPressedWithController`** — New optional callback `void Function(ToastController)`
+  on `ToastAction` that receives the live `ToastController` for the toast.  When provided, the toast
+  is **not** automatically dismissed — callers have full control and can call
+  `controller.dismiss()` at the appropriate time (e.g., after an async operation or a
+  conditional check).
+
+  ```dart
+  ToastKit.show(ToastEvent.warning(
+    message: 'Only one base currency is allowed.',
+    dismissible: false,
+    actions: [
+      ToastAction(
+        label: 'OK',
+        onPressedWithController: (controller) {
+          // custom logic...
+          controller.dismiss();
+        },
+      ),
+    ],
+  ));
+  ```
+
+- **`ChannelConfig.copyWith`** — now includes the new `toastSpacing` field.
+
+### Changed
+
+- **`OverlayEngine`** — stack offset computation now uses per-entry spacing (stored from the
+  effective spacing at show time) instead of a single global `toastSpacing`.  This is an internal
+  change with no public API impact.
+- **`ToastAction.onPressed`** — changed from `required` to optional (`VoidCallback?`).  All
+  existing code that passes `onPressed` continues to work without modification.  At least one of
+  `onPressed` or `onPressedWithController` must be provided (enforced via `assert`).
+
 ## [2.2.1] - Added Readme.md
 
 ## [2.2.0] - Full-Featured Toast Builder UI

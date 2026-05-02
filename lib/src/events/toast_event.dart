@@ -19,16 +19,50 @@ String _generateId() {
 class ToastAction {
 
   /// Creates a [ToastAction].
+  ///
+  /// Provide either [onPressed] (a simple callback) or
+  /// [onPressedWithController] (a callback that receives the [ToastController]
+  /// so you can dismiss the toast, update its state, etc.).
+  ///
+  /// If [onPressedWithController] is provided it takes full precedence and
+  /// the caller is responsible for calling `controller.dismiss()` if desired.
+  /// When only [onPressed] is provided the toast is automatically dismissed
+  /// after the callback completes.
   const ToastAction({
     required this.label,
-    required this.onPressed,
+    this.onPressed,
+    this.onPressedWithController,
     this.color,
-  });
+  }) : assert(
+          onPressed != null || onPressedWithController != null,
+          'ToastAction requires either onPressed or onPressedWithController.',
+        );
   /// Button label text.
   final String label;
 
   /// Callback invoked when the button is pressed.
-  final VoidCallback onPressed;
+  ///
+  /// The toast is automatically dismissed after this callback runs.
+  /// Use [onPressedWithController] if you need manual control over dismissal.
+  final VoidCallback? onPressed;
+
+  /// Callback invoked when the button is pressed, receiving the
+  /// [ToastController] for the current toast.
+  ///
+  /// When this is provided, [onPressed] is ignored and the toast is **not**
+  /// automatically dismissed — call `controller.dismiss()` explicitly when
+  /// appropriate.
+  ///
+  /// ```dart
+  /// ToastAction(
+  ///   label: 'OK',
+  ///   onPressedWithController: (controller) {
+  ///     // Perform async work, then dismiss when ready.
+  ///     controller.dismiss();
+  ///   },
+  /// )
+  /// ```
+  final void Function(ToastController controller)? onPressedWithController;
 
   /// Optional colour override for the button.
   final Color? color;
@@ -78,6 +112,7 @@ class ToastEvent {
     this.persistent = false,
     this.dismissible = true,
     this.channel,
+    this.delay,
     DateTime? createdAt,
   })  : id = id ?? _generateId(),
         createdAt = createdAt ?? DateTime.now();
@@ -104,6 +139,7 @@ class ToastEvent {
     bool persistent = false,
     bool dismissible = true,
     String? channel,
+    Duration? delay,
   }) {
     return ToastEvent(
       type: ToastType.success,
@@ -123,6 +159,7 @@ class ToastEvent {
       persistent: persistent,
       dismissible: dismissible,
       channel: channel,
+      delay: delay,
     );
   }
 
@@ -144,6 +181,7 @@ class ToastEvent {
     bool persistent = false,
     bool dismissible = true,
     String? channel,
+    Duration? delay,
   }) {
     return ToastEvent(
       type: ToastType.error,
@@ -163,6 +201,7 @@ class ToastEvent {
       persistent: persistent,
       dismissible: dismissible,
       channel: channel,
+      delay: delay,
     );
   }
 
@@ -184,6 +223,7 @@ class ToastEvent {
     bool persistent = false,
     bool dismissible = true,
     String? channel,
+    Duration? delay,
   }) {
     return ToastEvent(
       type: ToastType.warning,
@@ -203,6 +243,7 @@ class ToastEvent {
       persistent: persistent,
       dismissible: dismissible,
       channel: channel,
+      delay: delay,
     );
   }
 
@@ -224,6 +265,7 @@ class ToastEvent {
     bool persistent = false,
     bool dismissible = true,
     String? channel,
+    Duration? delay,
   }) {
     return ToastEvent(
       type: ToastType.info,
@@ -243,6 +285,7 @@ class ToastEvent {
       persistent: persistent,
       dismissible: dismissible,
       channel: channel,
+      delay: delay,
     );
   }
 
@@ -261,6 +304,7 @@ class ToastEvent {
     bool persistent = true,
     bool dismissible = false,
     String? channel,
+    Duration? delay,
   }) {
     return ToastEvent(
       type: ToastType.loading,
@@ -278,6 +322,7 @@ class ToastEvent {
       persistent: persistent,
       dismissible: dismissible,
       channel: channel,
+      delay: delay,
     );
   }
 
@@ -293,6 +338,7 @@ class ToastEvent {
     bool persistent = false,
     bool dismissible = true,
     String? channel,
+    Duration? delay,
   }) {
     return ToastEvent(
       // ignore: deprecated_member_use_from_same_package
@@ -308,6 +354,7 @@ class ToastEvent {
       persistent: persistent,
       dismissible: dismissible,
       channel: channel,
+      delay: delay,
     );
   }
   /// Unique identifier (auto-generated).
@@ -382,6 +429,20 @@ class ToastEvent {
 
   /// Optional channel ID for category-based policies.
   final String? channel;
+
+  /// Optional delay before the toast is displayed.
+  ///
+  /// When set, the toast will appear after the specified [Duration] has
+  /// elapsed. This is useful for displaying follow-up notifications,
+  /// onboarding hints, or timed alerts.
+  ///
+  /// ```dart
+  /// ToastKit.show(ToastEvent.success(
+  ///   message: 'Welcome!',
+  ///   delay: Duration(seconds: 2),
+  /// ));
+  /// ```
+  final Duration? delay;
 
   @override
   String toString() => 'ToastEvent(id: $id, type: $type, message: $message)';
