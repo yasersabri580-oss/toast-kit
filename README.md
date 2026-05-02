@@ -3,7 +3,7 @@
 [![Dart](https://img.shields.io/badge/Dart-3.0+-blue)](https://dart.dev)
 [![Flutter](https://img.shields.io/badge/Flutter-3.10+-blue)](https://flutter.dev)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-2.2.0-orange)](https://github.com/yasersabri580-oss/toast-kit)
+[![Version](https://img.shields.io/badge/version-2.3.0-orange)](https://github.com/yasersabri580-oss/toast-kit)
 
 **A production-grade, rule-driven toast and notification system for Flutter.**
 
@@ -716,6 +716,69 @@ ToastKit.init(
   plugins: [LoggerPlugin(), AnalyticsPlugin()],
 );
 ```
+
+---
+
+## 🆕 New in 2.3.0
+
+### Delayed Toasts
+
+Display a toast after a specified time using the `delay` parameter available on all `ToastEvent` factory constructors.
+
+```dart
+// Show a welcome toast 3 seconds after the call
+ToastKit.show(ToastEvent.success(
+  message: 'Welcome back!',
+  delay: const Duration(seconds: 3),
+));
+
+// Timed onboarding hint
+ToastKit.show(ToastEvent.info(
+  message: 'Tip: swipe left to archive items.',
+  delay: const Duration(seconds: 5),
+  duration: const Duration(seconds: 6),
+));
+```
+
+### Per-Channel Toast Spacing
+
+Override the global `toastSpacing` for toasts on a specific channel using `ChannelConfig.toastSpacing`.
+
+```dart
+ToastKit.registerChannel(
+  const ToastChannel(id: 'notifications', label: 'Notifications'),
+  config: const ChannelConfig(toastSpacing: 16.0),
+);
+
+// Global spacing can be set at init time
+ToastKit.init(
+  navigatorKey: navigatorKey,
+  config: const ToastConfig(toastSpacing: 8.0), // default for all channels
+);
+```
+
+### Dismiss Toast from Inside an Action
+
+Use `onPressedWithController` on `ToastAction` to receive the `ToastController` and manually call `dismiss()`.  This is especially useful when the toast is `dismissible: false` and you need conditional or async dismissal.
+
+```dart
+ToastKit.show(ToastEvent.warning(
+  message: 'Only one base currency is allowed. '
+      'This will be set as the base currency automatically.',
+  dismissible: false,
+  actions: [
+    ToastAction(
+      label: 'OK',
+      onPressedWithController: (controller) {
+        // Perform any logic, then dismiss when ready.
+        controller.dismiss();
+      },
+    ),
+  ],
+));
+```
+
+> **Note:** When `onPressedWithController` is supplied the toast is **not** dismissed automatically — your callback has full control.  The simpler `onPressed: () {}` callback still auto-dismisses the toast after it runs.
 
 ---
 

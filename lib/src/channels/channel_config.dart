@@ -21,6 +21,7 @@ class ChannelConfig {
     this.deduplicationWindow = const Duration(seconds: 2),
     this.enableThrottling = false,
     this.throttleInterval = const Duration(milliseconds: 500),
+    this.toastSpacing,
   });
   /// Maximum number of toasts visible at once for this channel.
   final int? maxVisible;
@@ -44,6 +45,18 @@ class ChannelConfig {
   /// Minimum interval between toasts on this channel.
   final Duration throttleInterval;
 
+  /// Vertical spacing (in logical pixels) between stacked toasts on this
+  /// channel.
+  ///
+  /// When set, this overrides the global [ToastConfig.toastSpacing] for toasts
+  /// belonging to this channel, allowing independent spacing control per
+  /// channel.
+  ///
+  /// ```dart
+  /// const ChannelConfig(toastSpacing: 12.0)
+  /// ```
+  final double? toastSpacing;
+
   /// Returns a copy with the given fields replaced.
   ChannelConfig copyWith({
     int? maxVisible,
@@ -53,6 +66,7 @@ class ChannelConfig {
     Duration? deduplicationWindow,
     bool? enableThrottling,
     Duration? throttleInterval,
+    double? toastSpacing,
   }) {
     return ChannelConfig(
       maxVisible: maxVisible ?? this.maxVisible,
@@ -62,6 +76,7 @@ class ChannelConfig {
       deduplicationWindow: deduplicationWindow ?? this.deduplicationWindow,
       enableThrottling: enableThrottling ?? this.enableThrottling,
       throttleInterval: throttleInterval ?? this.throttleInterval,
+      toastSpacing: toastSpacing ?? this.toastSpacing,
     );
   }
 
@@ -75,7 +90,8 @@ class ChannelConfig {
         other.enableDeduplication == enableDeduplication &&
         other.deduplicationWindow == deduplicationWindow &&
         other.enableThrottling == enableThrottling &&
-        other.throttleInterval == throttleInterval;
+        other.throttleInterval == throttleInterval &&
+        other.toastSpacing == toastSpacing;
   }
 
   @override
@@ -87,5 +103,6 @@ class ChannelConfig {
         deduplicationWindow,
         enableThrottling,
         throttleInterval,
+        toastSpacing,
       );
 }

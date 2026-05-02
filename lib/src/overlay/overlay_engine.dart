@@ -14,12 +14,14 @@ class _EntryData {
     required this.entry,
     required this.position,
     required this.animController,
+    required this.spacing,
     this.autoTimer,
     this.isRemoving = false,
   });
   final OverlayEntry entry;
   final ToastPosition position;
   final AnimationController animController;
+  final double spacing;
   Timer? autoTimer;
   bool isRemoving;
 }
@@ -87,6 +89,7 @@ class OverlayEngine {
     required ToastPosition position,
     required Duration animationDuration,
     required ToastAnimation animation,
+    double spacing = 8.0,
     Duration? autoDismiss,
     VoidCallback? onDismissed,
   }) {
@@ -114,6 +117,7 @@ class OverlayEngine {
           position: position,
           animationDuration: animationDuration,
           animation: animation,
+          spacing: spacing,
           autoDismiss: autoDismiss,
           onDismissed: onDismissed,
         );
@@ -141,17 +145,8 @@ class OverlayEngine {
                 ? ToastPositionCalculator.calculateKeyboardOffset(mq, position)
                 : 0.0;
 
-        // Calculate stack index for vertical offset.
-        final stackIndex = _stackIndexFor(id, position);
-        // Use an estimated toast height for stacking. This is approximate;
-        // actual heights vary by variant. A more advanced implementation
-        // would measure widgets after layout.
-        const double estimatedToastHeight = 64.0;
-        final stackOffset = ToastPositionCalculator.calculateStackOffset(
-          stackIndex,
-          _config.toastSpacing,
-          toastHeight: estimatedToastHeight,
-        );
+        // Calculate cumulative stack offset using per-entry spacing.
+        final stackOffset = _stackOffsetFor(id, position);
 
         final isTop = position == ToastPosition.top ||
             position == ToastPosition.topLeft ||
@@ -182,6 +177,7 @@ class OverlayEngine {
       entry: overlayEntry,
       position: position,
       animController: animController,
+      spacing: spacing,
     );
 
     _entries[id] = data;
@@ -290,12 +286,23 @@ class OverlayEngine {
     _entries.remove(id);
   }
 
-  int _stackIndexFor(String id, ToastPosition position) {
-    int idx = 0;
+  /// Computes the cumulative vertical offset (in logical pixels) for [id]
+  /// at the given [position] by summing spacing and estimated heights for
+  /// all preceding entries at the same position.
+  ///
+  /// Each entry contributes its own [_EntryData.spacing] plus the estimated
+  /// toast height (64 logical pixels) to the total.  This allows independent
+  /// spacing per channel when different channels supply different spacing
+  /// values.
+  double _stackOffsetFor(String id, ToastPosition position) {
+    const double estimatedToastHeight = 64.0;
+    double offset = 0;
     for (final entry in _entries.entries) {
-      if (entry.key == id) return idx;
-      if (entry.value.position == position) idx++;
+      if (entry.key == id) break;
+      if (entry.value.position == position) {
+        offset += entry.value.spacing + estimatedToastHeight;
+      }
     }
-    return idx;
+    return offset;
   }
 }
