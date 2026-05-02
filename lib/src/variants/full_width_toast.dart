@@ -1,13 +1,11 @@
-import 'dart:nativewrappers/_internal/vm/lib/ffi_allocation_patch.dart';
-
 import 'package:flutter/material.dart';
 import '../events/toast_event.dart';
 import 'toast_variant_helpers.dart';
 
 /// Full-width banner toast.
 class FullWidthToast extends StatelessWidget {
-
-  const FullWidthToast({super.key, required this.event, required this.controller});
+  const FullWidthToast(
+      {super.key, required this.event, required this.controller});
   final ToastEvent event;
   final ToastController controller;
 
@@ -26,10 +24,12 @@ class FullWidthToast extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          Icon(event.icon ?? iconForType(event.type), color: accent, size: theme.iconSize),
+          Icon(event.icon ?? iconForType(event.type),
+              color: accent, size: theme.iconSize),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(event.message ?? '', style: theme.textStyle.copyWith(color: theme.foregroundColor)),
+            child: Text(event.message ?? '',
+                style: theme.textStyle.copyWith(color: theme.foregroundColor)),
           ),
           if (event.actions != null)
             for (final a in event.actions!)
@@ -38,7 +38,8 @@ class FullWidthToast extends StatelessWidget {
                   a.onPressed?.call();
                   controller.dismiss();
                 },
-                child: Text(a.label, style: TextStyle(color: a.color ?? accent)),
+                child:
+                    Text(a.label, style: TextStyle(color: a.color ?? accent)),
               ),
         ],
       ),
