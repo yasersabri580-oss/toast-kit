@@ -50,7 +50,7 @@ class MaterialToast extends StatelessWidget {
                 for (final action in event.actions!)
                   TextButton(
                     onPressed: () {
-                      action.onPressed();
+                      action.onPressed?.call();
                       controller.dismiss();
                     },
                     child: Text(action.label, style: TextStyle(color: action.color ?? accent)),

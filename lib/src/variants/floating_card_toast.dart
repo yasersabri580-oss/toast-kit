@@ -52,7 +52,7 @@ class FloatingCardToast extends StatelessWidget {
                             padding: const EdgeInsets.only(left: 8),
                             child: TextButton(
                               onPressed: () {
-                                a.onPressed();
+                                a.onPressed?.call();
                                 controller.dismiss();
                               },
                               child: Text(a.label, style: TextStyle(color: a.color ?? accent)),

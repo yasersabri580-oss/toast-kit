@@ -1,3 +1,5 @@
+import 'dart:nativewrappers/_internal/vm/lib/ffi_allocation_patch.dart';
+
 import 'package:flutter/material.dart';
 import '../events/toast_event.dart';
 import 'toast_variant_helpers.dart';
@@ -33,7 +35,7 @@ class FullWidthToast extends StatelessWidget {
             for (final a in event.actions!)
               TextButton(
                 onPressed: () {
-                  a.onPressed();
+                  a.onPressed?.call();
                   controller.dismiss();
                 },
                 child: Text(a.label, style: TextStyle(color: a.color ?? accent)),
